@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
@@ -21,24 +21,8 @@ type VideoHistoryItem = {
   quality: string;
   cost: number;
   created_at: string;
+  created_at_label: string;
 };
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-
-  if (mins < 60) {
-    return `${mins} минутын өмнө`;
-  }
-
-  const hours = Math.floor(mins / 60);
-
-  if (hours < 24) {
-    return `${hours} цагийн өмнө`;
-  }
-
-  return `${Math.floor(hours / 24)} өдрийн өмнө`;
-}
 
 export function VideoGeneratorClient({
   currentCredits,
@@ -59,28 +43,61 @@ export function VideoGeneratorClient({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const selected = event.target.files?.[0] ?? null;
-    setFile(selected);
-    setError(null);
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
-    if (selected) {
-      setPreview(URL.createObjectURL(selected));
-    } else {
-      setPreview(null);
+  function replaceFile(nextFile: File | null) {
+    setFile(nextFile);
+
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+
+    setPreview(nextFile ? URL.createObjectURL(nextFile) : null);
+
+    if (!nextFile && fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   }
 
-  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const selected = event.target.files?.[0] ?? null;
+
+    if (!selected) {
+      return;
+    }
+
+    if (!selected.type.startsWith("image/")) {
+      setError("Зөвхөн зураг файл оруулна уу.");
+      return;
+    }
+
+    setError(null);
+    replaceFile(selected);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsDragging(false);
+
     const dropped = event.dataTransfer.files?.[0] ?? null;
 
-    if (dropped && dropped.type.startsWith("image/")) {
-      setFile(dropped);
-      setPreview(URL.createObjectURL(dropped));
-      setError(null);
+    if (!dropped) {
+      return;
     }
+
+    if (!dropped.type.startsWith("image/")) {
+      setError("Зөвхөн зураг файл оруулна уу.");
+      return;
+    }
+
+    setError(null);
+    replaceFile(dropped);
   }
 
   async function handleSubmit() {
@@ -97,7 +114,7 @@ export function VideoGeneratorClient({
     }
 
     if (quality === "1080p" && duration === 10) {
-      setError("1080p чанар зөвхөн 5 секундын видеод дэмжигдэнэ.");
+      setError("1080p чанар зөвхөн 5 секундийн видеод дэмжигдэнэ.");
       return;
     }
 
@@ -138,13 +155,7 @@ export function VideoGeneratorClient({
 
       setResult(generatePayload as GenerateVideoResult);
       setPrompt("");
-      setFile(null);
-      setPreview(null);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-
+      replaceFile(null);
       router.refresh();
     } catch {
       setError("Алдаа гарлаа. Дахин оролдоно уу.");
@@ -155,256 +166,388 @@ export function VideoGeneratorClient({
 
   function handleClear() {
     setPrompt("");
-    setFile(null);
-    setPreview(null);
+    replaceFile(null);
     setResult(null);
     setError(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   }
 
+  const creditsRemaining = result ? result.credits_remaining : currentCredits;
+
   return (
-    <div className="flex h-full flex-col lg:flex-row">
-      <div className="flex w-full flex-shrink-0 flex-col border-b border-gray-200 bg-white lg:w-[420px] lg:border-b-0 lg:border-r xl:w-[480px]">
-        <div className="flex-1 space-y-5 overflow-auto p-5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Үлдэгдэл кредит</span>
-            <span className="rounded-full bg-purple-50 px-3 py-1 font-semibold text-purple-700">
-              {result ? result.credits_remaining : currentCredits} кредит
-            </span>
+    <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,29rem)_minmax(0,1fr)]">
+      <div className="border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
+        <div className="flex h-full flex-col">
+          <div className="space-y-5 p-4 sm:p-6">
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-2">
+                  <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
+                    Image to Video
+                  </span>
+                  <div>
+                    <h1 className="text-2xl font-semibold text-slate-950">Зургаас видео</h1>
+                    <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
+                      Эх зургийнхаа хөдөлгөөн, камерын чиглэл, орчны мэдрэмжийг тайлбарлаад богино видео үүсгэнэ.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
+                </div>
+              </div>
+            </div>
+
+            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Эх зураг</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">Mobile дээр дараад эсвэл desktop дээр drag & drop хийж оруулна.</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                  JPG, PNG, WebP
+                </span>
+              </div>
+
+              <div
+                onDrop={handleDrop}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onClick={() => !preview && fileInputRef.current?.click()}
+                className={`mt-4 flex min-h-[14rem] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.5rem] border-2 border-dashed px-6 text-center transition ${
+                  isDragging
+                    ? "border-cyan-400 bg-cyan-50"
+                    : preview
+                      ? "cursor-default border-slate-200 bg-slate-50"
+                      : "border-cyan-300 bg-cyan-50/60 hover:border-cyan-400 hover:bg-cyan-50"
+                }`}
+              >
+                {preview ? (
+                  <div className="relative w-full overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview} alt="" className="max-h-72 w-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        replaceFile(null);
+                      }}
+                      className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/85 text-white"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-cyan-700 shadow-sm">
+                      <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" x2="12" y1="3" y2="15" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Эх зургаа оруулах</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        Нэг зураг сонгож хөдөлгөөнийг нь промптоор тодорхойлно.
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              {file && (
+                <p className="mt-3 text-xs text-slate-500">
+                  {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              )}
+            </section>
+
+            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Промпт</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Камерын хөдөлгөөн, subject animation, орчны динамикаа тайлбарлана уу.
+                </p>
+              </div>
+
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder="Жишээ: Камер удаанаар zoom in хийж, үс салхинд намуухан хөдөлж, cinematic cyan light туссан байдал..."
+                rows={5}
+                className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+              />
+            </section>
+
+            <section className="grid gap-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Гаралтын тохиргоо</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">Видеоны урт болон чанараа сонгоно уу.</p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Үргэлжлэх хугацаа</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {VIDEO_DURATIONS.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setDuration(item)}
+                        className={`rounded-[1rem] border px-3 py-3 text-sm font-medium transition ${
+                          duration === item
+                            ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                        }`}
+                      >
+                        {item} сек
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Чанар</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {VIDEO_QUALITIES.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setQuality(item)}
+                        disabled={item === "1080p" && duration === 10}
+                        className={`rounded-[1rem] border px-3 py-3 text-sm font-medium transition ${
+                          quality === item
+                            ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                        } disabled:cursor-not-allowed disabled:opacity-40`}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900">Эх зураг</label>
-            <div
-              onDrop={handleDrop}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onClick={() => !preview && fileInputRef.current?.click()}
-              className={`relative flex min-h-[160px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition ${
-                isDragging
-                  ? "border-purple-400 bg-purple-50"
-                  : preview
-                    ? "cursor-default border-gray-200 bg-gray-50"
-                    : "border-gray-300 bg-gray-50 hover:border-purple-400 hover:bg-purple-50"
-              }`}
-            >
-              {preview ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={preview} alt="" className="max-h-48 max-w-full rounded-lg object-contain" />
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setFile(null);
-                      setPreview(null);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = "";
-                      }
-                    }}
-                    className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-sm text-white hover:bg-red-600"
-                  >
-                    ×
-                  </button>
-                </>
-              ) : (
-                <>
-                  <svg className="h-8 w-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" x2="12" y1="3" y2="15" />
-                  </svg>
-                  <p className="text-sm text-gray-600">Зураг чирж оруулах эсвэл дарж сонгоно уу</p>
-                  <p className="text-xs text-gray-400">JPG, PNG, WebP · хамгийн ихдээ 10MB</p>
-                </>
-              )}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            {file && (
-              <p className="text-xs text-gray-500">
-                {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+          <div className="mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/90 p-4 sm:p-6">
+            {error && (
+              <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
               </p>
             )}
-          </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900">Промпт</label>
-            <textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Видео ямар хөдөлгөөнтэй, ямар орчинтой байхыг тайлбарлана уу..."
-              rows={3}
-              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-            />
-          </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-[1.25rem] bg-[linear-gradient(135deg,#31c4e8,#129fd5)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(18,159,213,0.3)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPending ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Видео боловсруулж байна...
+                  </>
+                ) : (
+                  "Видео үүсгэх"
+                )}
+              </button>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-900">Үргэлжлэх хугацаа</label>
-              <div className="flex gap-2">
-                {VIDEO_DURATIONS.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setDuration(item)}
-                    className={`flex-1 rounded-lg py-2 text-xs font-medium transition ${
-                      duration === item
-                        ? "bg-purple-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    {item} сек
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-900">Чанар</label>
-              <div className="flex gap-2">
-                {VIDEO_QUALITIES.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setQuality(item)}
-                    disabled={item === "1080p" && duration === 10}
-                    className={`flex-1 rounded-lg py-2 text-xs font-medium transition ${
-                      quality === item
-                        ? "bg-purple-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    } disabled:opacity-40`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={isPending}
+                className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Цэвэрлэх
+              </button>
             </div>
           </div>
-        </div>
-
-        <div className="flex-shrink-0 space-y-3 border-t border-gray-200 p-5">
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isPending ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Видео үүсгэж байна...
-              </>
-            ) : (
-              "Видео үүсгэх"
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            disabled={isPending}
-            className="w-full rounded-xl border border-gray-200 py-2.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-          >
-            Цэвэрлэх
-          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-gray-50 p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-gray-900">Гаралт</h2>
-          <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">Видео</span>
+      <div className="bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
+          <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-7">
+            <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+              <div>
+                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
+                  Motion preview
+                </span>
+                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Эх зурагнаас амьд хөдөлгөөн рүү</h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
+                  Өгсөн зураг, промпт, чанарын тохиргоонууд энэ дэлгэц дээр нэг мөрөөр харагдаж mobile flow-г илүү ойлгомжтой болгоно.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Duration</p>
+                  <p className="mt-2 text-lg font-semibold">{duration} сек</p>
+                </div>
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Quality</p>
+                  <p className="mt-2 text-lg font-semibold">{quality}</p>
+                </div>
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Source</p>
+                  <p className="mt-2 text-lg font-semibold">{file ? "Бэлэн" : "Хүлээж байна"}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside className="grid gap-4">
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Сайн prompt-ын бүтэц</p>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+                <li>1. Subject ямар хөдөлгөөн хийхийг бич</li>
+                <li>2. Камерын чиглэлийг тусад нь хэл</li>
+                <li>3. Орчны light, speed, mood-оо нэм</li>
+              </ul>
+            </div>
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
+            </div>
+          </aside>
         </div>
 
-        <div className="flex min-h-[400px] items-center justify-center">
-          {isPending ? (
-            <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-                <svg className="h-8 w-8 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+        <section className="mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-950">Гаралт</h3>
+                <p className="mt-1 text-sm text-slate-500">Үүссэн видео энд preview болон download хэлбэрээр харагдана.</p>
               </div>
-              <p className="mb-2 font-medium text-gray-900">Видео үүсгэж байна...</p>
-              <p className="text-sm text-gray-500">Энэ процесс арай удаан үргэлжилж болно. Түр хүлээнэ үү.</p>
+              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Video</span>
             </div>
-          ) : result ? (
-            <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <video controls src={result.video_url} className="w-full" />
-              <div className="flex items-center justify-between border-t border-gray-100 p-4">
-                <span className="text-sm text-gray-500">{duration} сек · {quality}</span>
-                <a href={result.video_url} download className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" x2="12" y1="15" y2="3" />
+
+            {isPending ? (
+              <div className="flex min-h-[20rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+                  <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Татах
-                </a>
+                </div>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">Видео үүсгэж байна...</h4>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  Энэ процесс зураг үүсгэхээс арай урт үргэлжилж болно. Дуусмагц preview автоматаар шинэчлэгдэнэ.
+                </p>
               </div>
-            </div>
-          ) : (
-            <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-                <svg className="h-8 w-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m22 8-6 4 6 4V8z" />
-                  <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
-                </svg>
+            ) : result ? (
+              <div className="space-y-4">
+                <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-950 shadow-sm">
+                  <video controls src={result.video_url} className="w-full" />
+                </div>
+
+                <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <span className="rounded-full bg-white px-3 py-1 font-medium">{duration} сек</span>
+                    <span className="rounded-full bg-white px-3 py-1 font-medium">{quality}</span>
+                    <span className="rounded-full bg-white px-3 py-1 font-medium">{result.cost} кредит</span>
+                  </div>
+                  <a
+                    href={result.video_url}
+                    download
+                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" x2="12" y1="15" y2="3" />
+                    </svg>
+                    Видео татах
+                  </a>
+                </div>
               </div>
-              <p className="mb-2 font-medium text-gray-900">Одоогоор видео үүсгээгүй байна</p>
-              <p className="text-sm text-gray-500">Эх зураг болон промптоо оруулаад видео үүсгэх товчийг дарна уу.</p>
+            ) : (
+              <div className="flex min-h-[20rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-6 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m22 8-6 4 6 4V8z" />
+                    <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
+                  </svg>
+                </div>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">Таны видео энд гарна</h4>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  Эх зургаа оруулаад prompt-оо сайн тодорхойлбол илүү тогтвортой хөдөлгөөнтэй видео гарна.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {history.length > 0 && (
+            <div className="mt-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-950">Сүүлийн видеонууд</h3>
+                  <p className="mt-1 text-sm text-slate-500">Өмнөх ажлуудаа mobile card хэлбэрээр тоймлон хараарай.</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                  {history.length} видео
+                </span>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {history.map((item) => (
+                  <article
+                    key={item.id}
+                    className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm"
+                  >
+                    <div className="aspect-video bg-slate-950">
+                      <video
+                        src={item.video_url}
+                        poster={item.image_url}
+                        controls
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="space-y-3 p-4">
+                      <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
+                      <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.duration} сек</span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.quality}</span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                      </div>
+                      <a
+                        href={item.video_url}
+                        download
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" x2="12" y1="15" y2="3" />
+                        </svg>
+                        Татах
+                      </a>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
           )}
-        </div>
-
-        {history.length > 0 && (
-          <div className="mt-8">
-            <h3 className="mb-4 text-base font-semibold text-gray-900">Түүх</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {history.map((item) => (
-                <div key={item.id} className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow hover:shadow-md">
-                  <div className="relative aspect-video bg-gray-100">
-                    <video
-                      src={item.video_url}
-                      poster={item.image_url}
-                      controls
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <p className="mb-1 line-clamp-2 text-sm font-medium text-gray-900">{item.prompt}</p>
-                    <div className="mb-2 flex items-center justify-between text-xs text-gray-400">
-                      <span>{timeAgo(item.created_at)}</span>
-                      <span>{item.duration} сек · {item.quality} · {item.cost} кр</span>
-                    </div>
-                    <a href={item.video_url} download className="flex w-full items-center justify-center gap-1 rounded-xl border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50">
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" x2="12" y1="15" y2="3" />
-                      </svg>
-                      Татах
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        </section>
       </div>
     </div>
   );

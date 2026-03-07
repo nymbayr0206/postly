@@ -9,12 +9,12 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 type Mode = "login" | "signup";
 type RequestedRole = "user" | "agent";
 
-function formatMnt(value: number) {
-  return `${new Intl.NumberFormat("mn-MN").format(value)}₮`;
+function formatNumber(value: number) {
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-function formatCredits(value: number) {
-  return new Intl.NumberFormat("mn-MN").format(value);
+function formatMnt(value: number) {
+  return `${formatNumber(value)}₮`;
 }
 
 export function AuthForm() {
@@ -88,8 +88,8 @@ export function AuthForm() {
     if (!data.session) {
       setMessage(
         requestedRole === "agent"
-          ? "Бүртгэл амжилттай үүслээ. Имэйлээ баталгаажуулаад нэвтэрсний дараа агентын төлбөрийн баримтаа илгээнэ үү."
-          : "Бүртгэл амжилттай үүслээ. Имэйлээ баталгаажуулаад дараа нь нэвтэрнэ үү.",
+          ? "Бүртгэл үүслээ. Имэйлээ баталгаажуулаад нэвтэрсний дараа агентын төлбөрийн баримтаа илгээнэ үү."
+          : "Бүртгэл үүслээ. Имэйлээ баталгаажуулаад дараа нь нэвтэрнэ үү.",
       );
       setMode("login");
       setPassword("");
@@ -103,8 +103,22 @@ export function AuthForm() {
   }
 
   return (
-    <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <div className="mb-6 flex items-center gap-2 rounded-2xl bg-slate-100 p-1">
+    <div className="rounded-[1.75rem] bg-white px-4 py-4 sm:px-5 sm:py-5">
+      <div className="mb-5">
+        <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+          {mode === "login" ? "Нэвтрэх" : "Шинэ бүртгэл"}
+        </div>
+        <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+          {mode === "login" ? "Postly руу нэвтрэх" : "Postly данс үүсгэх"}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          {mode === "login"
+            ? "Хамгийн их ашиглагддаг контентын урсгалууд руу шууд орно."
+            : "Энгийн хэрэглэгчээр шууд эхлэх эсвэл агентын эрхийн урсгал руу орно."}
+        </p>
+      </div>
+
+      <div className="mb-5 grid grid-cols-2 gap-2 rounded-[1.25rem] bg-slate-100 p-1.5">
         <button
           type="button"
           onClick={() => {
@@ -112,8 +126,8 @@ export function AuthForm() {
             setError(null);
             setMessage(null);
           }}
-          className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition ${
-            mode === "login" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
+          className={`rounded-[1rem] px-4 py-3 text-sm font-semibold transition ${
+            mode === "login" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
           }`}
         >
           Нэвтрэх
@@ -125,8 +139,8 @@ export function AuthForm() {
             setError(null);
             setMessage(null);
           }}
-          className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition ${
-            mode === "signup" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
+          className={`rounded-[1rem] px-4 py-3 text-sm font-semibold transition ${
+            mode === "signup" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
           }`}
         >
           Бүртгүүлэх
@@ -135,106 +149,118 @@ export function AuthForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "signup" ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">Бүртгэлийн төрөл</p>
-            <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-3">
+            <div className="text-sm font-semibold text-slate-700">Бүртгэлийн төрөл</div>
+            <div className="grid gap-3">
               <button
                 type="button"
                 onClick={() => setRequestedRole("user")}
-                className={`rounded-2xl border p-4 text-left transition ${
+                className={`rounded-[1.5rem] border p-4 text-left transition ${
                   requestedRole === "user"
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-900 hover:border-slate-300"
+                    ? "border-cyan-300 bg-cyan-50 shadow-[0_10px_30px_rgba(47,188,230,0.12)]"
+                    : "border-slate-200 bg-white hover:border-cyan-200"
                 }`}
               >
-                <div className="text-sm font-semibold">Энгийн хэрэглэгч</div>
-                <p
-                  className={`mt-2 text-xs ${
-                    requestedRole === "user" ? "text-slate-200" : "text-slate-500"
-                  }`}
-                >
-                  Шууд данс нээгдэж, үндсэн үйлчилгээ ашиглана.
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-base font-bold text-slate-950">Энгийн хэрэглэгч</div>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Шууд дансаа нээгээд зураг, видео, аудио үүсгэж эхэлнэ.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                    Шууд эхэлнэ
+                  </span>
+                </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setRequestedRole("agent")}
-                className={`rounded-2xl border p-4 text-left transition ${
+                className={`rounded-[1.5rem] border p-4 text-left transition ${
                   requestedRole === "agent"
-                    ? "border-cyan-700 bg-cyan-700 text-white"
-                    : "border-slate-200 bg-white text-slate-900 hover:border-cyan-300"
+                    ? "brand-shell text-white"
+                    : "border-slate-200 bg-white hover:border-cyan-200"
                 }`}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold">Агент</div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className={`text-base font-bold ${requestedRole === "agent" ? "text-white" : "text-slate-950"}`}>
+                      Агент
+                    </div>
+                    <p className={`mt-1 text-sm ${requestedRole === "agent" ? "text-slate-300" : "text-slate-500"}`}>
+                      Төлбөрийн баталгаажуулалттай onboarding урсгал. Зөвшөөрөгдвөл
+                      {` ${formatNumber(AGENT_APPROVAL_CREDITS)} `}кредит болон Хичээл tab нээгдэнэ.
+                    </p>
+                  </div>
                   <span
-                    className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
                       requestedRole === "agent"
-                        ? "bg-white/20 text-white"
+                        ? "bg-white/10 text-cyan-100"
                         : "bg-cyan-50 text-cyan-700"
                     }`}
                   >
                     {formatMnt(AGENT_SIGNUP_PRICE_MNT)}
                   </span>
                 </div>
-                <p
-                  className={`mt-2 text-xs ${
-                    requestedRole === "agent" ? "text-cyan-50" : "text-slate-500"
-                  }`}
-                >
-                  Төлбөрийн хэсэг рүү орж баримт илгээнэ. Зөвшөөрөгдвөл {formatCredits(AGENT_APPROVAL_CREDITS)} кредит
-                  болон Хичээл tab нээгдэнэ.
-                </p>
               </button>
             </div>
           </div>
         ) : null}
 
-        <label className="block text-sm font-medium text-slate-700">
-          Имэйл
+        <label className="block">
+          <div className="mb-2 text-sm font-semibold text-slate-700">Имэйл</div>
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
+            className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
             placeholder="name@example.com"
             required
           />
         </label>
 
-        <label className="block text-sm font-medium text-slate-700">
-          Нууц үг
+        <label className="block">
+          <div className="mb-2 text-sm font-semibold text-slate-700">Нууц үг</div>
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
+            className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
             placeholder="Хамгийн багадаа 6 тэмдэгт"
             required
           />
         </label>
 
         {mode === "signup" ? (
-          <label className="block text-sm font-medium text-slate-700">
-            Нууц үг давтах
+          <label className="block">
+            <div className="mb-2 text-sm font-semibold text-slate-700">Нууц үг давтах</div>
             <input
               type="password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
+              className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               required
             />
           </label>
         ) : null}
 
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-        {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
+        {error ? (
+          <div className="rounded-[1.15rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        {message ? (
+          <div className="rounded-[1.15rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {message}
+          </div>
+        ) : null}
 
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          className="w-full rounded-[1.2rem] bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] px-4 py-3.5 text-sm font-black text-slate-950 shadow-[0_18px_40px_rgba(47,188,230,0.28)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? "Түр хүлээнэ үү..." : mode === "login" ? "Нэвтрэх" : "Бүртгэл үүсгэх"}
         </button>

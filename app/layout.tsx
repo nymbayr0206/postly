@@ -15,7 +15,7 @@ const jetBrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Postly",
-  description: "Credit-based content generation platform",
+  description: "Postly контент үүсгэх платформ",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="mn">
       <body className={`${manrope.variable} ${jetBrainsMono.variable} antialiased`}>{children}</body>
     </html>
   );

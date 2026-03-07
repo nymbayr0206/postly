@@ -49,13 +49,13 @@ function TypeBadge({ type }: { type: "image" | "audio" | "video" }) {
     video: "Видео",
   };
   const colors = {
-    image: "bg-blue-100 text-blue-700",
-    audio: "bg-purple-100 text-purple-700",
-    video: "bg-green-100 text-green-700",
+    image: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    audio: "border-slate-200 bg-slate-100 text-slate-700",
+    video: "border-sky-200 bg-sky-50 text-sky-700",
   };
 
   return (
-    <span className={`rounded-full px-2 py-1 text-xs font-medium ${colors[type]}`}>
+    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${colors[type]}`}>
       {labels[type]}
     </span>
   );
@@ -126,20 +126,48 @@ export default async function HistoryPage() {
     })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  return (
-    <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-gray-900 sm:text-3xl">Түүх</h1>
-        <p className="text-sm text-gray-600">Таны үүсгэсэн бүх зураг, видео, аудио энд байна.</p>
-      </div>
+  const imageCount = items.filter((item) => item.type === "image").length;
+  const audioCount = items.filter((item) => item.type === "audio").length;
+  const videoCount = items.filter((item) => item.type === "video").length;
 
-      <div className="mb-6 text-sm text-gray-500">{items.length} бичлэг олдлоо</div>
+  return (
+    <div className="mx-auto max-w-7xl space-y-5 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+      <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-8">
+        <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
+              Generation history
+            </span>
+            <h1 className="mt-4 text-3xl font-semibold sm:text-4xl">Таны үүсгэлтийн түүх</h1>
+            <p className="mt-3 text-sm leading-6 text-slate-200 sm:text-base">
+              Зураг, видео, аудио бүх үр дүнгээ нэг дэлгэц дээр хянаж, дахин нээж эсвэл татаж болно.
+            </p>
+          </div>
+
+          <div className="grid w-full gap-3 sm:grid-cols-3 lg:max-w-xl">
+            <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Нийт</p>
+              <p className="mt-2 text-3xl font-semibold">{items.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Зураг</p>
+              <p className="mt-2 text-3xl font-semibold">{imageCount}</p>
+            </div>
+            <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Видео / Аудио</p>
+              <p className="mt-2 text-3xl font-semibold">
+                {videoCount} / {audioCount}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+        <section className="brand-surface rounded-[2rem] p-8 text-center sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
             <svg
-              className="h-8 w-8 text-gray-400"
+              className="h-8 w-8"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -152,19 +180,19 @@ export default async function HistoryPage() {
               <path d="M12 7v5l4 2" />
             </svg>
           </div>
-          <p className="mb-2 font-medium text-gray-900">Одоогоор түүх хоосон байна</p>
-          <p className="text-sm text-gray-500">
-            Зураг, видео эсвэл аудио үүсгэсний дараа энд харагдана.
+          <h2 className="mt-5 text-2xl font-semibold text-slate-950">Одоогоор түүх хоосон байна</h2>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
+            Зураг, видео эсвэл аудио үүсгэсний дараа энд автоматаар нэмэгдэнэ.
           </p>
-        </div>
+        </section>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
-            <div
+            <article
               key={`${item.type}-${item.id}`}
-              className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow hover:shadow-lg"
+              className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/85 shadow-[0_18px_40px_rgba(9,38,66,0.08)] backdrop-blur"
             >
-              <div className="relative aspect-video bg-gray-100">
+              <div className="relative aspect-video bg-slate-100">
                 {item.type === "image" && (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -180,10 +208,10 @@ export default async function HistoryPage() {
                   />
                 )}
                 {item.type === "audio" && (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-100">
+                  <div className="brand-shell brand-grid flex h-full w-full flex-col items-center justify-center gap-4 p-5 text-white">
+                    <div className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-cyan-100">
                       <svg
-                        className="h-7 w-7 text-purple-600"
+                        className="h-7 w-7"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -196,32 +224,43 @@ export default async function HistoryPage() {
                         <circle cx="18" cy="16" r="3" />
                       </svg>
                     </div>
-                    <audio controls src={item.url} className="w-full" />
+                    <audio controls src={item.url} className="relative z-10 w-full" />
                   </div>
                 )}
-                <div className="absolute left-2 top-2">
+                <div className="absolute left-3 top-3">
                   <TypeBadge type={item.type} />
                 </div>
               </div>
 
-              <div className="p-4">
-                <p className="mb-2 line-clamp-2 text-sm font-medium text-gray-900">{item.prompt}</p>
-                <div className="mb-3 flex items-center justify-between text-xs text-gray-400">
-                  <span>{formatDate(item.created_at)}</span>
-                  {item.type === "image" && <span>{item.aspect_ratio ?? "-"}</span>}
-                  {item.type === "video" && <span>{item.duration} сек · {item.quality}</span>}
-                  {item.type === "audio" && <span>{item.model_name}</span>}
-                  <span>{item.cost} кредит</span>
+              <div className="space-y-4 p-4 sm:p-5">
+                <div className="space-y-2">
+                  <p className="line-clamp-2 text-base font-semibold text-slate-950">{item.prompt}</p>
+                  <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                    <span className="rounded-full bg-slate-100 px-3 py-1">{formatDate(item.created_at)}</span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                    {item.type === "image" && (
+                      <span className="rounded-full bg-slate-100 px-3 py-1">{item.aspect_ratio ?? "-"}</span>
+                    )}
+                    {item.type === "video" && (
+                      <span className="rounded-full bg-slate-100 px-3 py-1">
+                        {item.duration} сек · {item.quality}
+                      </span>
+                    )}
+                    {item.type === "audio" && (
+                      <span className="rounded-full bg-slate-100 px-3 py-1">{item.model_name}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="grid grid-cols-2 gap-3">
                   <a
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-600 transition hover:bg-gray-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                   >
                     <svg
-                      className="h-3.5 w-3.5"
+                      className="h-4 w-4"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -237,10 +276,10 @@ export default async function HistoryPage() {
                   <a
                     href={item.url}
                     download
-                    className="rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-600 transition hover:bg-gray-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     <svg
-                      className="h-3.5 w-3.5"
+                      className="h-4 w-4"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -252,12 +291,13 @@ export default async function HistoryPage() {
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" x2="12" y1="15" y2="3" />
                     </svg>
+                    Татах
                   </a>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
-        </div>
+        </section>
       )}
     </div>
   );

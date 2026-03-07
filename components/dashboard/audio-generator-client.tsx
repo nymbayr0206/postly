@@ -21,24 +21,13 @@ type AudioHistoryItem = {
   model_name: string;
   cost: number;
   created_at: string;
+  created_at_label: string;
 };
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-
-  if (mins < 60) {
-    return `${mins} минутын өмнө`;
-  }
-
-  const hours = Math.floor(mins / 60);
-
-  if (hours < 24) {
-    return `${hours} цагийн өмнө`;
-  }
-
-  return `${Math.floor(hours / 24)} өдрийн өмнө`;
-}
+const INITIAL_LINES: DialogueLine[] = [
+  { text: "", voice: "Brian" },
+  { text: "", voice: "Adam" },
+];
 
 export function AudioGeneratorClient({
   currentCredits,
@@ -47,10 +36,7 @@ export function AudioGeneratorClient({
   currentCredits: number;
   history: AudioHistoryItem[];
 }) {
-  const [lines, setLines] = useState<DialogueLine[]>([
-    { text: "", voice: "Brian" },
-    { text: "", voice: "Adam" },
-  ]);
+  const [lines, setLines] = useState<DialogueLine[]>(INITIAL_LINES);
   const [stability, setStability] = useState(0.5);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,10 +92,7 @@ export function AudioGeneratorClient({
       }
 
       setResult(payload as GenerateAudioResult);
-      setLines([
-        { text: "", voice: "Brian" },
-        { text: "", voice: "Adam" },
-      ]);
+      setLines(INITIAL_LINES);
       router.refresh();
     } catch {
       setError("Алдаа гарлаа. Дахин оролдоно уу.");
@@ -119,219 +102,347 @@ export function AudioGeneratorClient({
   }
 
   function handleClear() {
-    setLines([
-      { text: "", voice: "Brian" },
-      { text: "", voice: "Adam" },
-    ]);
+    setLines(INITIAL_LINES);
     setResult(null);
     setError(null);
   }
 
+  const creditsRemaining = result ? result.credits_remaining : currentCredits;
+  const filledCount = lines.filter((line) => line.text.trim().length > 0).length;
+
   return (
-    <div className="flex h-full flex-col lg:flex-row">
-      <div className="flex w-full flex-shrink-0 flex-col border-b border-gray-200 bg-white lg:w-[480px] lg:border-b-0 lg:border-r xl:w-[540px]">
-        <div className="flex-1 space-y-5 overflow-auto p-5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Үлдэгдэл кредит</span>
-            <span className="rounded-full bg-purple-50 px-3 py-1 font-semibold text-purple-700">
-              {result ? result.credits_remaining : currentCredits} кредит
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-900">Харилцан яриа</label>
-              <span className="text-xs text-gray-400">{lines.length}/20</span>
-            </div>
-
-            {lines.map((line, index) => (
-              <div key={index} className="flex items-start gap-2">
-                <div className="flex-shrink-0">
-                  <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-purple-700">
-                    {index + 1}
+    <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
+      <div className="border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
+        <div className="flex h-full flex-col">
+          <div className="space-y-5 p-4 sm:p-6">
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-2">
+                  <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
+                    ElevenLabs
+                  </span>
+                  <div>
+                    <h1 className="text-2xl font-semibold text-slate-950">Аудио үүсгэх</h1>
+                    <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
+                      Харилцан ярианы мөрүүдээ оруулаад, дуу хоолойгоо сонгон нэг дор MP3 болгон гаргана.
+                    </p>
                   </div>
                 </div>
-                <div className="flex-1 space-y-1.5">
-                  <select
-                    value={line.voice}
-                    onChange={(event) => updateLine(index, "voice", event.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs text-gray-900 outline-none focus:border-purple-400"
-                  >
-                    {ELEVENLABS_VOICES.map((voice) => (
-                      <option key={voice} value={voice}>
-                        {voice}
-                      </option>
-                    ))}
-                  </select>
-                  <textarea
-                    value={line.text}
-                    onChange={(event) => updateLine(index, "text", event.target.value)}
-                    placeholder={`${index + 1}-р мөрийн текст`}
-                    rows={2}
-                    className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
-                  />
-                </div>
-                {lines.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeLine(index)}
-                    className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-400 transition hover:bg-red-50 hover:text-red-500"
-                  >
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 6 6 18" />
-                      <path d="m6 6 12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
 
-            {lines.length < 20 && (
+                <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
+                </div>
+              </div>
+            </div>
+
+            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Харилцан яриа</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Хоолой бүрт тусдаа мөр үүсгээд текстээ бөглөнө үү.
+                  </p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                  {filledCount}/{lines.length} идэвхтэй
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {lines.map((line, index) => (
+                  <div
+                    key={`${line.voice}-${index}`}
+                    className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
+                        {index + 1}
+                      </div>
+                      <select
+                        value={line.voice}
+                        onChange={(event) => updateLine(index, "voice", event.target.value)}
+                        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                      >
+                        {ELEVENLABS_VOICES.map((voice) => (
+                          <option key={voice} value={voice}>
+                            {voice}
+                          </option>
+                        ))}
+                      </select>
+                      {lines.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeLine(index)}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    <textarea
+                      value={line.text}
+                      onChange={(event) => updateLine(index, "text", event.target.value)}
+                      placeholder={`${index + 1}-р мөрийн текст`}
+                      rows={3}
+                      className="mt-3 w-full resize-none rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {lines.length < 20 && (
+                <button
+                  type="button"
+                  onClick={addLine}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" x2="12" y1="5" y2="19" />
+                    <line x1="5" x2="19" y1="12" y2="12" />
+                  </svg>
+                  Мөр нэмэх
+                </button>
+              )}
+            </section>
+
+            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Тогтвортой байдал</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">Дуу хоолойн тогтвортой байдлыг тохируулна.</p>
+                </div>
+                <span className="rounded-full bg-cyan-50 px-3 py-1 text-sm font-semibold text-cyan-700">
+                  {stability.toFixed(1)}
+                </span>
+              </div>
+
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.1}
+                value={stability}
+                onChange={(event) => setStability(Number(event.target.value))}
+                className="mt-4 w-full accent-cyan-600"
+              />
+
+              <div className="mt-3 flex justify-between text-xs text-slate-500">
+                <span>Илүү чөлөөтэй</span>
+                <span>Илүү тогтвортой</span>
+              </div>
+            </section>
+          </div>
+
+          <div className="mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/90 p-4 sm:p-6">
+            {error && (
+              <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </p>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={addLine}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-500 transition hover:border-purple-400 hover:bg-purple-50 hover:text-purple-600"
+                onClick={handleSubmit}
+                disabled={isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-[1.25rem] bg-[linear-gradient(135deg,#31c4e8,#129fd5)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(18,159,213,0.3)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" x2="12" y1="5" y2="19" />
-                  <line x1="5" x2="19" y1="12" y2="12" />
-                </svg>
-                Мөр нэмэх
+                {isPending ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Аудио боловсруулж байна...
+                  </>
+                ) : (
+                  "Аудио үүсгэх"
+                )}
               </button>
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-900">Тогтвортой байдал</label>
-              <span className="text-sm font-medium text-purple-700">{stability.toFixed(1)}</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.1}
-              value={stability}
-              onChange={(event) => setStability(Number(event.target.value))}
-              className="w-full accent-purple-600"
-            />
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>Илүү хувирамтгай</span>
-              <span>Илүү тогтвортой</span>
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={isPending}
+                className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Цэвэрлэх
+              </button>
             </div>
           </div>
-        </div>
-
-        <div className="flex-shrink-0 space-y-3 border-t border-gray-200 p-5">
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isPending ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Аудио үүсгэж байна...
-              </>
-            ) : (
-              "Аудио үүсгэх"
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            disabled={isPending}
-            className="w-full rounded-xl border border-gray-200 py-2.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-          >
-            Цэвэрлэх
-          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-gray-50 p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-gray-900">Гаралт</h2>
-          <span className="rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Аудио</span>
+      <div className="bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
+          <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-7">
+            <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+              <div>
+                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
+                  Шууд сонсох
+                </span>
+                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Нэг дэлгэц дээр бичих, үүсгэх, сонсох</h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
+                  Mobile хэрэглэгчид текстээ зүүн талд бэлдээд, гарсан MP3-аа баруун талд шууд сонсоно.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Мөр</p>
+                  <p className="mt-2 text-lg font-semibold">{lines.length}</p>
+                </div>
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Идэвхтэй</p>
+                  <p className="mt-2 text-lg font-semibold">{filledCount}</p>
+                </div>
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Stability</p>
+                  <p className="mt-2 text-lg font-semibold">{stability.toFixed(1)}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside className="grid gap-4">
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Хэрэглэх зөвлөмж</p>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+                <li>1. Нэг мөрт нэг speaker байлга</li>
+                <li>2. Урт өгүүлбэрийг жижиглэвэл илүү цэвэр гарна</li>
+                <li>3. Дуу хоолойн уур амьсгалыг текстдээ тусга</li>
+              </ul>
+            </div>
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
+            </div>
+          </aside>
         </div>
 
-        <div className="flex min-h-[400px] items-center justify-center">
-          {isPending ? (
-            <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <svg className="h-8 w-8 animate-spin text-green-600" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+        <section className="mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-950">Гаралт</h3>
+                <p className="mt-1 text-sm text-slate-500">Үүссэн аудио файл энд шууд тоглогдоно.</p>
               </div>
-              <p className="mb-2 font-medium text-gray-900">Аудио үүсгэж байна...</p>
-              <p className="text-sm text-gray-500">Түр хүлээнэ үү. Файл удахгүй бэлэн болно.</p>
+              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">MP3</span>
             </div>
-          ) : result ? (
-            <div className="w-full max-w-xl space-y-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <svg className="h-8 w-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18V5l12-2v13" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
-                </svg>
-              </div>
-              <audio controls src={result.audio_url} className="w-full" />
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">MP3 · ElevenLabs</span>
-                <a href={result.audio_url} download className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" x2="12" y1="15" y2="3" />
+
+            {isPending ? (
+              <div className="flex min-h-[18rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+                  <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Татах
-                </a>
+                </div>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">Аудио үүсгэж байна...</h4>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  ElevenLabs хүсэлтийг боловсруулж байна. Дуусмагц тоглуулагч болон татах товч гарч ирнэ.
+                </p>
               </div>
-            </div>
-          ) : (
-            <div className="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-                <svg className="h-8 w-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18V5l12-2v13" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
-                </svg>
-              </div>
-              <p className="mb-2 font-medium text-gray-900">Одоогоор аудио үүсгээгүй байна</p>
-              <p className="text-sm text-gray-500">Харилцан яриагаа оруулаад аудио үүсгэх товчийг дарна уу.</p>
-            </div>
-          )}
-        </div>
-
-        {history.length > 0 && (
-          <div className="mt-8">
-            <h3 className="mb-4 text-base font-semibold text-gray-900">Түүх</h3>
-            <div className="space-y-3">
-              {history.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md">
-                  <p className="mb-2 line-clamp-2 text-sm font-medium text-gray-900">{item.prompt}</p>
-                  <audio controls src={item.audio_url} className="mb-2 w-full" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">{timeAgo(item.created_at)} · {item.cost} кр</span>
-                    <a href={item.audio_url} download className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50">
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            ) : result ? (
+              <div className="space-y-4">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+                    <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18V5l12-2v13" />
+                      <circle cx="6" cy="18" r="3" />
+                      <circle cx="18" cy="16" r="3" />
+                    </svg>
+                  </div>
+                  <audio controls src={result.audio_url} className="w-full" />
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap gap-2 text-sm text-slate-600">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">MP3</span>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">{result.cost} кредит</span>
+                    </div>
+                    <a
+                      href={result.audio_url}
+                      download
+                      className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="7 10 12 15 17 10" />
                         <line x1="12" x2="12" y1="15" y2="3" />
                       </svg>
-                      Татах
+                      Аудио татах
                     </a>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[18rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-6 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                  </svg>
+                </div>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">Таны аудио энд гарна</h4>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+                  Dialogue мөрүүдээ бөглөөд үүсгэхэд бэлэн. Preview хэсгийг mobile дээр том товчтой байхаар шинэчилсэн.
+                </p>
+              </div>
+            )}
           </div>
-        )}
+
+          {history.length > 0 && (
+            <div className="mt-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-950">Сүүлийн аудионууд</h3>
+                  <p className="mt-1 text-sm text-slate-500">Өмнөх үүсгэлтүүдээ эндээс дахин тоглуулж, татаж болно.</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                  {history.length} бичлэг
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {history.map((item) => (
+                  <article
+                    key={item.id}
+                    className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-2">
+                        <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
+                        <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
+                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.model_name}</span>
+                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                        </div>
+                      </div>
+                      <a
+                        href={item.audio_url}
+                        download
+                        className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" x2="12" y1="15" y2="3" />
+                        </svg>
+                        Татах
+                      </a>
+                    </div>
+                    <audio controls src={item.audio_url} className="mt-4 w-full" />
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

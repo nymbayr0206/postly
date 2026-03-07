@@ -41,6 +41,30 @@ function requestStatusLabel(status: "pending" | "approved" | "rejected") {
   return "Хүлээгдэж буй";
 }
 
+function QuickCard({
+  href,
+  title,
+  description,
+  accent,
+}: {
+  href: string;
+  title: string;
+  description: string;
+  accent: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="brand-surface group rounded-[1.75rem] p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(8,30,53,0.08)]"
+    >
+      <div className={`h-1.5 w-16 rounded-full ${accent}`} />
+      <h2 className="mt-5 text-lg font-black text-slate-950">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+      <div className="mt-5 text-sm font-semibold text-cyan-700">Нээх</div>
+    </Link>
+  );
+}
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -72,177 +96,182 @@ export default async function DashboardPage() {
   const generations = (generationsResponse.data ?? []) as GenerationRow[];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
-      <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+      <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] px-5 py-6 text-white sm:px-7 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
           <div>
-            <p className="text-sm text-slate-500">Тавтай морил</p>
-            <h1 className="mt-1 text-3xl font-semibold text-slate-900">{profile.email}</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Эрх: <span className="font-medium text-slate-900">{roleLabel(profile.role)}</span>
+            <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
+              {roleLabel(profile.role)}
+            </div>
+            <h1 className="mt-4 max-w-2xl text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
+              Нэг dashboard дотор контентын бүх урсгалаа удирд.
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+              Mobile дээр хурдан, desktop дээр бүтэн удирдлагатай ажиллах байдлаар зохиов.
+              Зураг, видео, аудио үүсгэлт болон кредитийн урсгалууд бүгд нэг орчинд байна.
             </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/dashboard/image"
+                className="rounded-full bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] px-5 py-3 text-sm font-black text-slate-950 shadow-[0_18px_40px_rgba(47,188,230,0.28)]"
+              >
+                Зураг үүсгэх
+              </Link>
+              <Link
+                href="/dashboard/billing"
+                className="rounded-full border border-white/12 bg-white/[0.08] px-5 py-3 text-sm font-semibold text-white"
+              >
+                Кредит авах
+              </Link>
+            </div>
           </div>
 
-          {profile.role === "admin" ? (
-            <Link
-              href="/admin"
-              className="rounded-2xl bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600"
-            >
-              Админ самбар
-            </Link>
-          ) : null}
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Одоогийн кредит</div>
+              <div className="mt-2 text-3xl font-black text-white">{wallet.credits}</div>
+            </div>
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Сүүлийн үүсгэлт</div>
+              <div className="mt-2 text-base font-bold text-white">
+                {generations[0] ? formatDate(generations[0].created_at) : "Одоогоор түүх алга"}
+              </div>
+            </div>
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Хэрэглэгч</div>
+              <div className="mt-2 truncate text-base font-bold text-white">{profile.email}</div>
+            </div>
+          </div>
         </div>
       </section>
 
       {profile.role === "agent" ? (
-        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <section className="brand-surface rounded-[1.75rem] p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-emerald-900">Агент эрх идэвхтэй</h2>
-              <p className="mt-1 text-sm text-emerald-800">
-                Танд агентын `Хичээл` хэсэг нээгдсэн. Шинэ материалуудаа тэндээс үзнэ үү.
+              <div className="text-sm font-semibold text-cyan-700">Агентын статус</div>
+              <h2 className="mt-1 text-xl font-black text-slate-950">Хичээлийн хэсэг идэвхтэй</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Агентын сургалтын материалууд тань бэлэн. Шинэ материалуудаа тэндээс үзнэ үү.
               </p>
             </div>
             <Link
               href="/dashboard/lessons"
-              className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
             >
               Хичээл рүү орох
             </Link>
           </div>
         </section>
       ) : agentRequest ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <section className="brand-surface rounded-[1.75rem] p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-amber-900">Агент хүсэлт бүртгэлтэй</h2>
-              <p className="mt-1 text-sm text-amber-800">
-                Төлөв: {requestStatusLabel(agentRequest.status)}. Төлбөрийн баримтаа шалгаж, шаардлагатай бол
-                шинэчилж илгээх боломжтой.
+              <div className="text-sm font-semibold text-amber-600">Агентын хүсэлт</div>
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Төлөв: {requestStatusLabel(agentRequest.status)}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Төлбөрийн баримтаа шалгаж, шаардлагатай бол шинэчилж илгээх боломжтой.
               </p>
             </div>
             <Link
               href="/dashboard/agent-onboarding"
-              className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500"
+              className="rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-white"
             >
-              Агент баталгаажуулалт
+              Баталгаажуулалт руу орох
             </Link>
           </div>
         </section>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Одоогийн кредит</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{wallet.credits}</p>
-        </article>
-        <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Сүүлийн үүсгэлтүүд</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{generations.length}</p>
-        </article>
-        <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Сүүлд хийсэн</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">
-            {generations[0] ? formatDate(generations[0].created_at) : "Одоогоор түүх алга"}
-          </p>
-        </article>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Link
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <QuickCard
           href="/dashboard/image"
-          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <h2 className="text-lg font-semibold text-slate-900">Зураг үүсгэх</h2>
-          <p className="mt-2 text-sm text-slate-600">NanoBanana-аар шинэ зураг үүсгэнэ.</p>
-        </Link>
-        <Link
+          title="Зураг үүсгэх"
+          description="NanoBanana-аар social пост, product visual, campaign image бүтээнэ."
+          accent="bg-[linear-gradient(135deg,#84E0EF,#2FBCE6)]"
+        />
+        <QuickCard
           href="/dashboard/video"
-          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <h2 className="text-lg font-semibold text-slate-900">Зургаас видео</h2>
-          <p className="mt-2 text-sm text-slate-600">Нэг зургаас AI видео үүсгэнэ.</p>
-        </Link>
-        <Link
+          title="Зургаас видео"
+          description="Нэг зураг дээр тулгуурлан motion-тэй богино видео үүсгэнэ."
+          accent="bg-[linear-gradient(135deg,#68E3D0,#2FBCE6)]"
+        />
+        <QuickCard
           href="/dashboard/audio"
-          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <h2 className="text-lg font-semibold text-slate-900">Аудио үүсгэх</h2>
-          <p className="mt-2 text-sm text-slate-600">Текстээ дуу болгон хөрвүүлнэ.</p>
-        </Link>
-        {profile.role === "agent" ? (
-          <Link
-            href="/dashboard/lessons"
-            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <h2 className="text-lg font-semibold text-slate-900">Хичээл</h2>
-            <p className="mt-2 text-sm text-slate-600">Агентуудад зориулсан сургалтын материал үзнэ.</p>
-          </Link>
-        ) : null}
-        {agentRequest ? (
-          <Link
-            href="/dashboard/agent-onboarding"
-            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <h2 className="text-lg font-semibold text-slate-900">Агент баталгаажуулалт</h2>
-            <p className="mt-2 text-sm text-slate-600">Төлбөрийн баримт болон хүсэлтийн төлөвөө шалгана.</p>
-          </Link>
-        ) : null}
-        <Link
-          href="/dashboard/history"
-          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <h2 className="text-lg font-semibold text-slate-900">Түүх</h2>
-          <p className="mt-2 text-sm text-slate-600">Өмнөх үүсгэсэн контентуудаа харна.</p>
-        </Link>
-        <Link
+          title="Аудио үүсгэх"
+          description="Харилцан яриаг олон хоолойгоор AI аудио болгон хөрвүүлнэ."
+          accent="bg-[linear-gradient(135deg,#9EE7F5,#56C9EC)]"
+        />
+        <QuickCard
           href="/dashboard/billing"
-          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <h2 className="text-lg font-semibold text-slate-900">Кредит худалдаж авах</h2>
-          <p className="mt-2 text-sm text-slate-600">Багц сонгож төлбөрийн баримт илгээн кредит авна.</p>
-        </Link>
-        <Link
-          href="/dashboard/settings"
-          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <h2 className="text-lg font-semibold text-slate-900">Тохиргоо</h2>
-          <p className="mt-2 text-sm text-slate-600">Данс болон мэдэгдлийн тохиргоогоо удирдана.</p>
-        </Link>
+          title="Кредит худалдаж авах"
+          description="Package сонгож, шилжүүлгийн баримт илгээж кредитээ цэнэглэнэ."
+          accent="bg-[linear-gradient(135deg,#84E0EF,#169FD5)]"
+        />
+        <QuickCard
+          href="/dashboard/history"
+          title="Түүх"
+          description="Өмнөх бүх зураг, видео, аудио үүсгэлтээ нэг дороос харна."
+          accent="bg-[linear-gradient(135deg,#B0EEF7,#68D4ED)]"
+        />
+        {profile.role === "agent" ? (
+          <QuickCard
+            href="/dashboard/lessons"
+            title="Хичээл"
+            description="Агентуудад зориулсан сургалт, ашиглах аргачлалуудыг үзнэ."
+            accent="bg-[linear-gradient(135deg,#72E4E9,#2FBCE6)]"
+          />
+        ) : (
+          <QuickCard
+            href="/dashboard/settings"
+            title="Тохиргоо"
+            description="Данс, мэдэгдэл, хэрэглэгчийн тохиргоогоо эндээс удирдана."
+            accent="bg-[linear-gradient(135deg,#84E0EF,#42C7EA)]"
+          />
+        )}
       </section>
 
-      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <section className="brand-surface rounded-[1.75rem] p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">Сүүлийн үүсгэлтүүд</h2>
-          <Link href="/dashboard/history" className="text-sm font-medium text-cyan-700 hover:text-cyan-600">
+          <div>
+            <div className="text-sm font-semibold text-slate-500">Сүүлийн үүсгэлтүүд</div>
+            <h2 className="mt-1 text-xl font-black text-slate-950">Сүүлийн 5 зураг</h2>
+          </div>
+          <Link href="/dashboard/history" className="text-sm font-semibold text-cyan-700">
             Бүгдийг харах
           </Link>
         </div>
 
         {generations.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">Одоогоор үүсгэлт алга.</p>
+          <div className="mt-5 rounded-[1.5rem] border border-dashed border-slate-200 bg-white/70 p-8 text-center text-sm text-slate-500">
+            Одоогоор үүсгэсэн зураг алга байна.
+          </div>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-5 space-y-3">
             {generations.map((generation) => (
               <div
                 key={generation.id}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-3"
+                className="rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-4 shadow-sm"
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-900">{generation.prompt}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {generation.model_name} · {generation.cost} кредит · {formatDate(generation.created_at)}
-                  </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-slate-950">{generation.prompt}</div>
+                    <div className="mt-2 text-xs text-slate-500">
+                      {generation.model_name} · {generation.cost} кредит · {formatDate(generation.created_at)}
+                    </div>
+                  </div>
+                  <a
+                    href={generation.image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    Нээх
+                  </a>
                 </div>
-
-                <a
-                  href={generation.image_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Нээх
-                </a>
               </div>
             ))}
           </div>
