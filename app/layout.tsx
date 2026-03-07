@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { JetBrains_Mono, Manrope } from "next/font/google";
 
 import "./globals.css";
@@ -14,8 +14,13 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Postly",
+  title: "Postly.mn",
   description: "Postly контент үүсгэх платформ",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -29,4 +34,3 @@ export default function RootLayout({
     </html>
   );
 }
-

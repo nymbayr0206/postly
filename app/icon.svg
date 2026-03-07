@@ -1,0 +1,15 @@
+﻿<svg width="256" height="256" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="postly-gradient" x1="8" y1="10" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B4FBFF" />
+      <stop offset="0.45" stop-color="#54DDF0" />
+      <stop offset="1" stop-color="#0A98E8" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="16" height="56" rx="8" fill="url(#postly-gradient)" />
+  <rect x="4" y="4" width="38" height="16" rx="8" fill="url(#postly-gradient)" />
+  <rect x="4" y="24" width="38" height="16" rx="8" fill="url(#postly-gradient)" />
+  <circle cx="47" cy="32" r="12" fill="url(#postly-gradient)" />
+  <circle cx="47" cy="32" r="7.75" fill="#082236" />
+  <path d="M44 27.5 51.2 32 44 36.5Z" fill="url(#postly-gradient)" />
+</svg>
