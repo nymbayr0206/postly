@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -77,7 +77,7 @@ export function VideoGeneratorClient({
     }
 
     if (!selected.type.startsWith("image/")) {
-      setError("Ð—Ó©Ð²Ñ…Ó©Ð½ Ð·ÑƒÑ€Ð°Ð³ Ñ„Ð°Ð¹Ð» Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ.");
+      setError("Зөвхөн зураг файл оруулна уу.");
       return;
     }
 
@@ -96,7 +96,7 @@ export function VideoGeneratorClient({
     }
 
     if (!dropped.type.startsWith("image/")) {
-      setError("Ð—Ó©Ð²Ñ…Ó©Ð½ Ð·ÑƒÑ€Ð°Ð³ Ñ„Ð°Ð¹Ð» Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ.");
+      setError("Зөвхөн зураг файл оруулна уу.");
       return;
     }
 
@@ -109,20 +109,19 @@ export function VideoGeneratorClient({
     const availableCredits = result ? result.credits_remaining : currentCredits;
 
     if (!file) {
-      setError("Ð­Ñ… Ð·ÑƒÑ€Ð°Ð³ ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ.");
+      setError("Эх зураг сонгоно уу.");
       return;
     }
 
     if (!prompt.trim()) {
-      setError("ÐŸÑ€Ð¾Ð¼Ð¿Ñ‚ Ñ…Ð¾Ð¾ÑÐ¾Ð½ Ð±Ð°Ð¹Ð½Ð°.");
+      setError("Prompt хоосон байна.");
       return;
     }
 
     if (quality === "1080p" && duration === 10) {
-      setError("1080p Ñ‡Ð°Ð½Ð°Ñ€ Ð·Ó©Ð²Ñ…Ó©Ð½ 5 ÑÐµÐºÑƒÐ½Ð´Ð¸Ð¹Ð½ Ð²Ð¸Ð´ÐµÐ¾Ð´ Ð´ÑÐ¼Ð¶Ð¸Ð³Ð´ÑÐ½Ñ.");
+      setError("1080p чанар зөвхөн 5 секундын видеод дэмжигдэнэ.");
       return;
     }
-
 
     if (availableCredits < pricing.current_cost) {
       setError(`Кредит хүрэлцэхгүй байна. ${pricing.current_cost} кредит шаардлагатай.`);
@@ -142,7 +141,7 @@ export function VideoGeneratorClient({
       const uploadPayload = await uploadResponse.json();
 
       if (!uploadResponse.ok) {
-        setError(uploadPayload.error ?? "Ð—ÑƒÑ€Ð°Ð³ Ð¾Ñ€ÑƒÑƒÐ»Ð°Ñ…Ð°Ð´ Ð°Ð»Ð´Ð°Ð° Ð³Ð°Ñ€Ð»Ð°Ð°.");
+        setError(uploadPayload.error ?? "Зураг оруулахад алдаа гарлаа.");
         return;
       }
 
@@ -160,7 +159,7 @@ export function VideoGeneratorClient({
       const generatePayload = await generateResponse.json();
 
       if (!generateResponse.ok) {
-        setError(generatePayload.error ?? "Ð’Ð¸Ð´ÐµÐ¾ Ò¯Ò¯ÑÐ³ÑÑ…ÑÐ´ Ð°Ð»Ð´Ð°Ð° Ð³Ð°Ñ€Ð»Ð°Ð°.");
+        setError(generatePayload.error ?? "Видео үүсгэхэд алдаа гарлаа.");
         return;
       }
 
@@ -169,7 +168,7 @@ export function VideoGeneratorClient({
       replaceFile(null);
       router.refresh();
     } catch {
-      setError("ÐÐ»Ð´Ð°Ð° Ð³Ð°Ñ€Ð»Ð°Ð°. Ð”Ð°Ñ…Ð¸Ð½ Ð¾Ñ€Ð¾Ð»Ð´Ð¾Ð½Ð¾ ÑƒÑƒ.");
+      setError("Алдаа гарлаа. Дахин оролдоно уу.");
     } finally {
       setIsPending(false);
     }
@@ -194,18 +193,19 @@ export function VideoGeneratorClient({
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                   <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
-                    Image to Video
+                    Зургаас видео
                   </span>
                   <div>
-                    <h1 className="text-2xl font-semibold text-slate-950">Ð—ÑƒÑ€Ð³Ð°Ð°Ñ Ð²Ð¸Ð´ÐµÐ¾</h1>
+                    <h1 className="text-2xl font-semibold text-slate-950">Зургаас видео</h1>
                     <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                      Ð­Ñ… Ð·ÑƒÑ€Ð³Ð¸Ð¹Ð½Ñ…Ð°Ð° Ñ…Ó©Ð´Ó©Ð»Ð³Ó©Ó©Ð½, ÐºÐ°Ð¼ÐµÑ€Ñ‹Ð½ Ñ‡Ð¸Ð³Ð»ÑÐ», Ð¾Ñ€Ñ‡Ð½Ñ‹ Ð¼ÑÐ´Ñ€ÑÐ¼Ð¶Ð¸Ð¹Ð³ Ñ‚Ð°Ð¹Ð»Ð±Ð°Ñ€Ð»Ð°Ð°Ð´ Ð±Ð¾Ð³Ð¸Ð½Ð¾ Ð²Ð¸Ð´ÐµÐ¾ Ò¯Ò¯ÑÐ³ÑÐ½Ñ.
+                      Эх зургийнхаа хөдөлгөөн, камерын чиглэл, орчны мэдрэмжийг тайлбарлаад
+                      богино видео үүсгэнэ.
                     </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Ò®Ð»Ð´ÑÐ³Ð´ÑÐ» ÐºÑ€ÐµÐ´Ð¸Ñ‚</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
                   <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
                 </div>
               </div>
@@ -216,8 +216,8 @@ export function VideoGeneratorClient({
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Ð­Ñ… Ð·ÑƒÑ€Ð°Ð³</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">Mobile Ð´ÑÑÑ€ Ð´Ð°Ñ€Ð°Ð°Ð´ ÑÑÐ²ÑÐ» desktop Ð´ÑÑÑ€ drag & drop Ñ…Ð¸Ð¹Ð¶ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð°.</p>
+                  <h2 className="text-sm font-semibold text-slate-900">Эх зураг</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">Mobile дээр дараад эсвэл desktop дээр drag and drop хийгээд оруулна.</p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   JPG, PNG, WebP
@@ -243,7 +243,7 @@ export function VideoGeneratorClient({
                 {preview ? (
                   <div className="relative w-full overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt="" className="max-h-72 w-full object-contain" />
+                    <img src={preview} alt="Эх зураг" className="max-h-72 w-full object-contain" />
                     <button
                       type="button"
                       onClick={(event) => {
@@ -251,8 +251,9 @@ export function VideoGeneratorClient({
                         replaceFile(null);
                       }}
                       className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/85 text-white"
+                      aria-label="Зураг хасах"
                     >
-                      Ã—
+                      ×
                     </button>
                   </div>
                 ) : (
@@ -265,9 +266,9 @@ export function VideoGeneratorClient({
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">Ð­Ñ… Ð·ÑƒÑ€Ð³Ð°Ð° Ð¾Ñ€ÑƒÑƒÐ»Ð°Ñ…</p>
+                      <p className="text-sm font-semibold text-slate-900">Эх зургаа оруулах</p>
                       <p className="mt-1 text-sm leading-6 text-slate-500">
-                        ÐÑÐ³ Ð·ÑƒÑ€Ð°Ð³ ÑÐ¾Ð½Ð³Ð¾Ð¶ Ñ…Ó©Ð´Ó©Ð»Ð³Ó©Ó©Ð½Ð¸Ð¹Ð³ Ð½ÑŒ Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚Ð¾Ð¾Ñ€ Ñ‚Ð¾Ð´Ð¾Ñ€Ñ…Ð¾Ð¹Ð»Ð½Ð¾.
+                        Нэг зураг сонгож хөдөлгөөнийг нь prompt-оор тодорхойлно.
                       </p>
                     </div>
                   </>
@@ -284,23 +285,23 @@ export function VideoGeneratorClient({
 
               {file && (
                 <p className="mt-3 text-xs text-slate-500">
-                  {file.name} Â· {(file.size / 1024 / 1024).toFixed(2)} MB
+                  {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               )}
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">ÐŸÑ€Ð¾Ð¼Ð¿Ñ‚</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Prompt</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  ÐšÐ°Ð¼ÐµÑ€Ñ‹Ð½ Ñ…Ó©Ð´Ó©Ð»Ð³Ó©Ó©Ð½, subject animation, Ð¾Ñ€Ñ‡Ð½Ñ‹ Ð´Ð¸Ð½Ð°Ð¼Ð¸ÐºÐ°Ð° Ñ‚Ð°Ð¹Ð»Ð±Ð°Ñ€Ð»Ð°Ð½Ð° ÑƒÑƒ.
+                  Камерын хөдөлгөөн, subject animation, орчны динамикаа тайлбарлана уу.
                 </p>
               </div>
 
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Ð–Ð¸ÑˆÑÑ: ÐšÐ°Ð¼ÐµÑ€ ÑƒÐ´Ð°Ð°Ð½Ð°Ð°Ñ€ zoom in Ñ…Ð¸Ð¹Ð¶, Ò¯Ñ ÑÐ°Ð»Ñ…Ð¸Ð½Ð´ Ð½Ð°Ð¼ÑƒÑƒÑ…Ð°Ð½ Ñ…Ó©Ð´Ó©Ð»Ð¶, cinematic cyan light Ñ‚ÑƒÑÑÐ°Ð½ Ð±Ð°Ð¹Ð´Ð°Ð»..."
+                placeholder="Жишээ: Камер удаанаар zoom in хийж, үс салхинд зөөлөн хөдөлж, cinematic cyan light туссан байдал..."
                 rows={5}
                 className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               />
@@ -308,13 +309,13 @@ export function VideoGeneratorClient({
 
             <section className="grid gap-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Ð“Ð°Ñ€Ð°Ð»Ñ‚Ñ‹Ð½ Ñ‚Ð¾Ñ…Ð¸Ñ€Ð³Ð¾Ð¾</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">Ð’Ð¸Ð´ÐµÐ¾Ð½Ñ‹ ÑƒÑ€Ñ‚ Ð±Ð¾Ð»Ð¾Ð½ Ñ‡Ð°Ð½Ð°Ñ€Ð°Ð° ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ.</p>
+                <h2 className="text-sm font-semibold text-slate-900">Видео тохиргоо</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">Видеоны урт болон чанараа сонгоно уу.</p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Ò®Ñ€Ð³ÑÐ»Ð¶Ð»ÑÑ… Ñ…ÑƒÐ³Ð°Ñ†Ð°Ð°</p>
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Үргэлжлэх хугацаа</p>
                   <div className="grid grid-cols-2 gap-2">
                     {VIDEO_DURATIONS.map((item) => (
                       <button
@@ -327,14 +328,14 @@ export function VideoGeneratorClient({
                             : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                         }`}
                       >
-                        {item} ÑÐµÐº
+                        {item} сек
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Ð§Ð°Ð½Ð°Ñ€</p>
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Чанар</p>
                   <div className="grid grid-cols-2 gap-2">
                     {VIDEO_QUALITIES.map((item) => (
                       <button
@@ -377,10 +378,10 @@ export function VideoGeneratorClient({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Ð’Ð¸Ð´ÐµÐ¾ Ð±Ð¾Ð»Ð¾Ð²ÑÑ€ÑƒÑƒÐ»Ð¶ Ð±Ð°Ð¹Ð½Ð°...
+                    Видео боловсруулж байна...
                   </>
                 ) : (
-                  `Ð’Ð¸Ð´ÐµÐ¾ Ò¯Ò¯ÑÐ³ÑÑ… Â· ${pricing.current_cost} ÐºÑ€`
+                  `Видео үүсгэх · ${pricing.current_cost} кр`
                 )}
               </button>
 
@@ -390,12 +391,12 @@ export function VideoGeneratorClient({
                 disabled={isPending}
                 className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
-                Ð¦ÑÐ²ÑÑ€Ð»ÑÑ…
+                Цэвэрлэх
               </button>
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Энэ үүсгэлтийг эхлүүлэхийн тулд доод хаяж {pricing.current_cost} кредит шаардлагатай.
+                Кредит хүрэлцэхгүй байна. Доод тал нь {pricing.current_cost} кредит шаардлагатай.
               </p>
             ) : null}
           </div>
@@ -408,26 +409,27 @@ export function VideoGeneratorClient({
             <div className="relative z-10 flex h-full flex-col justify-between gap-6">
               <div>
                 <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
-                  Motion preview
+                  Хөдөлгөөний харагдац
                 </span>
-                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Ð­Ñ… Ð·ÑƒÑ€Ð°Ð³Ð½Ð°Ð°Ñ Ð°Ð¼ÑŒÐ´ Ñ…Ó©Ð´Ó©Ð»Ð³Ó©Ó©Ð½ Ñ€Ò¯Ò¯</h2>
+                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Эх зургаас амьд хөдөлгөөнт дүрс рүү</h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                  Ó¨Ð³ÑÓ©Ð½ Ð·ÑƒÑ€Ð°Ð³, Ð¿Ñ€Ð¾Ð¼Ð¿Ñ‚, Ñ‡Ð°Ð½Ð°Ñ€Ñ‹Ð½ Ñ‚Ð¾Ñ…Ð¸Ñ€Ð³Ð¾Ð¾Ð½ÑƒÑƒÐ´ ÑÐ½Ñ Ð´ÑÐ»Ð³ÑÑ† Ð´ÑÑÑ€ Ð½ÑÐ³ Ð¼Ó©Ñ€Ó©Ó©Ñ€ Ñ…Ð°Ñ€Ð°Ð³Ð´Ð°Ð¶ mobile flow-Ð³ Ð¸Ð»Ò¯Ò¯ Ð¾Ð¹Ð»Ð³Ð¾Ð¼Ð¶Ñ‚Ð¾Ð¹ Ð±Ð¾Ð»Ð³Ð¾Ð½Ð¾.
+                  Өгсөн зураг, prompt, чанарын тохиргоонууд энд нэг мөрөөр харагдаж,
+                  mobile flow-ийг илүү ойлгомжтой болгоно.
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Duration</p>
-                  <p className="mt-2 text-lg font-semibold">{duration} ÑÐµÐº</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Үргэлжлэх хугацаа</p>
+                  <p className="mt-2 text-lg font-semibold">{duration} сек</p>
                 </div>
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Quality</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Чанар</p>
                   <p className="mt-2 text-lg font-semibold">{quality}</p>
                 </div>
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Source</p>
-                  <p className="mt-2 text-lg font-semibold">{file ? "Ð‘ÑÐ»ÑÐ½" : "Ð¥Ò¯Ð»ÑÑÐ¶ Ð±Ð°Ð¹Ð½Ð°"}</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Эх зураг</p>
+                  <p className="mt-2 text-lg font-semibold">{file ? "Бэлэн" : "Хүлээж байна"}</p>
                 </div>
               </div>
             </div>
@@ -435,16 +437,16 @@ export function VideoGeneratorClient({
 
           <aside className="grid gap-4">
             <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Ð¡Ð°Ð¹Ð½ prompt-Ñ‹Ð½ Ð±Ò¯Ñ‚ÑÑ†</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Сайн prompt-ийн бүтэц</p>
               <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <li>1. Subject ÑÐ¼Ð°Ñ€ Ñ…Ó©Ð´Ó©Ð»Ð³Ó©Ó©Ð½ Ñ…Ð¸Ð¹Ñ…Ð¸Ð¹Ð³ Ð±Ð¸Ñ‡</li>
-                <li>2. ÐšÐ°Ð¼ÐµÑ€Ñ‹Ð½ Ñ‡Ð¸Ð³Ð»ÑÐ»Ð¸Ð¹Ð³ Ñ‚ÑƒÑÐ°Ð´ Ð½ÑŒ Ñ…ÑÐ»</li>
-                <li>3. ÐžÑ€Ñ‡Ð½Ñ‹ light, speed, mood-Ð¾Ð¾ Ð½ÑÐ¼</li>
+                <li>1. Subject ямар хөдөлгөөн хийхийг бич.</li>
+                <li>2. Камерын чиглэлийг тусад нь нэм.</li>
+                <li>3. Орчны light, speed, mood-оо нэм.</li>
               </ul>
             </div>
             <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">ÐšÑ€ÐµÐ´Ð¸Ñ‚ Ð·Ó©Ð²Ñ…Ó©Ð½ Ð°Ð¼Ð¶Ð¸Ð»Ñ‚Ñ‚Ð°Ð¹ Ò¯Ò¯ÑÑÑÐ½ Ò¯ÐµÐ´ Ñ…Ð°ÑÐ°Ð³Ð´Ð°Ð½Ð°.</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">ÐÐ»Ð´Ð°Ð° Ð³Ð°Ñ€Ð²Ð°Ð» Ò¯Ð»Ð´ÑÐ³Ð´ÑÐ»Ð´ Ó©Ó©Ñ€Ñ‡Ð»Ó©Ð»Ñ‚ Ð¾Ñ€Ð¾Ñ…Ð³Ò¯Ð¹.</p>
+              <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
             </div>
           </aside>
         </div>
@@ -453,10 +455,10 @@ export function VideoGeneratorClient({
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-slate-950">Ð“Ð°Ñ€Ð°Ð»Ñ‚</h3>
-                <p className="mt-1 text-sm text-slate-500">Ò®Ò¯ÑÑÑÐ½ Ð²Ð¸Ð´ÐµÐ¾ ÑÐ½Ð´ preview Ð±Ð¾Ð»Ð¾Ð½ download Ñ…ÑÐ»Ð±ÑÑ€ÑÑÑ€ Ñ…Ð°Ñ€Ð°Ð³Ð´Ð°Ð½Ð°.</p>
+                <h3 className="text-lg font-semibold text-slate-950">Гаралт</h3>
+                <p className="mt-1 text-sm text-slate-500">Үүссэн видео энд preview болон татах хэлбэрээр харагдана.</p>
               </div>
-              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Video</span>
+              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Видео</span>
             </div>
 
             {isPending ? (
@@ -467,9 +469,9 @@ export function VideoGeneratorClient({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 </div>
-                <h4 className="mt-5 text-xl font-semibold text-slate-950">Ð’Ð¸Ð´ÐµÐ¾ Ò¯Ò¯ÑÐ³ÑÐ¶ Ð±Ð°Ð¹Ð½Ð°...</h4>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">Видео үүсгэж байна...</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Ð­Ð½Ñ Ð¿Ñ€Ð¾Ñ†ÐµÑÑ Ð·ÑƒÑ€Ð°Ð³ Ò¯Ò¯ÑÐ³ÑÑ…ÑÑÑ Ð°Ñ€Ð°Ð¹ ÑƒÑ€Ñ‚ Ò¯Ñ€Ð³ÑÐ»Ð¶Ð¸Ð»Ð¶ Ð±Ð¾Ð»Ð½Ð¾. Ð”ÑƒÑƒÑÐ¼Ð°Ð³Ñ† preview Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð°Ð°Ñ€ ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÐ³Ð´ÑÐ½Ñ.
+                  Энэ процесс зураг үүсгэхээс арай урт үргэлжилж болно. Дуусмагц preview автоматаар шинэчлэгдэнэ.
                 </p>
               </div>
             ) : result ? (
@@ -480,9 +482,9 @@ export function VideoGeneratorClient({
 
                 <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                    <span className="rounded-full bg-white px-3 py-1 font-medium">{duration} ÑÐµÐº</span>
+                    <span className="rounded-full bg-white px-3 py-1 font-medium">{duration} сек</span>
                     <span className="rounded-full bg-white px-3 py-1 font-medium">{quality}</span>
-                    <span className="rounded-full bg-white px-3 py-1 font-medium">{result.cost} ÐºÑ€ÐµÐ´Ð¸Ñ‚</span>
+                    <span className="rounded-full bg-white px-3 py-1 font-medium">{result.cost} кредит</span>
                   </div>
                   <a
                     href={result.video_url}
@@ -494,7 +496,7 @@ export function VideoGeneratorClient({
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" x2="12" y1="15" y2="3" />
                     </svg>
-                    Ð’Ð¸Ð´ÐµÐ¾ Ñ‚Ð°Ñ‚Ð°Ñ…
+                    Видео татах
                   </a>
                 </div>
               </div>
@@ -506,9 +508,9 @@ export function VideoGeneratorClient({
                     <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
                   </svg>
                 </div>
-                <h4 className="mt-5 text-xl font-semibold text-slate-950">Ð¢Ð°Ð½Ñ‹ Ð²Ð¸Ð´ÐµÐ¾ ÑÐ½Ð´ Ð³Ð°Ñ€Ð½Ð°</h4>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">Таны видео энд гарна</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Ð­Ñ… Ð·ÑƒÑ€Ð³Ð°Ð° Ð¾Ñ€ÑƒÑƒÐ»Ð°Ð°Ð´ prompt-Ð¾Ð¾ ÑÐ°Ð¹Ð½ Ñ‚Ð¾Ð´Ð¾Ñ€Ñ…Ð¾Ð¹Ð»Ð±Ð¾Ð» Ð¸Ð»Ò¯Ò¯ Ñ‚Ð¾Ð³Ñ‚Ð²Ð¾Ñ€Ñ‚Ð¾Ð¹ Ñ…Ó©Ð´Ó©Ð»Ð³Ó©Ó©Ð½Ñ‚ÑÐ¹ Ð²Ð¸Ð´ÐµÐ¾ Ð³Ð°Ñ€Ð½Ð°.
+                  Эх зургаа оруулаад prompt-оо сайн тодорхойлбол илүү тогтвортой хөдөлгөөнтэй видео гарна.
                 </p>
               </div>
             )}
@@ -518,11 +520,11 @@ export function VideoGeneratorClient({
             <div className="mt-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-950">Ð¡Ò¯Ò¯Ð»Ð¸Ð¹Ð½ Ð²Ð¸Ð´ÐµÐ¾Ð½ÑƒÑƒÐ´</h3>
-                  <p className="mt-1 text-sm text-slate-500">Ó¨Ð¼Ð½Ó©Ñ… Ð°Ð¶Ð»ÑƒÑƒÐ´Ð°Ð° mobile card Ñ…ÑÐ»Ð±ÑÑ€ÑÑÑ€ Ñ‚Ð¾Ð¹Ð¼Ð»Ð¾Ð½ Ñ…Ð°Ñ€Ð°Ð°Ñ€Ð°Ð¹.</p>
+                  <h3 className="text-lg font-semibold text-slate-950">Сүүлийн видеонууд</h3>
+                  <p className="mt-1 text-sm text-slate-500">Өмнөх ажлуудаа mobile card хэлбэрээр тоймлон харна.</p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  {history.length} Ð²Ð¸Ð´ÐµÐ¾
+                  {history.length} видео
                 </span>
               </div>
 
@@ -544,9 +546,9 @@ export function VideoGeneratorClient({
                       <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
                       <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                         <span className="rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
-                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.duration} ÑÐµÐº</span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.duration} сек</span>
                         <span className="rounded-full bg-slate-100 px-3 py-1">{item.quality}</span>
-                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} ÐºÑ€ÐµÐ´Ð¸Ñ‚</span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
                       </div>
                       <a
                         href={item.video_url}
@@ -558,7 +560,7 @@ export function VideoGeneratorClient({
                           <polyline points="7 10 12 15 17 10" />
                           <line x1="12" x2="12" y1="15" y2="3" />
                         </svg>
-                        Ð¢Ð°Ñ‚Ð°Ñ…
+                        Татах
                       </a>
                     </div>
                   </article>
@@ -571,4 +573,3 @@ export function VideoGeneratorClient({
     </div>
   );
 }
-

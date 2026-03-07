@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FC, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { signOutAction } from "@/app/dashboard/actions";
+import { PostlyLogo } from "@/components/brand/postly-logo";
 
 function HomeIcon({ className }: { className?: string }) {
   return (
@@ -56,6 +57,7 @@ function PriceTagIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
 function AgentIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -198,7 +200,7 @@ function ShieldIcon({ className }: { className?: string }) {
 type NavItem = {
   href: string;
   label: string;
-  icon: React.FC<{ className?: string }>;
+  icon: FC<{ className?: string }>;
   exact: boolean;
   disabled?: boolean;
 };
@@ -224,21 +226,15 @@ function SidebarNav({
     <div className="flex h-full flex-col">
       <div className="flex h-16 flex-shrink-0 items-center border-b border-gray-200 px-4 lg:px-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-700">
-            <span className="text-sm font-semibold text-white">P</span>
-          </div>
-          <div>
-            <span className="leading-none text-lg font-semibold text-gray-900">Postly</span>
-            <div className="mt-0.5 flex items-center gap-1">
-              <ShieldIcon className="h-3 w-3 text-cyan-600" />
-              <span className="text-xs font-medium text-cyan-600">ÐÐ´Ð¼Ð¸Ð½</span>
-            </div>
-          </div>
+          <PostlyLogo compact className="scale-[0.88] origin-left" />
+          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">
+            Админ
+          </span>
         </div>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        <p className="mb-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-400">Ð¦ÑÑ</p>
+        <p className="mb-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-400">Цэс</p>
         {adminNavItems.map((item) => {
           const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -252,7 +248,7 @@ function SidebarNav({
                 <Icon className="h-5 w-5 flex-shrink-0" />
                 <span>{item.label}</span>
                 <span className="ml-auto rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400">
-                  Ð¢ÑƒÐ½ ÑƒÐ´Ð°Ñ…Ð³Ò¯Ð¹
+                  Тун удахгүй
                 </span>
               </div>
             );
@@ -290,21 +286,21 @@ function SidebarNav({
           >
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Ð¥ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡Ð¸Ð¹Ð½ Ñ…ÑÑÑÐ³ Ñ€Ò¯Ò¯ Ð±ÑƒÑ†Ð°Ñ…
+          Хэрэглэгчийн хэсэг рүү буцах
         </Link>
       </div>
 
       <div className="flex-shrink-0 border-t border-gray-200 p-4">
-        <div className="mb-2 text-xs text-gray-500">ÐÐ´Ð¼Ð¸Ð½ Ð¾Ñ€Ñ‡Ð¸Ð½</div>
+        <div className="mb-2 text-xs text-gray-500">Админ эрх</div>
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100">
             <span className="text-sm font-medium text-cyan-700">{email ? email[0].toUpperCase() : "A"}</span>
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{email || "ÐÐ´Ð¼Ð¸Ð½"}</div>
+            <div className="truncate text-sm font-medium text-gray-900">{email || "Админ"}</div>
             <div className="flex items-center gap-1">
               <ShieldIcon className="h-3 w-3 text-cyan-600" />
-              <span className="text-xs font-medium text-cyan-600">ÐÐ´Ð¼Ð¸Ð½Ð¸ÑÑ‚Ñ€Ð°Ñ‚Ð¾Ñ€</span>
+              <span className="text-xs font-medium text-cyan-600">Администратор</span>
             </div>
           </div>
         </div>
@@ -317,7 +313,7 @@ export default function AdminLayoutClient({
   children,
   email,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   email: string;
 }) {
   const pathname = usePathname();
@@ -378,6 +374,7 @@ export default function AdminLayoutClient({
       >
         <div className="absolute right-3 top-3">
           <button
+            type="button"
             onClick={() => setMobileOpen(false)}
             className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100"
           >
@@ -391,24 +388,26 @@ export default function AdminLayoutClient({
         <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => setMobileOpen(true)}
               className="rounded-md p-2 text-gray-500 hover:bg-gray-100 lg:hidden"
             >
               <MenuIcon className="h-5 w-5" />
             </button>
             <span className="hidden font-semibold text-gray-900 sm:block">
-              {currentItem?.label ?? "ÐÐ´Ð¼Ð¸Ð½"}
+              {currentItem?.label ?? "Админ"}
             </span>
           </div>
 
           <div className="flex items-center gap-2 lg:gap-3">
             <div className="flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-sm font-medium text-cyan-700">
               <ShieldIcon className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">ÐÐ´Ð¼Ð¸Ð½ ÑÐ°Ð¼Ð±Ð°Ñ€</span>
+              <span className="hidden sm:inline">Админ самбар</span>
             </div>
 
             <div className="relative">
               <button
+                type="button"
                 onClick={(event) => {
                   event.stopPropagation();
                   setUserMenuOpen((value) => !value);
@@ -421,7 +420,7 @@ export default function AdminLayoutClient({
               {userMenuOpen ? (
                 <div className="absolute right-0 top-11 z-50 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
                   <div className="border-b border-gray-100 px-3 py-2">
-                    <p className="text-xs font-medium text-gray-900">ÐÐ´Ð¼Ð¸Ð½</p>
+                    <p className="text-xs font-medium text-gray-900">Админ</p>
                     <p className="truncate text-xs text-gray-500">{email}</p>
                   </div>
                   <Link
@@ -430,7 +429,7 @@ export default function AdminLayoutClient({
                     className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
                     <HomeIcon className="h-4 w-4" />
-                    Ð¥ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡Ð¸Ð¹Ð½ Ñ…ÑÑÑÐ³ Ñ€Ò¯Ò¯ Ð±ÑƒÑ†Ð°Ñ…
+                    Хэрэглэгчийн хэсэг рүү буцах
                   </Link>
                   <div className="mt-1 border-t border-gray-100 pt-1">
                     <button
@@ -440,7 +439,7 @@ export default function AdminLayoutClient({
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                     >
                       <LogOutIcon className="h-4 w-4" />
-                      {isSigningOut ? "Ð“Ð°Ñ€Ñ‡ Ð±Ð°Ð¹Ð½Ð°..." : "Ð“Ð°Ñ€Ð°Ñ…"}
+                      {isSigningOut ? "Гарч байна..." : "Гарах"}
                     </button>
                   </div>
                 </div>
@@ -454,4 +453,3 @@ export default function AdminLayoutClient({
     </div>
   );
 }
-
