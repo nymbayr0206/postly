@@ -1,6 +1,14 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-import type { AgentRequestRow, ModelRow, TariffRow, UserRow, WalletRow } from "@/lib/types";
+import { buildGenerationPricingPreview } from "@/lib/pricing";
+import type {
+  AgentRequestRow,
+  GenerationPricingPreview,
+  ModelRow,
+  TariffRow,
+  UserRow,
+  WalletRow,
+} from "@/lib/types";
 
 function isDuplicateViolation(code: string | undefined) {
   return code === "23505";
@@ -96,6 +104,20 @@ export async function getTariffById(supabase: SupabaseClient, tariffId: string) 
   return data;
 }
 
+export async function getTariffs(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from("tariffs")
+    .select("id,name,multiplier,created_at")
+    .order("created_at", { ascending: true })
+    .returns<TariffRow[]>();
+
+  if (error) {
+    throw new Error(`Тарифуудыг ачаалж чадсангүй: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
 export async function getModelByName(supabase: SupabaseClient, modelName: string) {
   const { data, error } = await supabase
     .from("models")
@@ -112,6 +134,39 @@ export async function getModelByName(supabase: SupabaseClient, modelName: string
   }
 
   return data;
+}
+
+export async function getModels(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from("models")
+    .select("id,name,base_cost,created_at")
+    .order("created_at", { ascending: true })
+    .returns<ModelRow[]>();
+
+  if (error) {
+    throw new Error(`Моделийн жагсаалтыг ачаалж чадсангүй: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+export async function getGenerationPricingPreview(
+  supabase: SupabaseClient,
+  profile: Pick<UserRow, "role" | "tariff_id">,
+  modelName: string,
+): Promise<GenerationPricingPreview> {
+  const [model, tariffs] = await Promise.all([
+    getModelByName(supabase, modelName),
+    getTariffs(supabase),
+  ]);
+
+  return buildGenerationPricingPreview({
+    modelName: model.name,
+    baseCost: model.base_cost,
+    tariffs,
+    currentRole: profile.role,
+    currentTariffId: profile.tariff_id,
+  });
 }
 
 export async function getAgentRequestByUserId(supabase: SupabaseClient, userId: string) {

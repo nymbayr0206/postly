@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getServerEnv } from "@/lib/env";
 import { getImageModelProvider } from "@/lib/image-models/registry";
 import { ASPECT_RATIOS, ImageModelError } from "@/lib/image-models/types";
-import { calculateFinalCreditCost } from "@/lib/pricing";
+import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
@@ -60,14 +60,6 @@ const requestSchema = z.object({
   reference_images: z.array(z.string().min(1)).max(3).default([]),
 });
 
-function getTariffNameByRole(role: "agent" | "user" | "admin") {
-  if (role === "agent") {
-    return "Agent";
-  }
-
-  return "Regular User";
-}
-
 export async function POST(request: Request) {
   let body: unknown;
 
@@ -118,7 +110,7 @@ export async function POST(request: Request) {
       : await supabase
           .from("tariffs")
           .select("id,name,multiplier,created_at")
-          .eq("name", getTariffNameByRole(profile.role))
+          .eq("name", getDefaultTariffNameForRole(profile.role))
           .maybeSingle()
           .then(({ data, error }) => {
             if (error || !data) {

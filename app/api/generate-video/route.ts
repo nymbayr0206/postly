@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getServerEnv } from "@/lib/env";
 import { getVideoModelProvider } from "@/lib/video-models/registry";
 import { VIDEO_QUALITIES, VideoModelError } from "@/lib/video-models/types";
-import { calculateFinalCreditCost } from "@/lib/pricing";
+import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
 
@@ -13,10 +13,6 @@ const requestSchema = z.object({
   duration: z.union([z.literal(5), z.literal(10)]).default(5),
   quality: z.enum(VIDEO_QUALITIES).default("720p"),
 });
-
-function getTariffNameByRole(role: "agent" | "user" | "admin") {
-  return role === "agent" ? "Agent" : "Regular User";
-}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -62,7 +58,7 @@ export async function POST(request: Request) {
       : await supabase
           .from("tariffs")
           .select("id,name,multiplier,created_at")
-          .eq("name", getTariffNameByRole(profile.role))
+          .eq("name", getDefaultTariffNameForRole(profile.role))
           .maybeSingle()
           .then(({ data, error }) => {
             if (error || !data) throw new Error("Тариф олдсонгүй.");

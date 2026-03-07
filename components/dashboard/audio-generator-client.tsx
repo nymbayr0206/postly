@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import { ELEVENLABS_VOICES } from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
+import type { GenerationPricingPreview } from "@/lib/types";
 
 type DialogueLine = { text: string; voice: ElevenLabsVoice };
 
@@ -32,9 +34,11 @@ const INITIAL_LINES: DialogueLine[] = [
 export function AudioGeneratorClient({
   currentCredits,
   history,
+  pricing,
 }: {
   currentCredits: number;
   history: AudioHistoryItem[];
+  pricing: GenerationPricingPreview;
 }) {
   const [lines, setLines] = useState<DialogueLine[]>(INITIAL_LINES);
   const [stability, setStability] = useState(0.5);
@@ -135,6 +139,8 @@ export function AudioGeneratorClient({
                 </div>
               </div>
             </div>
+
+            <GenerationPricingCard pricing={pricing} />
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
@@ -261,7 +267,7 @@ export function AudioGeneratorClient({
                     Аудио боловсруулж байна...
                   </>
                 ) : (
-                  "Аудио үүсгэх"
+                  `Аудио үүсгэх · ${pricing.current_cost} кр`
                 )}
               </button>
 

@@ -30,9 +30,13 @@ async function requireAdmin() {
 
 function revalidateAdminAndDashboardPaths() {
   revalidatePath("/admin");
+  revalidatePath("/admin/pricing");
   revalidatePath("/admin/credits");
   revalidatePath("/admin/agents");
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/image");
+  revalidatePath("/dashboard/audio");
+  revalidatePath("/dashboard/video");
   revalidatePath("/dashboard/billing");
   revalidatePath("/dashboard/agent-onboarding");
   revalidatePath("/dashboard/lessons");

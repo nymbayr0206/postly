@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
+import type { GenerationPricingPreview } from "@/lib/types";
 import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
 
 type GenerateVideoResult = {
@@ -27,9 +29,11 @@ type VideoHistoryItem = {
 export function VideoGeneratorClient({
   currentCredits,
   history,
+  pricing,
 }: {
   currentCredits: number;
   history: VideoHistoryItem[];
+  pricing: GenerationPricingPreview;
 }) {
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -199,6 +203,8 @@ export function VideoGeneratorClient({
               </div>
             </div>
 
+            <GenerationPricingCard pricing={pricing} />
+
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -366,7 +372,7 @@ export function VideoGeneratorClient({
                     Видео боловсруулж байна...
                   </>
                 ) : (
-                  "Видео үүсгэх"
+                  `Видео үүсгэх · ${pricing.current_cost} кр`
                 )}
               </button>
 

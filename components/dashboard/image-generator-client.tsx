@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import type { ImageAspectRatio } from "@/lib/types";
+import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
+import type { GenerationPricingPreview, ImageAspectRatio } from "@/lib/types";
 
 type GenerateResult = {
   image_url: string;
@@ -39,7 +40,13 @@ const PROMPT_HINTS = [
   "лавлах зураг ашиглавал илүү тогтвортой гарна",
 ];
 
-export function ImageGeneratorClient({ currentCredits }: { currentCredits: number }) {
+export function ImageGeneratorClient({
+  currentCredits,
+  pricing,
+}: {
+  currentCredits: number;
+  pricing: GenerationPricingPreview;
+}) {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState<ImageAspectRatio>("1:1");
   const [files, setFiles] = useState<File[]>([]);
@@ -186,6 +193,8 @@ export function ImageGeneratorClient({ currentCredits }: { currentCredits: numbe
                 </div>
               </div>
             </div>
+
+            <GenerationPricingCard pricing={pricing} />
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
@@ -342,7 +351,7 @@ export function ImageGeneratorClient({ currentCredits }: { currentCredits: numbe
                     Зураг боловсруулж байна...
                   </>
                 ) : (
-                  "Зураг үүсгэх"
+                  `Зураг үүсгэх · ${pricing.current_cost} кр`
                 )}
               </button>
 

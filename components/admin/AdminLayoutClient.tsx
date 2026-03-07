@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -40,6 +40,22 @@ function CreditRequestsIcon({ className }: { className?: string }) {
   );
 }
 
+function PriceTagIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82Z" />
+      <path d="M7 7h.01" />
+    </svg>
+  );
+}
 function AgentIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -188,7 +204,7 @@ type NavItem = {
 };
 
 const adminNavItems: NavItem[] = [
-  { href: "/admin", label: "Ерөнхий", icon: HomeIcon, exact: true },
+  { href: "/admin/pricing", label: "Үнэ ба model", icon: PriceTagIcon, exact: false },
   { href: "/admin/agents", label: "Агент хүсэлт", icon: AgentIcon, exact: false },
   { href: "/admin/credits", label: "Кредит хүсэлт", icon: CreditRequestsIcon, exact: false },
   { href: "/admin/users", label: "Хэрэглэгчид", icon: UsersIcon, exact: false, disabled: true },
@@ -215,14 +231,14 @@ function SidebarNav({
             <span className="leading-none text-lg font-semibold text-gray-900">Postly</span>
             <div className="mt-0.5 flex items-center gap-1">
               <ShieldIcon className="h-3 w-3 text-cyan-600" />
-              <span className="text-xs font-medium text-cyan-600">Админ</span>
+              <span className="text-xs font-medium text-cyan-600">ÐÐ´Ð¼Ð¸Ð½</span>
             </div>
           </div>
         </div>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        <p className="mb-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-400">Цэс</p>
+        <p className="mb-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-400">Ð¦ÑÑ</p>
         {adminNavItems.map((item) => {
           const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -236,7 +252,7 @@ function SidebarNav({
                 <Icon className="h-5 w-5 flex-shrink-0" />
                 <span>{item.label}</span>
                 <span className="ml-auto rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400">
-                  Тун удахгүй
+                  Ð¢ÑƒÐ½ ÑƒÐ´Ð°Ñ…Ð³Ò¯Ð¹
                 </span>
               </div>
             );
@@ -274,21 +290,21 @@ function SidebarNav({
           >
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Хэрэглэгчийн хэсэг рүү буцах
+          Ð¥ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡Ð¸Ð¹Ð½ Ñ…ÑÑÑÐ³ Ñ€Ò¯Ò¯ Ð±ÑƒÑ†Ð°Ñ…
         </Link>
       </div>
 
       <div className="flex-shrink-0 border-t border-gray-200 p-4">
-        <div className="mb-2 text-xs text-gray-500">Админ орчин</div>
+        <div className="mb-2 text-xs text-gray-500">ÐÐ´Ð¼Ð¸Ð½ Ð¾Ñ€Ñ‡Ð¸Ð½</div>
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100">
             <span className="text-sm font-medium text-cyan-700">{email ? email[0].toUpperCase() : "A"}</span>
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{email || "Админ"}</div>
+            <div className="truncate text-sm font-medium">{email || "ÐÐ´Ð¼Ð¸Ð½"}</div>
             <div className="flex items-center gap-1">
               <ShieldIcon className="h-3 w-3 text-cyan-600" />
-              <span className="text-xs font-medium text-cyan-600">Администратор</span>
+              <span className="text-xs font-medium text-cyan-600">ÐÐ´Ð¼Ð¸Ð½Ð¸ÑÑ‚Ñ€Ð°Ñ‚Ð¾Ñ€</span>
             </div>
           </div>
         </div>
@@ -381,14 +397,14 @@ export default function AdminLayoutClient({
               <MenuIcon className="h-5 w-5" />
             </button>
             <span className="hidden font-semibold text-gray-900 sm:block">
-              {currentItem?.label ?? "Админ"}
+              {currentItem?.label ?? "ÐÐ´Ð¼Ð¸Ð½"}
             </span>
           </div>
 
           <div className="flex items-center gap-2 lg:gap-3">
             <div className="flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-sm font-medium text-cyan-700">
               <ShieldIcon className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Админ самбар</span>
+              <span className="hidden sm:inline">ÐÐ´Ð¼Ð¸Ð½ ÑÐ°Ð¼Ð±Ð°Ñ€</span>
             </div>
 
             <div className="relative">
@@ -405,7 +421,7 @@ export default function AdminLayoutClient({
               {userMenuOpen ? (
                 <div className="absolute right-0 top-11 z-50 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
                   <div className="border-b border-gray-100 px-3 py-2">
-                    <p className="text-xs font-medium text-gray-900">Админ</p>
+                    <p className="text-xs font-medium text-gray-900">ÐÐ´Ð¼Ð¸Ð½</p>
                     <p className="truncate text-xs text-gray-500">{email}</p>
                   </div>
                   <Link
@@ -414,7 +430,7 @@ export default function AdminLayoutClient({
                     className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
                     <HomeIcon className="h-4 w-4" />
-                    Хэрэглэгчийн хэсэг рүү буцах
+                    Ð¥ÑÑ€ÑÐ³Ð»ÑÐ³Ñ‡Ð¸Ð¹Ð½ Ñ…ÑÑÑÐ³ Ñ€Ò¯Ò¯ Ð±ÑƒÑ†Ð°Ñ…
                   </Link>
                   <div className="mt-1 border-t border-gray-100 pt-1">
                     <button
@@ -424,7 +440,7 @@ export default function AdminLayoutClient({
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                     >
                       <LogOutIcon className="h-4 w-4" />
-                      {isSigningOut ? "Гарч байна..." : "Гарах"}
+                      {isSigningOut ? "Ð“Ð°Ñ€Ñ‡ Ð±Ð°Ð¹Ð½Ð°..." : "Ð“Ð°Ñ€Ð°Ñ…"}
                     </button>
                   </div>
                 </div>
@@ -438,3 +454,4 @@ export default function AdminLayoutClient({
     </div>
   );
 }
+

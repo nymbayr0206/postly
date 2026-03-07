@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { ImageGeneratorClient } from "@/components/dashboard/image-generator-client";
+import { getServerEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getWallet } from "@/lib/user-data";
+import { getGenerationPricingPreview, getUserProfile, getWallet } from "@/lib/user-data";
 
 export default async function ImagePage() {
   const supabase = await createSupabaseServerClient();
@@ -14,12 +15,20 @@ export default async function ImagePage() {
     redirect("/auth");
   }
 
-  const wallet = await getWallet(supabase, user.id);
+  const [profile, wallet] = await Promise.all([
+    getUserProfile(supabase, user.id),
+    getWallet(supabase, user.id),
+  ]);
+  const pricing = await getGenerationPricingPreview(
+    supabase,
+    profile,
+    getServerEnv().nanoBananaModelName,
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
       <section className="brand-surface overflow-hidden rounded-[2rem]">
-        <ImageGeneratorClient currentCredits={wallet.credits} />
+        <ImageGeneratorClient currentCredits={wallet.credits} pricing={pricing} />
       </section>
     </div>
   );

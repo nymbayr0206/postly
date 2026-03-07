@@ -66,3 +66,18 @@ export type AgentRequestRow = {
   updated_at: string;
 };
 
+export type GenerationPricingPreview = {
+  model_name: string;
+  model_label: string;
+  base_cost: number;
+  current_role: UserRole;
+  current_role_label: string;
+  current_tariff_name: string;
+  current_multiplier: number;
+  current_cost: number;
+  regular_user_multiplier: number;
+  regular_user_cost: number;
+  agent_multiplier: number;
+  agent_cost: number;
+};
+
