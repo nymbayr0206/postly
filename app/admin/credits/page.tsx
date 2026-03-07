@@ -1,0 +1,152 @@
+import {
+  approveCreditRequestAction,
+  rejectCreditRequestAction,
+} from "@/app/admin/actions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { CreditRequestRow, UserRow, WalletRow } from "@/lib/types";
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function statusClasses(status: CreditRequestRow["status"]) {
+  if (status === "approved") {
+    return "bg-emerald-100 text-emerald-800";
+  }
+
+  if (status === "rejected") {
+    return "bg-rose-100 text-rose-800";
+  }
+
+  return "bg-amber-100 text-amber-800";
+}
+
+export default async function AdminCreditsPage() {
+  const supabase = await createSupabaseServerClient();
+  const [creditRequestsResponse, usersResponse, walletsResponse] = await Promise.all([
+    supabase
+      .from("credit_requests")
+      .select("id,user_id,amount,status,created_at")
+      .order("created_at", { ascending: false }),
+    supabase.from("users").select("id,email,role,tariff_id,created_at"),
+    supabase.from("wallets").select("id,user_id,credits,created_at"),
+  ]);
+
+  if (creditRequestsResponse.error || usersResponse.error || walletsResponse.error) {
+    throw new Error("Unable to load credit requests.");
+  }
+
+  const requests = (creditRequestsResponse.data ?? []) as CreditRequestRow[];
+  const users = (usersResponse.data ?? []) as UserRow[];
+  const wallets = (walletsResponse.data ?? []) as WalletRow[];
+
+  const userById = new Map(users.map((user) => [user.id, user]));
+  const walletByUserId = new Map(wallets.map((wallet) => [wallet.user_id, wallet]));
+  const pendingCount = requests.filter((request) => request.status === "pending").length;
+  const approvedCredits = requests
+    .filter((request) => request.status === "approved")
+    .reduce((sum, request) => sum + request.amount, 0);
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <section className="grid gap-4 md:grid-cols-3">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Total requests</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{requests.length}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Pending</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{pendingCount}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Approved credits</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{approvedCredits}</p>
+        </article>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h1 className="text-xl font-semibold text-slate-900">Credit requests</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Review user requests and approve or reject them.
+          </p>
+        </div>
+
+        {requests.length === 0 ? (
+          <div className="px-6 py-12 text-center text-sm text-slate-500">
+            No credit requests yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[860px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500">
+                  <th className="px-6 py-3 font-medium">User</th>
+                  <th className="px-6 py-3 font-medium">Role</th>
+                  <th className="px-6 py-3 font-medium">Amount</th>
+                  <th className="px-6 py-3 font-medium">Balance</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium">Requested</th>
+                  <th className="px-6 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((request) => {
+                  const user = userById.get(request.user_id);
+                  const wallet = walletByUserId.get(request.user_id);
+
+                  return (
+                    <tr key={request.id} className="border-b border-slate-100 align-top">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">{user?.email ?? request.user_id}</div>
+                        <div className="mt-1 text-xs text-slate-500">{request.id}</div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-700">{user?.role ?? "-"}</td>
+                      <td className="px-6 py-4 text-slate-900">{request.amount}</td>
+                      <td className="px-6 py-4 text-slate-700">{wallet?.credits ?? 0}</td>
+                      <td className="px-6 py-4">
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(request.status)}`}>
+                          {request.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">{formatDate(request.created_at)}</td>
+                      <td className="px-6 py-4">
+                        {request.status === "pending" ? (
+                          <div className="flex gap-2">
+                            <form action={approveCreditRequestAction}>
+                              <input type="hidden" name="request_id" value={request.id} />
+                              <button
+                                type="submit"
+                                className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600"
+                              >
+                                Approve
+                              </button>
+                            </form>
+                            <form action={rejectCreditRequestAction}>
+                              <input type="hidden" name="request_id" value={request.id} />
+                              <button
+                                type="submit"
+                                className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-600"
+                              >
+                                Reject
+                              </button>
+                            </form>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-500">Processed</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

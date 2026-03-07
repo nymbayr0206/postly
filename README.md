@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Postly Phase 1 (Image Generation)
 
-## Getting Started
+Phase 1 ships a minimal production-ready Postly app where authenticated users generate NanoBanana images using a credit wallet.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js (App Router)
+- Next.js Route Handlers (`/api/generate-image`)
+- Supabase (Auth + Postgres + RLS)
+- Tailwind CSS
+
+## Features Included
+
+- Email/password sign up + login
+- User dashboard
+- Current credit balance
+- Image generation form
+  - Prompt
+  - Aspect ratio (`1:1`, `4:5`, `16:9`)
+  - Up to 3 reference images
+- NanoBanana API integration
+- Credit deduction only after successful generation
+- Generation history with download buttons
+- Credit request submission
+- Admin panel
+  - View users
+  - View generation stats
+  - Approve/reject credit requests
+  - Edit tariff multipliers
+  - Edit model base costs
+
+## Supabase Setup
+
+Run the SQL migration in your Supabase SQL editor:
+
+- `supabase/migrations/202603060001_phase1.sql`
+
+This migration creates:
+
+- `users`
+- `wallets`
+- `tariffs`
+- `models`
+- `generations`
+- `credit_requests`
+- RLS policies
+- helper RPCs for safe wallet deduction and credit request processing
+- auth trigger to create `users` + `wallets` rows on signup
+
+After migration, promote one account to admin manually in Supabase:
+
+```sql
+update public.users
+set role = 'admin'
+where email = 'admin@example.com';
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env.local` and fill values:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NANOBANANA_API_URL`
+- `NANOBANANA_API_KEY`
+- `NANOBANANA_MODEL_NAME` (default: `nanobanana`)
+- `NANOBANANA_TIMEOUT_MS` (default: `60000`)
 
-## Learn More
+## Run
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm install
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API
 
-## Deploy on Vercel
+### `POST /api/generate-image`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Body:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```json
+{
+  "prompt": "cinematic portrait of an astronaut in neon rain",
+  "aspect_ratio": "1:1",
+  "reference_images": []
+}
+```
+
+Behavior:
+
+1. Authenticates user
+2. Loads tariff + model pricing
+3. Checks wallet credits
+4. Calls NanoBanana API
+5. Deducts credits and inserts generation record atomically
+6. Returns image URL and remaining credits
+
