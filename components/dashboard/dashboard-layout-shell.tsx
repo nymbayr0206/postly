@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -13,18 +13,20 @@ type NavItem = {
   exact?: boolean;
 };
 
-const primaryNav: NavItem[] = [
-  { href: "/dashboard", label: "Ерөнхий", exact: true },
-  { href: "/dashboard/image", label: "Зураг үүсгэх" },
-  { href: "/dashboard/video", label: "Зургаас видео" },
-  { href: "/dashboard/audio", label: "Аудио үүсгэх" },
-  { href: "/dashboard/history", label: "Түүх" },
-  { href: "/dashboard/billing", label: "Кредит" },
-  { href: "/dashboard/settings", label: "Тохиргоо" },
-];
-
 function isActive(pathname: string, item: NavItem) {
   return item.exact ? pathname === item.href : pathname.startsWith(item.href);
+}
+
+function roleLabel(role: UserRole) {
+  if (role === "admin") {
+    return "Админ";
+  }
+
+  if (role === "agent") {
+    return "Агент";
+  }
+
+  return "Хэрэглэгч";
 }
 
 function MenuButton({
@@ -45,25 +47,15 @@ function MenuButton({
   );
 }
 
-function roleLabel(role: UserRole) {
-  if (role === "admin") {
-    return "Админ";
-  }
-
-  if (role === "agent") {
-    return "Агент";
-  }
-
-  return "Хэрэглэгч";
-}
-
 function Sidebar({
   pathname,
   role,
+  navItems,
   onNavigate,
 }: {
   pathname: string;
   role: UserRole;
+  navItems: NavItem[];
   onNavigate?: () => void;
 }) {
   return (
@@ -81,7 +73,7 @@ function Sidebar({
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {primaryNav.map((item) => (
+        {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
@@ -98,7 +90,7 @@ function Sidebar({
 
         {role === "admin" ? (
           <Link
-            href="/admin/credits"
+            href="/admin"
             onClick={onNavigate}
             className={`mt-3 block rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
               pathname.startsWith("/admin")
@@ -119,17 +111,47 @@ export default function DashboardLayoutShell({
   credits,
   email,
   role,
+  showAgentOnboarding,
+  showLessons,
 }: {
   children: React.ReactNode;
   credits: number;
   email: string;
   role: UserRole;
+  showAgentOnboarding: boolean;
+  showLessons: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const navItems = useMemo(() => {
+    const items: NavItem[] = [
+      { href: "/dashboard", label: "Ерөнхий", exact: true },
+      { href: "/dashboard/image", label: "Зураг үүсгэх" },
+      { href: "/dashboard/video", label: "Зургаас видео" },
+      { href: "/dashboard/audio", label: "Аудио үүсгэх" },
+    ];
+
+    if (showLessons) {
+      items.push({ href: "/dashboard/lessons", label: "Хичээл" });
+    }
+
+    items.push(
+      { href: "/dashboard/history", label: "Түүх" },
+      { href: "/dashboard/billing", label: "Кредит" },
+    );
+
+    if (showAgentOnboarding) {
+      items.push({ href: "/dashboard/agent-onboarding", label: "Агент баталгаажуулалт" });
+    }
+
+    items.push({ href: "/dashboard/settings", label: "Тохиргоо" });
+
+    return items;
+  }, [showAgentOnboarding, showLessons]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -156,7 +178,7 @@ export default function DashboardLayoutShell({
   return (
     <div className="flex min-h-screen bg-slate-100">
       <aside className="hidden w-72 border-r border-slate-200 bg-white lg:block">
-        <Sidebar pathname={pathname} role={role} />
+        <Sidebar pathname={pathname} role={role} navItems={navItems} />
       </aside>
 
       {mobileOpen ? (
@@ -165,7 +187,12 @@ export default function DashboardLayoutShell({
             className="h-full w-72 border-r border-slate-200 bg-white"
             onClick={(event) => event.stopPropagation()}
           >
-            <Sidebar pathname={pathname} role={role} onNavigate={() => setMobileOpen(false)} />
+            <Sidebar
+              pathname={pathname}
+              role={role}
+              navItems={navItems}
+              onNavigate={() => setMobileOpen(false)}
+            />
           </aside>
         </div>
       ) : null}
@@ -188,7 +215,7 @@ export default function DashboardLayoutShell({
 
               {role === "admin" ? (
                 <Link
-                  href="/admin/credits"
+                  href="/admin"
                   className="hidden rounded-full bg-cyan-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-600 sm:inline-flex"
                 >
                   Админ самбар
@@ -212,7 +239,7 @@ export default function DashboardLayoutShell({
                     </div>
                     {role === "admin" ? (
                       <Link
-                        href="/admin/credits"
+                        href="/admin"
                         className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
                       >
                         Админ самбар нээх
@@ -224,6 +251,22 @@ export default function DashboardLayoutShell({
                     >
                       Кредитийн хүсэлт
                     </Link>
+                    {showAgentOnboarding ? (
+                      <Link
+                        href="/dashboard/agent-onboarding"
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                      >
+                        Агент баталгаажуулалт
+                      </Link>
+                    ) : null}
+                    {showLessons ? (
+                      <Link
+                        href="/dashboard/lessons"
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                      >
+                        Хичээл
+                      </Link>
+                    ) : null}
                     <button
                       type="button"
                       onClick={handleSignOut}

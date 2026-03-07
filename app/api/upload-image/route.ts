@@ -6,9 +6,11 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export async function POST(request: Request) {
-  // Auth check
   const supabase = await createSupabaseServerClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
   if (userError || !user) {
     return Response.json({ error: "Зураг оруулахын тулд нэвтэрнэ үү." }, { status: 401 });
@@ -36,12 +38,10 @@ export async function POST(request: Request) {
 
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `${user.id}/${Date.now()}.${ext}`;
-
   const admin = createSupabaseAdminClient();
 
-  // Ensure bucket exists and is public
   const { data: buckets } = await admin.storage.listBuckets();
-  const bucketExists = buckets?.some((b) => b.name === BUCKET);
+  const bucketExists = buckets?.some((bucket) => bucket.name === BUCKET);
 
   if (!bucketExists) {
     const { error: createError } = await admin.storage.createBucket(BUCKET, {
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       fileSizeLimit: MAX_SIZE_BYTES,
       allowedMimeTypes: ALLOWED_TYPES,
     });
+
     if (createError) {
       console.error("[upload-image] bucket create error:", createError);
       return Response.json({ error: "Storage одоогоор ашиглах боломжгүй байна." }, { status: 500 });

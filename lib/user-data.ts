@@ -1,17 +1,13 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-import type { ModelRow, TariffRow, UserRow, WalletRow } from "@/lib/types";
+import type { AgentRequestRow, ModelRow, TariffRow, UserRow, WalletRow } from "@/lib/types";
 
 function isDuplicateViolation(code: string | undefined) {
   return code === "23505";
 }
 
 export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
-  const { data: profile } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
 
   if (!profile) {
     const { data: regularTariff } = await supabase
@@ -32,11 +28,7 @@ export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
     }
   }
 
-  const { data: wallet } = await supabase
-    .from("wallets")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const { data: wallet } = await supabase.from("wallets").select("id").eq("user_id", user.id).maybeSingle();
 
   if (!wallet) {
     const { error: walletInsertError } = await supabase.from("wallets").insert({
@@ -122,3 +114,16 @@ export async function getModelByName(supabase: SupabaseClient, modelName: string
   return data;
 }
 
+export async function getAgentRequestByUserId(supabase: SupabaseClient, userId: string) {
+  const { data, error } = await supabase
+    .from("agent_requests")
+    .select("id,user_id,amount_mnt,payment_screenshot_url,status,created_at,updated_at")
+    .eq("user_id", userId)
+    .maybeSingle<AgentRequestRow>();
+
+  if (error) {
+    throw new Error(`Агент хүсэлт ачаалж чадсангүй: ${error.message}`);
+  }
+
+  return data ?? null;
+}

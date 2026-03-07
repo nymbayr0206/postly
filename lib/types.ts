@@ -52,3 +52,13 @@ export type CreditRequestRow = {
   created_at: string;
 };
 
+export type AgentRequestRow = {
+  id: string;
+  user_id: string;
+  amount_mnt: number;
+  payment_screenshot_url: string | null;
+  status: CreditRequestStatus;
+  created_at: string;
+  updated_at: string;
+};
+

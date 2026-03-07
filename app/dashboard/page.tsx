@@ -3,7 +3,12 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GenerationRow } from "@/lib/types";
-import { ensureUserRecords, getUserProfile, getWallet } from "@/lib/user-data";
+import {
+  ensureUserRecords,
+  getAgentRequestByUserId,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -24,6 +29,18 @@ function roleLabel(role: "agent" | "user" | "admin") {
   return "Хэрэглэгч";
 }
 
+function requestStatusLabel(status: "pending" | "approved" | "rejected") {
+  if (status === "approved") {
+    return "Зөвшөөрсөн";
+  }
+
+  if (status === "rejected") {
+    return "Татгалзсан";
+  }
+
+  return "Хүлээгдэж буй";
+}
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -36,9 +53,10 @@ export default async function DashboardPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, generationsResponse] = await Promise.all([
+  const [profile, wallet, agentRequest, generationsResponse] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
+    getAgentRequestByUserId(supabase, user.id),
     supabase
       .from("generations")
       .select("id,user_id,model_name,prompt,aspect_ratio,cost,image_url,created_at")
@@ -67,7 +85,7 @@ export default async function DashboardPage() {
 
           {profile.role === "admin" ? (
             <Link
-              href="/admin/credits"
+              href="/admin"
               className="rounded-2xl bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600"
             >
               Админ самбар
@@ -75,6 +93,43 @@ export default async function DashboardPage() {
           ) : null}
         </div>
       </section>
+
+      {profile.role === "agent" ? (
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-emerald-900">Агент эрх идэвхтэй</h2>
+              <p className="mt-1 text-sm text-emerald-800">
+                Танд агентын `Хичээл` хэсэг нээгдсэн. Шинэ материалуудаа тэндээс үзнэ үү.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/lessons"
+              className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+            >
+              Хичээл рүү орох
+            </Link>
+          </div>
+        </section>
+      ) : agentRequest ? (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-amber-900">Агент хүсэлт бүртгэлтэй</h2>
+              <p className="mt-1 text-sm text-amber-800">
+                Төлөв: {requestStatusLabel(agentRequest.status)}. Төлбөрийн баримтаа шалгаж, шаардлагатай бол
+                шинэчилж илгээх боломжтой.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/agent-onboarding"
+              className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500"
+            >
+              Агент баталгаажуулалт
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -86,7 +141,7 @@ export default async function DashboardPage() {
           <p className="mt-2 text-3xl font-semibold text-slate-900">{generations.length}</p>
         </article>
         <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Сүүлд хийгдсэн</p>
+          <p className="text-sm text-slate-500">Сүүлд хийсэн</p>
           <p className="mt-2 text-lg font-semibold text-slate-900">
             {generations[0] ? formatDate(generations[0].created_at) : "Одоогоор түүх алга"}
           </p>
@@ -106,15 +161,33 @@ export default async function DashboardPage() {
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="text-lg font-semibold text-slate-900">Зургаас видео</h2>
-          <p className="mt-2 text-sm text-slate-600">Нэг зурагнаас AI видео үүсгэнэ.</p>
+          <p className="mt-2 text-sm text-slate-600">Нэг зургаас AI видео үүсгэнэ.</p>
         </Link>
         <Link
           href="/dashboard/audio"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="text-lg font-semibold text-slate-900">Аудио үүсгэх</h2>
-          <p className="mt-2 text-sm text-slate-600">ElevenLabs-ээр ярианы аудио үүсгэнэ.</p>
+          <p className="mt-2 text-sm text-slate-600">Текстээ дуу болгон хөрвүүлнэ.</p>
         </Link>
+        {profile.role === "agent" ? (
+          <Link
+            href="/dashboard/lessons"
+            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <h2 className="text-lg font-semibold text-slate-900">Хичээл</h2>
+            <p className="mt-2 text-sm text-slate-600">Агентуудад зориулсан сургалтын материал үзнэ.</p>
+          </Link>
+        ) : null}
+        {agentRequest ? (
+          <Link
+            href="/dashboard/agent-onboarding"
+            className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <h2 className="text-lg font-semibold text-slate-900">Агент баталгаажуулалт</h2>
+            <p className="mt-2 text-sm text-slate-600">Төлбөрийн баримт болон хүсэлтийн төлөвөө шалгана.</p>
+          </Link>
+        ) : null}
         <Link
           href="/dashboard/history"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
@@ -127,18 +200,14 @@ export default async function DashboardPage() {
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="text-lg font-semibold text-slate-900">Кредитийн хүсэлт</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Кредит нэмэх хүсэлт илгээж, төлөвөө шалгана.
-          </p>
+          <p className="mt-2 text-sm text-slate-600">Кредит нэмэх хүсэлт илгээж, төлөвөө шалгана.</p>
         </Link>
         <Link
           href="/dashboard/settings"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="text-lg font-semibold text-slate-900">Тохиргоо</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Данс болон мэдэгдлийн тохиргоогоо удирдана.
-          </p>
+          <p className="mt-2 text-sm text-slate-600">Данс болон мэдэгдлийн тохиргоогоо удирдана.</p>
         </Link>
       </section>
 

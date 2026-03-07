@@ -28,6 +28,16 @@ async function requireAdmin() {
   return supabase;
 }
 
+function revalidateAdminAndDashboardPaths() {
+  revalidatePath("/admin");
+  revalidatePath("/admin/credits");
+  revalidatePath("/admin/agents");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/billing");
+  revalidatePath("/dashboard/agent-onboarding");
+  revalidatePath("/dashboard/lessons");
+}
+
 export async function updateTariffAction(formData: FormData) {
   const tariffId = String(formData.get("tariff_id") ?? "");
   const multiplier = Number(formData.get("multiplier"));
@@ -44,10 +54,7 @@ export async function updateTariffAction(formData: FormData) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/credits");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/billing");
+  revalidateAdminAndDashboardPaths();
 }
 
 export async function updateModelCostAction(formData: FormData) {
@@ -66,8 +73,7 @@ export async function updateModelCostAction(formData: FormData) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/credits");
+  revalidateAdminAndDashboardPaths();
 }
 
 async function processCreditRequest(formData: FormData, status: "approved" | "rejected") {
@@ -88,10 +94,28 @@ async function processCreditRequest(formData: FormData, status: "approved" | "re
     throw new Error(error.message);
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/credits");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/billing");
+  revalidateAdminAndDashboardPaths();
+}
+
+async function processAgentRequest(formData: FormData, status: "approved" | "rejected") {
+  const requestId = String(formData.get("request_id") ?? "");
+
+  if (!requestId) {
+    throw new Error("Агент хүсэлтийн мэдээлэл буруу байна.");
+  }
+
+  const supabase = await requireAdmin();
+
+  const { error } = await supabase.rpc("process_agent_request", {
+    p_request_id: requestId,
+    p_status: status,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidateAdminAndDashboardPaths();
 }
 
 export async function approveCreditRequestAction(formData: FormData) {
@@ -102,3 +126,10 @@ export async function rejectCreditRequestAction(formData: FormData) {
   await processCreditRequest(formData, "rejected");
 }
 
+export async function approveAgentRequestAction(formData: FormData) {
+  await processAgentRequest(formData, "approved");
+}
+
+export async function rejectAgentRequestAction(formData: FormData) {
+  await processAgentRequest(formData, "rejected");
+}

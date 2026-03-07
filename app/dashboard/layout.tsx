@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 
 import DashboardLayoutShell from "@/components/dashboard/dashboard-layout-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords, getUserProfile, getWallet } from "@/lib/user-data";
+import {
+  ensureUserRecords,
+  getAgentRequestByUserId,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 export default async function DashboardLayout({
   children,
@@ -20,9 +25,10 @@ export default async function DashboardLayout({
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet] = await Promise.all([
+  const [profile, wallet, agentRequest] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
+    getAgentRequestByUserId(supabase, user.id),
   ]);
 
   return (
@@ -30,6 +36,8 @@ export default async function DashboardLayout({
       credits={wallet.credits}
       email={profile.email}
       role={profile.role}
+      showAgentOnboarding={profile.role !== "agent" && Boolean(agentRequest)}
+      showLessons={profile.role === "agent"}
     >
       {children}
     </DashboardLayoutShell>

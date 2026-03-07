@@ -40,6 +40,23 @@ function CreditRequestsIcon({ className }: { className?: string }) {
   );
 }
 
+function AgentIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 2 4 7v5c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V7l-8-5Z" />
+      <path d="M9.5 12 11 13.5 14.5 10" />
+    </svg>
+  );
+}
+
 function UsersIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -172,6 +189,7 @@ type NavItem = {
 
 const adminNavItems: NavItem[] = [
   { href: "/admin", label: "Ерөнхий", icon: HomeIcon, exact: true },
+  { href: "/admin/agents", label: "Агент хүсэлт", icon: AgentIcon, exact: false },
   { href: "/admin/credits", label: "Кредит хүсэлт", icon: CreditRequestsIcon, exact: false },
   { href: "/admin/users", label: "Хэрэглэгчид", icon: UsersIcon, exact: false, disabled: true },
   { href: "/admin/settings", label: "Тохиргоо", icon: SettingsIcon, exact: false, disabled: true },
@@ -190,14 +208,14 @@ function SidebarNav({
     <div className="flex h-full flex-col">
       <div className="flex h-16 flex-shrink-0 items-center border-b border-gray-200 px-4 lg:px-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-700">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-700">
             <span className="text-sm font-semibold text-white">P</span>
           </div>
           <div>
             <span className="leading-none text-lg font-semibold text-gray-900">Postly</span>
             <div className="mt-0.5 flex items-center gap-1">
-              <ShieldIcon className="h-3 w-3 text-purple-600" />
-              <span className="text-xs font-medium text-purple-600">Админ</span>
+              <ShieldIcon className="h-3 w-3 text-cyan-600" />
+              <span className="text-xs font-medium text-cyan-600">Админ</span>
             </div>
           </div>
         </div>
@@ -230,7 +248,7 @@ function SidebarNav({
               href={item.href}
               onClick={onNavigate}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive ? "bg-purple-50 text-purple-700" : "text-gray-700 hover:bg-gray-100"
+                isActive ? "bg-cyan-50 text-cyan-700" : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
@@ -263,16 +281,14 @@ function SidebarNav({
       <div className="flex-shrink-0 border-t border-gray-200 p-4">
         <div className="mb-2 text-xs text-gray-500">Админ орчин</div>
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-100">
-            <span className="text-sm font-medium text-purple-700">
-              {email ? email[0].toUpperCase() : "A"}
-            </span>
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100">
+            <span className="text-sm font-medium text-cyan-700">{email ? email[0].toUpperCase() : "A"}</span>
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{email || "Админ"}</div>
             <div className="flex items-center gap-1">
-              <ShieldIcon className="h-3 w-3 text-purple-600" />
-              <span className="text-xs font-medium text-purple-600">Администратор</span>
+              <ShieldIcon className="h-3 w-3 text-cyan-600" />
+              <span className="text-xs font-medium text-cyan-600">Администратор</span>
             </div>
           </div>
         </div>
@@ -333,11 +349,11 @@ export default function AdminLayoutClient({
         <SidebarNav pathname={pathname} email={email} />
       </aside>
 
-      {mobileOpen && (
+      {mobileOpen ? (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMobileOpen(false)}>
           <div className="absolute inset-0 bg-black/50" />
         </div>
-      )}
+      ) : null}
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-white transition-transform duration-300 lg:hidden ${
@@ -352,11 +368,7 @@ export default function AdminLayoutClient({
             <XIcon className="h-5 w-5" />
           </button>
         </div>
-        <SidebarNav
-          pathname={pathname}
-          email={email}
-          onNavigate={() => setMobileOpen(false)}
-        />
+        <SidebarNav pathname={pathname} email={email} onNavigate={() => setMobileOpen(false)} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -374,7 +386,7 @@ export default function AdminLayoutClient({
           </div>
 
           <div className="flex items-center gap-2 lg:gap-3">
-            <div className="flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-sm font-medium text-purple-700">
+            <div className="flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-sm font-medium text-cyan-700">
               <ShieldIcon className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Админ самбар</span>
             </div>
@@ -390,7 +402,7 @@ export default function AdminLayoutClient({
                 <UserIcon className="h-4 w-4 text-gray-600" />
               </button>
 
-              {userMenuOpen && (
+              {userMenuOpen ? (
                 <div className="absolute right-0 top-11 z-50 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
                   <div className="border-b border-gray-100 px-3 py-2">
                     <p className="text-xs font-medium text-gray-900">Админ</p>
@@ -416,7 +428,7 @@ export default function AdminLayoutClient({
                     </button>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </header>
