@@ -192,7 +192,7 @@ function DesktopSidebar({
 }) {
   return (
     <div className="brand-shell brand-grid flex h-full flex-col rounded-r-[2rem] px-4 py-5 text-white">
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.06] px-4 py-4">
+      <div className="px-1 py-1">
         <PostlyLogo showTagline tone="light" />
       </div>
 

@@ -226,7 +226,7 @@ function SidebarNav({
     <div className="flex h-full flex-col">
       <div className="flex h-16 flex-shrink-0 items-center border-b border-gray-200 px-4 lg:px-6">
         <div className="flex items-center gap-2">
-          <PostlyLogo compact className="scale-[0.88] origin-left" />
+          <PostlyLogo compact className="origin-left" />
           <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">
             Админ
           </span>

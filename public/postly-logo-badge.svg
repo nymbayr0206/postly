@@ -1,0 +1,54 @@
+<svg width="520" height="156" viewBox="0 0 520 156" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="panel" x1="26" y1="18" x2="492" y2="152" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#315566" stop-opacity="0.86"/>
+      <stop offset="0.48" stop-color="#264C5D" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#153949" stop-opacity="0.88"/>
+    </linearGradient>
+    <linearGradient id="panelStroke" x1="20" y1="18" x2="490" y2="152" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#86EFFF" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#86EFFF" stop-opacity="0.06"/>
+    </linearGradient>
+    <radialGradient id="panelGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(250 78) rotate(90) scale(86 240)">
+      <stop stop-color="#78F6FF" stop-opacity="0.42"/>
+      <stop offset="0.72" stop-color="#78F6FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="40" y1="34" x2="116" y2="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C1FDFF"/>
+      <stop offset="0.48" stop-color="#57E1F4"/>
+      <stop offset="1" stop-color="#0A9AE7"/>
+    </linearGradient>
+    <linearGradient id="word" x1="144" y1="34" x2="334" y2="102" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E4FFFF"/>
+      <stop offset="0.55" stop-color="#A9F7FF"/>
+      <stop offset="1" stop-color="#61DBFF"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+
+  <rect x="10" y="10" width="500" height="136" rx="34" fill="url(#panel)"/>
+  <rect x="10.75" y="10.75" width="498.5" height="134.5" rx="33.25" stroke="url(#panelStroke)" stroke-width="1.5"/>
+  <path d="M34 18h120" stroke="#D6FDFF" stroke-opacity="0.12" stroke-linecap="round"/>
+  <path d="M290 138h180" stroke="#D6FDFF" stroke-opacity="0.08" stroke-linecap="round"/>
+  <ellipse cx="250" cy="78" rx="190" ry="74" fill="url(#panelGlow)"/>
+
+  <g>
+    <rect x="34" y="38" width="26" height="76" rx="13" fill="url(#brand)" filter="url(#glow)"/>
+    <rect x="34" y="38" width="64" height="26" rx="13" fill="url(#brand)" filter="url(#glow)"/>
+    <rect x="34" y="60" width="64" height="26" rx="13" fill="url(#brand)" filter="url(#glow)"/>
+    <circle cx="104" cy="73" r="28" fill="url(#brand)" filter="url(#glow)"/>
+
+    <rect x="34" y="38" width="26" height="76" rx="13" fill="url(#brand)"/>
+    <rect x="34" y="38" width="64" height="26" rx="13" fill="url(#brand)"/>
+    <rect x="34" y="60" width="64" height="26" rx="13" fill="url(#brand)"/>
+    <circle cx="104" cy="73" r="28" fill="url(#brand)"/>
+    <circle cx="104" cy="73" r="18" fill="#103847"/>
+    <path d="M98 61 116 73 98 85Z" fill="url(#brand)"/>
+  </g>
+
+  <text x="146" y="74" font-family="Manrope, Arial, sans-serif" font-size="44" font-weight="800" fill="url(#word)">Postly</text>
+  <text x="287" y="74" font-family="Manrope, Arial, sans-serif" font-size="34" font-weight="800" fill="url(#word)">.mn</text>
+  <text x="148" y="108" font-family="Manrope, Arial, sans-serif" font-size="20" font-weight="500" fill="#D5FBFF" fill-opacity="0.92">Контент бүтээх ажлын орчин</text>
+</svg>

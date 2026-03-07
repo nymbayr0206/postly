@@ -1,0 +1,59 @@
+<svg width="960" height="260" viewBox="0 0 960 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="logoGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(520 132) rotate(90) scale(170 380)">
+      <stop stop-color="#8CFBFF" stop-opacity="0.85"/>
+      <stop offset="0.52" stop-color="#46E7F8" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#46E7F8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="iconGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(180 128) rotate(90) scale(132)">
+      <stop stop-color="#A0FBFF" stop-opacity="0.95"/>
+      <stop offset="0.6" stop-color="#36DFF3" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#36DFF3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="102" y1="44" x2="244" y2="204" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BCFDFF"/>
+      <stop offset="0.52" stop-color="#53DFF4"/>
+      <stop offset="1" stop-color="#0A98E8"/>
+    </linearGradient>
+    <linearGradient id="textStroke" x1="320" y1="66" x2="866" y2="188" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E5FFFF"/>
+      <stop offset="0.48" stop-color="#A7F8FF"/>
+      <stop offset="1" stop-color="#7CEBFF"/>
+    </linearGradient>
+    <filter id="neon" x="-40%" y="-60%" width="180%" height="220%">
+      <feGaussianBlur stdDeviation="14" result="b"/>
+      <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0.95  0 0 1 0 1  0 0 0 0.85 0"/>
+    </filter>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="520" cy="132" rx="360" ry="122" fill="url(#logoGlow)"/>
+  <circle cx="176" cy="128" r="122" fill="url(#iconGlow)" filter="url(#soft)"/>
+
+  <g>
+    <g filter="url(#neon)">
+      <rect x="92" y="54" width="56" height="156" rx="28" fill="url(#brand)"/>
+      <rect x="92" y="54" width="138" height="56" rx="28" fill="url(#brand)"/>
+      <rect x="92" y="104" width="138" height="56" rx="28" fill="url(#brand)"/>
+      <circle cx="244" cy="132" r="58" fill="url(#brand)"/>
+    </g>
+    <rect x="92" y="54" width="56" height="156" rx="28" fill="url(#brand)"/>
+    <rect x="92" y="54" width="138" height="56" rx="28" fill="url(#brand)"/>
+    <rect x="92" y="104" width="138" height="56" rx="28" fill="url(#brand)"/>
+    <circle cx="244" cy="132" r="58" fill="url(#brand)"/>
+    <circle cx="244" cy="132" r="37" fill="#103847"/>
+    <path d="M233 109 269 132 233 155Z" fill="url(#brand)"/>
+    <path d="M106 191c27-11 48-8 70 7-25 2-45 11-66 28-13 0-23-4-31-11 7-8 15-16 27-24Z" fill="#0D7BE6" fill-opacity="0.96"/>
+    <rect x="92" y="54" width="56" height="156" rx="28" stroke="#D9FEFF" stroke-opacity="0.28" stroke-width="3"/>
+    <rect x="92" y="54" width="138" height="56" rx="28" stroke="#D9FEFF" stroke-opacity="0.24" stroke-width="3"/>
+    <rect x="92" y="104" width="138" height="56" rx="28" stroke="#D9FEFF" stroke-opacity="0.22" stroke-width="3"/>
+    <circle cx="244" cy="132" r="58" stroke="#D9FEFF" stroke-opacity="0.3" stroke-width="3"/>
+  </g>
+
+  <g filter="url(#neon)" opacity="0.95">
+    <text x="332" y="170" font-family="Manrope, Arial, sans-serif" font-size="108" font-weight="700" fill="none" stroke="url(#textStroke)" stroke-width="6" letter-spacing="-4">Postly.mn</text>
+  </g>
+  <text x="332" y="170" font-family="Manrope, Arial, sans-serif" font-size="108" font-weight="700" fill="none" stroke="url(#textStroke)" stroke-width="4" letter-spacing="-4">Postly.mn</text>
+</svg>
