@@ -71,7 +71,7 @@ export class ElevenLabsProvider {
       getServerEnv();
 
     if (!input.dialogue || input.dialogue.length === 0) {
-      throw new AudioModelError("At least one dialogue line is required.", 400);
+      throw new AudioModelError("Хамгийн багадаа нэг ярианы мөр шаардлагатай.", 400);
     }
 
     const baseUrl = getBaseApiUrl(elevenlabsApiUrl);
@@ -95,19 +95,19 @@ export class ElevenLabsProvider {
         }),
       });
     } catch {
-      throw new AudioModelError("Unable to reach ElevenLabs API at the moment.", 502);
+      throw new AudioModelError("Одоогоор ElevenLabs API-д холбогдож чадсангүй.", 502);
     }
 
     let createData: CreateTaskResponse;
     try {
       createData = (await createResponse.json()) as CreateTaskResponse;
     } catch {
-      throw new AudioModelError("Invalid response from ElevenLabs API.", 502);
+      throw new AudioModelError("ElevenLabs-аас ирсэн хариу буруу байна.", 502);
     }
 
     if (!createResponse.ok || !createData.data?.taskId) {
       throw new AudioModelError(
-        "ElevenLabs task creation failed. Please try again shortly.",
+        "ElevenLabs үүсгэлтийн даалгаврыг эхлүүлж чадсангүй. Дахин оролдоно уу.",
         createResponse.status >= 500 ? 502 : 400,
       );
     }
@@ -126,14 +126,14 @@ export class ElevenLabsProvider {
           headers: { Authorization: `Bearer ${elevenlabsApiKey}` },
         });
       } catch {
-        throw new AudioModelError("Unable to reach ElevenLabs API at the moment.", 502);
+        throw new AudioModelError("Одоогоор ElevenLabs API-д холбогдож чадсангүй.", 502);
       }
 
       let pollData: RecordInfoResponse;
       try {
         pollData = (await pollResponse.json()) as RecordInfoResponse;
       } catch {
-        throw new AudioModelError("Invalid poll response from ElevenLabs API.", 502);
+        throw new AudioModelError("ElevenLabs төлөв шалгах хариу буруу байна.", 502);
       }
 
       const state = pollData.data?.state;
@@ -142,20 +142,20 @@ export class ElevenLabsProvider {
       if (state === "success") {
         const audioUrl = extractAudioUrl(pollData.data?.resultJson);
         if (!audioUrl) {
-          throw new AudioModelError("ElevenLabs did not return an audio URL.", 502);
+          throw new AudioModelError("ElevenLabs аудионы холбоос буцаасангүй.", 502);
         }
         return { audioUrl, rawResponse: pollData };
       }
 
       if (state === "fail") {
         throw new AudioModelError(
-          pollData.data?.failMsg ?? "ElevenLabs generation failed. Please try again shortly.",
+          pollData.data?.failMsg ?? "ElevenLabs үүсгэлт амжилтгүй боллоо. Дахин оролдоно уу.",
           502,
         );
       }
       // waiting / queuing / generating — keep polling
     }
 
-    throw new AudioModelError("ElevenLabs request timed out. Please try again.", 504);
+    throw new AudioModelError("ElevenLabs хүсэлтийн хугацаа дууслаа. Дахин оролдоно уу.", 504);
   }
 }

@@ -1,7 +1,7 @@
 import type { CreditRequestRow } from "@/lib/types";
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -19,6 +19,18 @@ function statusStyles(status: CreditRequestRow["status"]) {
   return "bg-amber-100 text-amber-800";
 }
 
+function statusLabel(status: CreditRequestRow["status"]) {
+  if (status === "approved") {
+    return "Зөвшөөрсөн";
+  }
+
+  if (status === "rejected") {
+    return "Татгалзсан";
+  }
+
+  return "Хүлээгдэж буй";
+}
+
 export function CreditRequestPanel({
   requests,
   action,
@@ -28,12 +40,14 @@ export function CreditRequestPanel({
 }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">Request More Credits</h2>
-      <p className="mt-1 text-sm text-slate-600">Submit a request and wait for admin approval.</p>
+      <h2 className="text-xl font-semibold text-slate-900">Кредитийн хүсэлт</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        Нэмэлт кредит хүсэж илгээгээд админы шийдвэрийг хүлээнэ үү.
+      </p>
 
       <form action={action} className="mt-4 flex items-end gap-3">
         <label className="text-sm font-medium text-slate-700">
-          Amount
+          Хэмжээ
           <input
             name="amount"
             type="number"
@@ -48,7 +62,7 @@ export function CreditRequestPanel({
           type="submit"
           className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
         >
-          Submit Request
+          Хүсэлт илгээх
         </button>
       </form>
 
@@ -57,9 +71,9 @@ export function CreditRequestPanel({
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-slate-500">
-                <th className="py-2 pr-3 font-medium">Amount</th>
-                <th className="py-2 pr-3 font-medium">Status</th>
-                <th className="py-2 font-medium">Date</th>
+                <th className="py-2 pr-3 font-medium">Кредит</th>
+                <th className="py-2 pr-3 font-medium">Төлөв</th>
+                <th className="py-2 font-medium">Огноо</th>
               </tr>
             </thead>
             <tbody>
@@ -67,8 +81,10 @@ export function CreditRequestPanel({
                 <tr key={request.id} className="border-b border-slate-100">
                   <td className="py-2 pr-3 text-slate-800">{request.amount}</td>
                   <td className="py-2 pr-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusStyles(request.status)}`}>
-                      {request.status}
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusStyles(request.status)}`}
+                    >
+                      {statusLabel(request.status)}
                     </span>
                   </td>
                   <td className="py-2 text-slate-600">{formatDate(request.created_at)}</td>
@@ -78,9 +94,8 @@ export function CreditRequestPanel({
           </table>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-slate-600">No credit requests yet.</p>
+        <p className="mt-4 text-sm text-slate-600">Одоогоор кредитийн хүсэлт алга.</p>
       )}
     </section>
   );
 }
-

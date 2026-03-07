@@ -15,7 +15,7 @@ export async function createCreditRequestAction(formData: FormData) {
   const amountValue = Number(formData.get("amount"));
 
   if (!Number.isInteger(amountValue) || amountValue <= 0) {
-    throw new Error("Amount must be a positive integer.");
+    throw new Error("Дүн нь 0-ээс их бүхэл тоо байх ёстой.");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -25,7 +25,7 @@ export async function createCreditRequestAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("You must be logged in.");
+    throw new Error("Нэвтэрсэн байх шаардлагатай.");
   }
 
   const { error } = await supabase.from("credit_requests").insert({

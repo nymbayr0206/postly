@@ -11,27 +11,27 @@ export async function POST(request: Request) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return Response.json({ error: "Please sign in to upload images." }, { status: 401 });
+    return Response.json({ error: "Зураг оруулахын тулд нэвтэрнэ үү." }, { status: 401 });
   }
 
   let formData: FormData;
   try {
     formData = await request.formData();
   } catch {
-    return Response.json({ error: "Invalid form data." }, { status: 400 });
+    return Response.json({ error: "Формын мэдээлэл буруу байна." }, { status: 400 });
   }
 
   const file = formData.get("file");
   if (!file || !(file instanceof File)) {
-    return Response.json({ error: "No file provided." }, { status: 400 });
+    return Response.json({ error: "Файл илгээгдээгүй байна." }, { status: 400 });
   }
 
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return Response.json({ error: "Only JPG, PNG, and WebP images are allowed." }, { status: 400 });
+    return Response.json({ error: "Зөвхөн JPG, PNG, WebP зураг зөвшөөрнө." }, { status: 400 });
   }
 
   if (file.size > MAX_SIZE_BYTES) {
-    return Response.json({ error: "File exceeds 10MB limit." }, { status: 400 });
+    return Response.json({ error: "Файлын хэмжээ 10MB-ээс хэтэрсэн байна." }, { status: 400 });
   }
 
   const ext = file.name.split(".").pop() ?? "jpg";
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     });
     if (createError) {
       console.error("[upload-image] bucket create error:", createError);
-      return Response.json({ error: "Storage not available." }, { status: 500 });
+      return Response.json({ error: "Storage одоогоор ашиглах боломжгүй байна." }, { status: 500 });
     }
   }
 
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   if (uploadError) {
     console.error("[upload-image] upload error:", uploadError);
-    return Response.json({ error: "Failed to upload image." }, { status: 500 });
+    return Response.json({ error: "Зургийг байршуулж чадсангүй." }, { status: 500 });
   }
 
   const { data: urlData } = admin.storage.from(BUCKET).getPublicUrl(path);

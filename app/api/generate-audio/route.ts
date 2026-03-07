@@ -8,15 +8,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
 
 const dialogueLineSchema = z.object({
-  text: z.string().trim().min(1, "Dialogue text cannot be empty.").max(5000),
+  text: z.string().trim().min(1, "Ярианы текст хоосон байж болохгүй.").max(5000),
   voice: z.enum(ELEVENLABS_VOICES),
 });
 
 const requestSchema = z.object({
   dialogue: z
     .array(dialogueLineSchema)
-    .min(1, "At least one dialogue line is required.")
-    .max(20, "Too many dialogue lines (max 20)."),
+    .min(1, "Хамгийн багадаа нэг ярианы мөр шаардлагатай.")
+    .max(20, "Ярианы мөрийн тоо хэтэрсэн байна. Хамгийн ихдээ 20."),
   stability: z.number().min(0).max(1).default(0.5),
 });
 
@@ -30,14 +30,14 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    return Response.json({ error: "JSON хүсэлтийн бие буруу байна." }, { status: 400 });
   }
 
   const parsed = requestSchema.safeParse(body);
 
   if (!parsed.success) {
     return Response.json(
-      { error: parsed.error.issues[0]?.message ?? "Invalid request." },
+      { error: parsed.error.issues[0]?.message ?? "Хүсэлтийн мэдээлэл буруу байна." },
       { status: 400 },
     );
   }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return Response.json({ error: "Please sign in to generate audio." }, { status: 401 });
+    return Response.json({ error: "Аудио үүсгэхийн тулд нэвтэрнэ үү." }, { status: 401 });
   }
 
   try {
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
           .eq("name", getTariffNameByRole(profile.role))
           .maybeSingle()
           .then(({ data, error }) => {
-            if (error || !data) throw new Error("Unable to resolve tariff.");
+            if (error || !data) throw new Error("Тариф олдсонгүй.");
             return data;
           });
 
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
     if (wallet.credits < cost) {
       return Response.json(
-        { error: `Insufficient credits. You need ${cost} credits but only have ${wallet.credits}.` },
+        { error: `Кредит хүрэлцэхгүй байна. ${cost} кредит хэрэгтэй, таны үлдэгдэл ${wallet.credits}.` },
         { status: 402 },
       );
     }
@@ -108,13 +108,13 @@ export async function POST(request: Request) {
     if (deductionError) {
       if (deductionError.message.includes("INSUFFICIENT_CREDITS")) {
         return Response.json(
-          { error: "Credits changed during generation. Please top up and try again." },
+          { error: "Үүсгэлтийн явцад кредит өөрчлөгдсөн байна. Кредитээ цэнэглээд дахин оролдоно уу." },
           { status: 409 },
         );
       }
 
       return Response.json(
-        { error: "Audio generated, but we could not finalize the transaction. Please contact support." },
+        { error: "Аудио амжилттай үүссэн ч төлбөрийн гүйлгээг дуусгаж чадсангүй. Дэмжлэгтэй холбогдоно уу." },
         { status: 500 },
       );
     }
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
     const message = error instanceof Error ? error.message : String(error);
     return Response.json(
-      { error: "Unable to generate audio right now. Please try again.", debug: message },
+      { error: "Одоогоор аудио үүсгэх боломжгүй байна. Дахин оролдоно уу.", debug: message },
       { status: 500 },
     );
   }

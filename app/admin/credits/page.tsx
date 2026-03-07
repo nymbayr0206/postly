@@ -6,10 +6,38 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow, UserRow, WalletRow } from "@/lib/types";
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatStatus(status: CreditRequestRow["status"]) {
+  if (status === "approved") {
+    return "Зөвшөөрсөн";
+  }
+
+  if (status === "rejected") {
+    return "Татгалзсан";
+  }
+
+  return "Хүлээгдэж буй";
+}
+
+function formatRole(role: UserRow["role"] | undefined) {
+  if (role === "admin") {
+    return "Админ";
+  }
+
+  if (role === "agent") {
+    return "Агент";
+  }
+
+  if (role === "user") {
+    return "Хэрэглэгч";
+  }
+
+  return "-";
 }
 
 function statusClasses(status: CreditRequestRow["status"]) {
@@ -36,7 +64,7 @@ export default async function AdminCreditsPage() {
   ]);
 
   if (creditRequestsResponse.error || usersResponse.error || walletsResponse.error) {
-    throw new Error("Unable to load credit requests.");
+    throw new Error("Кредит хүсэлтүүдийг ачаалж чадсангүй.");
   }
 
   const requests = (creditRequestsResponse.data ?? []) as CreditRequestRow[];
@@ -54,43 +82,43 @@ export default async function AdminCreditsPage() {
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
       <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Total requests</p>
+          <p className="text-sm text-slate-500">Нийт хүсэлт</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{requests.length}</p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Pending</p>
+          <p className="text-sm text-slate-500">Хүлээгдэж буй</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{pendingCount}</p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Approved credits</p>
+          <p className="text-sm text-slate-500">Зөвшөөрсөн кредит</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{approvedCredits}</p>
         </article>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-6 py-4">
-          <h1 className="text-xl font-semibold text-slate-900">Credit requests</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Кредит хүсэлтүүд</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Review user requests and approve or reject them.
+            Хэрэглэгчдийн хүсэлтийг шалгаад зөвшөөрөх эсвэл татгалзана.
           </p>
         </div>
 
         {requests.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-slate-500">
-            No credit requests yet.
+            Одоогоор кредит хүсэлт алга байна.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
-                  <th className="px-6 py-3 font-medium">User</th>
-                  <th className="px-6 py-3 font-medium">Role</th>
-                  <th className="px-6 py-3 font-medium">Amount</th>
-                  <th className="px-6 py-3 font-medium">Balance</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium">Requested</th>
-                  <th className="px-6 py-3 font-medium">Actions</th>
+                  <th className="px-6 py-3 font-medium">Хэрэглэгч</th>
+                  <th className="px-6 py-3 font-medium">Эрх</th>
+                  <th className="px-6 py-3 font-medium">Дүн</th>
+                  <th className="px-6 py-3 font-medium">Үлдэгдэл</th>
+                  <th className="px-6 py-3 font-medium">Төлөв</th>
+                  <th className="px-6 py-3 font-medium">Илгээсэн</th>
+                  <th className="px-6 py-3 font-medium">Үйлдэл</th>
                 </tr>
               </thead>
               <tbody>
@@ -101,15 +129,19 @@ export default async function AdminCreditsPage() {
                   return (
                     <tr key={request.id} className="border-b border-slate-100 align-top">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">{user?.email ?? request.user_id}</div>
+                        <div className="font-medium text-slate-900">
+                          {user?.email ?? request.user_id}
+                        </div>
                         <div className="mt-1 text-xs text-slate-500">{request.id}</div>
                       </td>
-                      <td className="px-6 py-4 text-slate-700">{user?.role ?? "-"}</td>
+                      <td className="px-6 py-4 text-slate-700">{formatRole(user?.role)}</td>
                       <td className="px-6 py-4 text-slate-900">{request.amount}</td>
                       <td className="px-6 py-4 text-slate-700">{wallet?.credits ?? 0}</td>
                       <td className="px-6 py-4">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(request.status)}`}>
-                          {request.status}
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(request.status)}`}
+                        >
+                          {formatStatus(request.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-slate-600">{formatDate(request.created_at)}</td>
@@ -122,7 +154,7 @@ export default async function AdminCreditsPage() {
                                 type="submit"
                                 className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600"
                               >
-                                Approve
+                                Зөвшөөрөх
                               </button>
                             </form>
                             <form action={rejectCreditRequestAction}>
@@ -131,12 +163,12 @@ export default async function AdminCreditsPage() {
                                 type="submit"
                                 className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-600"
                               >
-                                Reject
+                                Татгалзах
                               </button>
                             </form>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-500">Processed</span>
+                          <span className="text-xs text-slate-500">Шийдвэрлэсэн</span>
                         )}
                       </td>
                     </tr>

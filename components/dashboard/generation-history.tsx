@@ -1,7 +1,7 @@
 import type { GenerationRow } from "@/lib/types";
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -10,20 +10,20 @@ function formatDate(value: string) {
 export function GenerationHistory({ generations }: { generations: GenerationRow[] }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-xl font-semibold text-slate-900">Generation History</h2>
+      <h2 className="mb-4 text-xl font-semibold text-slate-900">Үүсгэлтийн түүх</h2>
 
       {generations.length === 0 ? (
-        <p className="text-sm text-slate-600">No generations yet.</p>
+        <p className="text-sm text-slate-600">Одоогоор үүсгэсэн зураг алга байна.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
-                <th className="py-2 pr-4 font-medium">Prompt</th>
-                <th className="py-2 pr-4 font-medium">Preview</th>
-                <th className="py-2 pr-4 font-medium">Credits</th>
-                <th className="py-2 pr-4 font-medium">Date</th>
-                <th className="py-2 font-medium">Download</th>
+                <th className="py-2 pr-4 font-medium">Промпт</th>
+                <th className="py-2 pr-4 font-medium">Зураг</th>
+                <th className="py-2 pr-4 font-medium">Кредит</th>
+                <th className="py-2 pr-4 font-medium">Огноо</th>
+                <th className="py-2 font-medium">Татах</th>
               </tr>
             </thead>
             <tbody>
@@ -48,7 +48,7 @@ export function GenerationHistory({ generations }: { generations: GenerationRow[
                       download
                       className="inline-flex rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700"
                     >
-                      Download
+                      Татах
                     </a>
                   </td>
                 </tr>
@@ -60,4 +60,3 @@ export function GenerationHistory({ generations }: { generations: GenerationRow[
     </section>
   );
 }
-

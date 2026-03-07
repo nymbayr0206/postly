@@ -14,11 +14,13 @@ type NavItem = {
 };
 
 const primaryNav: NavItem[] = [
-  { href: "/dashboard", label: "Overview", exact: true },
-  { href: "/dashboard/image", label: "Image Studio" },
-  { href: "/dashboard/history", label: "History" },
-  { href: "/dashboard/billing", label: "Credits" },
-  { href: "/dashboard/settings", label: "Settings" },
+  { href: "/dashboard", label: "Ерөнхий", exact: true },
+  { href: "/dashboard/image", label: "Зураг үүсгэх" },
+  { href: "/dashboard/video", label: "Зургаас видео" },
+  { href: "/dashboard/audio", label: "Аудио үүсгэх" },
+  { href: "/dashboard/history", label: "Түүх" },
+  { href: "/dashboard/billing", label: "Кредит" },
+  { href: "/dashboard/settings", label: "Тохиргоо" },
 ];
 
 function isActive(pathname: string, item: NavItem) {
@@ -43,6 +45,18 @@ function MenuButton({
   );
 }
 
+function roleLabel(role: UserRole) {
+  if (role === "admin") {
+    return "Админ";
+  }
+
+  if (role === "agent") {
+    return "Агент";
+  }
+
+  return "Хэрэглэгч";
+}
+
 function Sidebar({
   pathname,
   role,
@@ -61,7 +75,7 @@ function Sidebar({
           </div>
           <div>
             <div className="text-base font-semibold text-slate-900">Postly</div>
-            <div className="text-xs text-slate-500">Content workspace</div>
+            <div className="text-xs text-slate-500">Контентын ажлын орчин</div>
           </div>
         </Link>
       </div>
@@ -92,7 +106,7 @@ function Sidebar({
                 : "border-cyan-200 bg-cyan-50 text-cyan-800 hover:bg-cyan-100"
             }`}
           >
-            Admin Panel
+            Админ самбар
           </Link>
         ) : null}
       </nav>
@@ -160,16 +174,16 @@ export default function DashboardLayoutShell({
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
-              <MenuButton onClick={() => setMobileOpen(true)}>Menu</MenuButton>
+              <MenuButton onClick={() => setMobileOpen(true)}>Цэс</MenuButton>
               <div>
-                <div className="text-sm text-slate-500">Signed in as</div>
+                <div className="text-sm text-slate-500">Нэвтэрсэн хэрэглэгч</div>
                 <div className="text-sm font-semibold text-slate-900">{email}</div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">
-                {credits} credits
+                {credits} кредит
               </div>
 
               {role === "admin" ? (
@@ -177,7 +191,7 @@ export default function DashboardLayoutShell({
                   href="/admin/credits"
                   className="hidden rounded-full bg-cyan-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-600 sm:inline-flex"
                 >
-                  Admin Panel
+                  Админ самбар
                 </Link>
               ) : null}
 
@@ -192,19 +206,23 @@ export default function DashboardLayoutShell({
 
                 {menuOpen ? (
                   <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+                    <div className="border-b border-slate-100 px-3 py-2">
+                      <div className="text-xs text-slate-500">Эрх</div>
+                      <div className="text-sm font-medium text-slate-900">{roleLabel(role)}</div>
+                    </div>
                     {role === "admin" ? (
                       <Link
                         href="/admin/credits"
                         className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
                       >
-                        Open Admin Panel
+                        Админ самбар нээх
                       </Link>
                     ) : null}
                     <Link
                       href="/dashboard/billing"
                       className="block rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
                     >
-                      Credit Requests
+                      Кредитийн хүсэлт
                     </Link>
                     <button
                       type="button"
@@ -212,7 +230,7 @@ export default function DashboardLayoutShell({
                       disabled={isSigningOut}
                       className="mt-1 block w-full rounded-xl px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                     >
-                      {isSigningOut ? "Signing out..." : "Sign out"}
+                      {isSigningOut ? "Гарч байна..." : "Гарах"}
                     </button>
                   </div>
                 ) : null}

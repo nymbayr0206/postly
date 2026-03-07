@@ -72,16 +72,16 @@ export class RunwayProvider {
     const { runwayApiKey, runwayGenerateUrl, runwayPollUrl, runwayTimeoutMs } = getServerEnv();
 
     if (!input.prompt.trim()) {
-      throw new VideoModelError("Prompt is required.", 400);
+      throw new VideoModelError("Промпт заавал шаардлагатай.", 400);
     }
 
     if (!input.imageUrl.startsWith("http")) {
-      throw new VideoModelError("A valid image URL is required.", 400);
+      throw new VideoModelError("Хүчинтэй зургийн холбоос шаардлагатай.", 400);
     }
 
     // 1080p does not support 10-second videos
     if (input.quality === "1080p" && input.duration === 10) {
-      throw new VideoModelError("1080p quality only supports 5-second videos.", 400);
+      throw new VideoModelError("1080p чанар зөвхөн 5 секундын видеод дэмжигдэнэ.", 400);
     }
 
     const deadline = Date.now() + runwayTimeoutMs;
@@ -104,20 +104,20 @@ export class RunwayProvider {
         }),
       });
     } catch {
-      throw new VideoModelError("Unable to reach Runway API at the moment.", 502);
+      throw new VideoModelError("Одоогоор Runway API-д холбогдож чадсангүй.", 502);
     }
 
     let createData: CreateResponse;
     try {
       createData = (await createRes.json()) as CreateResponse;
     } catch {
-      throw new VideoModelError("Invalid response from Runway API.", 502);
+      throw new VideoModelError("Runway-аас ирсэн хариу буруу байна.", 502);
     }
 
     if (!createRes.ok || !createData.data?.taskId) {
       console.error("[generate-video] create failed:", createData);
       throw new VideoModelError(
-        "Runway task creation failed. Please try again shortly.",
+        "Runway үүсгэлтийн даалгаврыг эхлүүлж чадсангүй. Дахин оролдоно уу.",
         createRes.status >= 500 ? 502 : 400,
       );
     }
@@ -136,14 +136,14 @@ export class RunwayProvider {
           headers: { Authorization: `Bearer ${runwayApiKey}` },
         });
       } catch {
-        throw new VideoModelError("Unable to reach Runway API at the moment.", 502);
+        throw new VideoModelError("Одоогоор Runway API-д холбогдож чадсангүй.", 502);
       }
 
       let pollData: PollResponse;
       try {
         pollData = (await pollRes.json()) as PollResponse;
       } catch {
-        throw new VideoModelError("Invalid poll response from Runway API.", 502);
+        throw new VideoModelError("Runway төлөв шалгах хариу буруу байна.", 502);
       }
 
       const state = pollData.data?.state;
@@ -153,20 +153,20 @@ export class RunwayProvider {
         console.log("[generate-video] full success response:", JSON.stringify(pollData, null, 2));
         const videoUrl = extractVideoUrl(pollData.data);
         if (!videoUrl) {
-          throw new VideoModelError("Runway did not return a video URL.", 502);
+          throw new VideoModelError("Runway видеоны холбоос буцаасангүй.", 502);
         }
         return { videoUrl, rawResponse: pollData };
       }
 
       if (state === "fail") {
         throw new VideoModelError(
-          pollData.data?.failMsg ?? "Runway generation failed. Please try again shortly.",
+          pollData.data?.failMsg ?? "Runway үүсгэлт амжилтгүй боллоо. Дахин оролдоно уу.",
           502,
         );
       }
       // waiting / queuing / generating — keep polling
     }
 
-    throw new VideoModelError("Runway request timed out. Please try again.", 504);
+    throw new VideoModelError("Runway хүсэлтийн хугацаа дууслаа. Дахин оролдоно уу.", 504);
   }
 }

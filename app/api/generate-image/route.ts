@@ -17,7 +17,7 @@ const BUCKET = "reference-images";
 async function uploadDataUrlToStorage(dataUrl: string, userId: string): Promise<string> {
   // data:image/jpeg;base64,<payload>
   const match = dataUrl.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
-  if (!match) throw new ImageModelError("Invalid image data URL.", 400);
+  if (!match) throw new ImageModelError("Зургийн data URL буруу байна.", 400);
 
   const mimeType = match[1];                          // e.g. "image/jpeg"
   const ext = mimeType.split("/")[1].split("+")[0];   // e.g. "jpeg"
@@ -36,7 +36,7 @@ async function uploadDataUrlToStorage(dataUrl: string, userId: string): Promise<
     contentType: mimeType,
     upsert: false,
   });
-  if (error) throw new ImageModelError(`Failed to upload reference image: ${error.message}`, 502);
+  if (error) throw new ImageModelError(`Лавлах зургийг байршуулж чадсангүй: ${error.message}`, 502);
 
   const { data: urlData } = admin.storage.from(BUCKET).getPublicUrl(filename);
   return urlData.publicUrl;
@@ -55,7 +55,7 @@ async function resolveReferenceImages(images: string[], userId: string): Promise
 }
 
 const requestSchema = z.object({
-  prompt: z.string().trim().min(3, "Prompt must be at least 3 characters.").max(1000, "Prompt is too long."),
+  prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой.").max(1000, "Промпт хэт урт байна."),
   aspect_ratio: z.enum(ASPECT_RATIOS),
   reference_images: z.array(z.string().min(1)).max(3).default([]),
 });
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    return Response.json({ error: "JSON хүсэлтийн бие буруу байна." }, { status: 400 });
   }
 
   const parsed = requestSchema.safeParse(body);
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return Response.json(
       {
-        error: parsed.error.issues[0]?.message ?? "Invalid request.",
+        error: parsed.error.issues[0]?.message ?? "Хүсэлтийн мэдээлэл буруу байна.",
       },
       { status: 400 },
     );
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return Response.json({ error: "Please sign in to generate images." }, { status: 401 });
+    return Response.json({ error: "Зураг үүсгэхийн тулд нэвтэрнэ үү." }, { status: 401 });
   }
 
   try {
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
           .maybeSingle()
           .then(({ data, error }) => {
             if (error || !data) {
-              throw new Error("Unable to resolve tariff.");
+              throw new Error("Тариф олдсонгүй.");
             }
 
             return data;
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
     if (wallet.credits < cost) {
       return Response.json(
         {
-          error: `Insufficient credits. You need ${cost} credits but only have ${wallet.credits}.`,
+          error: `Кредит хүрэлцэхгүй байна. ${cost} кредит хэрэгтэй, таны үлдэгдэл ${wallet.credits}.`,
         },
         { status: 402 },
       );
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
       if (deductionError.message.includes("INSUFFICIENT_CREDITS")) {
         return Response.json(
           {
-            error: "Credits changed during generation. Please top up and try again.",
+            error: "Үүсгэлтийн явцад кредит өөрчлөгдсөн байна. Кредитээ цэнэглээд дахин оролдоно уу.",
           },
           { status: 409 },
         );
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
 
       return Response.json(
         {
-          error: "Image generated, but we could not finalize the transaction. Please contact support.",
+          error: "Зураг амжилттай үүссэн ч төлбөрийн гүйлгээг дуусгаж чадсангүй. Дэмжлэгтэй холбогдоно уу.",
         },
         { status: 500 },
       );
@@ -201,11 +201,10 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : String(error);
     return Response.json(
       {
-        error: "Unable to generate image right now. Please try again.",
+        error: "Одоогоор зураг үүсгэх боломжгүй байна. Дахин оролдоно уу.",
         debug: message,
       },
       { status: 500 },
     );
   }
 }
-

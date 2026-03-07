@@ -42,15 +42,15 @@ export default async function BillingPage() {
       <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
         <div className="grid gap-4 md:grid-cols-3">
           <div>
-            <p className="text-sm text-slate-300">Current credits</p>
+            <p className="text-sm text-slate-300">Одоогийн кредит</p>
             <p className="mt-2 text-4xl font-semibold">{wallet.credits}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-300">Pending requests</p>
+            <p className="text-sm text-slate-300">Хүлээгдэж буй хүсэлт</p>
             <p className="mt-2 text-4xl font-semibold">{pendingCount}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-300">Approved credits</p>
+            <p className="text-sm text-slate-300">Зөвшөөрөгдсөн кредит</p>
             <p className="mt-2 text-4xl font-semibold">{approvedTotal}</p>
           </div>
         </div>

@@ -66,7 +66,7 @@ export class NanoBananaProvider {
       getServerEnv();
 
     if (!input.prompt.trim()) {
-      throw new ImageModelError("Prompt is required.", 400);
+      throw new ImageModelError("Промпт заавал шаардлагатай.", 400);
     }
 
     if (
@@ -75,7 +75,7 @@ export class NanoBananaProvider {
       )
     ) {
       throw new ImageModelError(
-        "Reference images must be HTTP(S) URLs or image data URLs.",
+        "Лавлах зургууд нь HTTP(S) холбоос эсвэл image data URL байх ёстой.",
         400,
       );
     }
@@ -102,19 +102,19 @@ export class NanoBananaProvider {
         }),
       });
     } catch {
-      throw new ImageModelError("Unable to reach NanoBanana at the moment.", 502);
+      throw new ImageModelError("Одоогоор NanoBanana API-д холбогдож чадсангүй.", 502);
     }
 
     let createData: CreateTaskResponse;
     try {
       createData = (await createResponse.json()) as CreateTaskResponse;
     } catch {
-      throw new ImageModelError("Invalid response from NanoBanana.", 502);
+      throw new ImageModelError("NanoBanana-аас ирсэн хариу буруу байна.", 502);
     }
 
     if (!createResponse.ok || !createData.data?.taskId) {
       throw new ImageModelError(
-        "NanoBanana task creation failed. Please try again shortly.",
+        "NanoBanana үүсгэлтийн даалгаврыг эхлүүлж чадсангүй. Дахин оролдоно уу.",
         createResponse.status >= 500 ? 502 : 400,
       );
     }
@@ -134,14 +134,14 @@ export class NanoBananaProvider {
           },
         });
       } catch {
-        throw new ImageModelError("Unable to reach NanoBanana at the moment.", 502);
+        throw new ImageModelError("Одоогоор NanoBanana API-д холбогдож чадсангүй.", 502);
       }
 
       let pollData: RecordInfoResponse;
       try {
         pollData = (await pollResponse.json()) as RecordInfoResponse;
       } catch {
-        throw new ImageModelError("Invalid poll response from NanoBanana.", 502);
+        throw new ImageModelError("NanoBanana төлөв шалгах хариу буруу байна.", 502);
       }
 
       const state = pollData.data?.state;
@@ -150,7 +150,7 @@ export class NanoBananaProvider {
         const imageUrl = extractImageUrl(pollData.data?.resultJson);
 
         if (!imageUrl) {
-          throw new ImageModelError("NanoBanana did not return an image URL.", 502);
+          throw new ImageModelError("NanoBanana зургийн холбоос буцаасангүй.", 502);
         }
 
         return { imageUrl, rawResponse: pollData };
@@ -158,7 +158,7 @@ export class NanoBananaProvider {
 
       if (state === "fail") {
         throw new ImageModelError(
-          pollData.data?.failMsg ?? "NanoBanana generation failed. Please try again shortly.",
+          pollData.data?.failMsg ?? "NanoBanana үүсгэлт амжилтгүй боллоо. Дахин оролдоно уу.",
           502,
         );
       }
@@ -166,6 +166,6 @@ export class NanoBananaProvider {
       // state is waiting / queuing / generating — keep polling
     }
 
-    throw new ImageModelError("NanoBanana request timed out. Please try again.", 504);
+    throw new ImageModelError("NanoBanana хүсэлтийн хугацаа дууслаа. Дахин оролдоно уу.", 504);
   }
 }

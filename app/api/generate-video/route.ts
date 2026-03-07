@@ -2,14 +2,14 @@ import { z } from "zod";
 
 import { getServerEnv } from "@/lib/env";
 import { getVideoModelProvider } from "@/lib/video-models/registry";
-import { VIDEO_DURATIONS, VIDEO_QUALITIES, VideoModelError } from "@/lib/video-models/types";
+import { VIDEO_QUALITIES, VideoModelError } from "@/lib/video-models/types";
 import { calculateFinalCreditCost } from "@/lib/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
 
 const requestSchema = z.object({
-  prompt: z.string().trim().min(3, "Prompt must be at least 3 characters.").max(1000),
-  image_url: z.string().url("A valid image URL is required."),
+  prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой.").max(1000),
+  image_url: z.string().url("Хүчинтэй зургийн холбоос шаардлагатай."),
   duration: z.union([z.literal(5), z.literal(10)]).default(5),
   quality: z.enum(VIDEO_QUALITIES).default("720p"),
 });
@@ -23,13 +23,13 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    return Response.json({ error: "JSON хүсэлтийн бие буруу байна." }, { status: 400 });
   }
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
     return Response.json(
-      { error: parsed.error.issues[0]?.message ?? "Invalid request." },
+      { error: parsed.error.issues[0]?.message ?? "Хүсэлтийн мэдээлэл буруу байна." },
       { status: 400 },
     );
   }
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   // 1080p only supports 5-second videos
   if (parsed.data.quality === "1080p" && parsed.data.duration === 10) {
     return Response.json(
-      { error: "1080p quality only supports 5-second videos." },
+      { error: "1080p чанар зөвхөн 5 секундын видеод дэмжигдэнэ." },
       { status: 400 },
     );
   }
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return Response.json({ error: "Please sign in to generate videos." }, { status: 401 });
+    return Response.json({ error: "Видео үүсгэхийн тулд нэвтэрнэ үү." }, { status: 401 });
   }
 
   try {
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
           .eq("name", getTariffNameByRole(profile.role))
           .maybeSingle()
           .then(({ data, error }) => {
-            if (error || !data) throw new Error("Unable to resolve tariff.");
+            if (error || !data) throw new Error("Тариф олдсонгүй.");
             return data;
           });
 
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
     if (wallet.credits < cost) {
       return Response.json(
-        { error: `Insufficient credits. You need ${cost} but only have ${wallet.credits}.` },
+        { error: `Кредит хүрэлцэхгүй байна. ${cost} кредит хэрэгтэй, таны үлдэгдэл ${wallet.credits}.` },
         { status: 402 },
       );
     }
@@ -104,12 +104,12 @@ export async function POST(request: Request) {
     if (deductionError) {
       if (deductionError.message.includes("INSUFFICIENT_CREDITS")) {
         return Response.json(
-          { error: "Credits changed during generation. Please top up and try again." },
+          { error: "Үүсгэлтийн явцад кредит өөрчлөгдсөн байна. Кредитээ цэнэглээд дахин оролдоно уу." },
           { status: 409 },
         );
       }
       return Response.json(
-        { error: "Video generated, but we could not finalize the transaction. Please contact support." },
+        { error: "Видео амжилттай үүссэн ч төлбөрийн гүйлгээг дуусгаж чадсангүй. Дэмжлэгтэй холбогдоно уу." },
         { status: 500 },
       );
     }
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
 
     const message = error instanceof Error ? error.message : String(error);
     return Response.json(
-      { error: "Unable to generate video right now. Please try again.", debug: message },
+      { error: "Одоогоор видео үүсгэх боломжгүй байна. Дахин оролдоно уу.", debug: message },
       { status: 500 },
     );
   }

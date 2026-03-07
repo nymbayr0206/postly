@@ -4,7 +4,7 @@ function readEnv(name: string): string {
   const value = process.env[name];
 
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    throw new Error(`Шаардлагатай орчны хувьсагч алга: ${name}`);
   }
 
   return value;
@@ -15,10 +15,10 @@ export function getPublicEnv() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl) {
-    throw new Error("Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL");
+    throw new Error("Шаардлагатай орчны хувьсагч алга: NEXT_PUBLIC_SUPABASE_URL");
   }
   if (!supabaseAnonKey) {
-    throw new Error("Missing required environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    throw new Error("Шаардлагатай орчны хувьсагч алга: NEXT_PUBLIC_SUPABASE_ANON_KEY");
   }
 
   return { supabaseUrl, supabaseAnonKey };

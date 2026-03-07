@@ -6,10 +6,22 @@ import type { GenerationRow } from "@/lib/types";
 import { ensureUserRecords, getUserProfile, getWallet } from "@/lib/user-data";
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function roleLabel(role: "agent" | "user" | "admin") {
+  if (role === "admin") {
+    return "Админ";
+  }
+
+  if (role === "agent") {
+    return "Агент";
+  }
+
+  return "Хэрэглэгч";
 }
 
 export default async function DashboardPage() {
@@ -46,10 +58,10 @@ export default async function DashboardPage() {
       <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm text-slate-500">Welcome back</p>
+            <p className="text-sm text-slate-500">Тавтай морил</p>
             <h1 className="mt-1 text-3xl font-semibold text-slate-900">{profile.email}</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Role: <span className="font-medium text-slate-900">{profile.role}</span>
+              Эрх: <span className="font-medium text-slate-900">{roleLabel(profile.role)}</span>
             </p>
           </div>
 
@@ -58,7 +70,7 @@ export default async function DashboardPage() {
               href="/admin/credits"
               className="rounded-2xl bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600"
             >
-              Open Admin Panel
+              Админ самбар
             </Link>
           ) : null}
         </div>
@@ -66,62 +78,80 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Current credits</p>
+          <p className="text-sm text-slate-500">Одоогийн кредит</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{wallet.credits}</p>
         </article>
         <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Recent generations</p>
+          <p className="text-sm text-slate-500">Сүүлийн үүсгэлтүүд</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{generations.length}</p>
         </article>
         <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Latest activity</p>
+          <p className="text-sm text-slate-500">Сүүлд хийгдсэн</p>
           <p className="mt-2 text-lg font-semibold text-slate-900">
-            {generations[0] ? formatDate(generations[0].created_at) : "No history yet"}
+            {generations[0] ? formatDate(generations[0].created_at) : "Одоогоор түүх алга"}
           </p>
         </article>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Link
           href="/dashboard/image"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
-          <h2 className="text-lg font-semibold text-slate-900">Generate Image</h2>
-          <p className="mt-2 text-sm text-slate-600">Create a new NanoBanana image.</p>
+          <h2 className="text-lg font-semibold text-slate-900">Зураг үүсгэх</h2>
+          <p className="mt-2 text-sm text-slate-600">NanoBanana-аар шинэ зураг үүсгэнэ.</p>
+        </Link>
+        <Link
+          href="/dashboard/video"
+          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <h2 className="text-lg font-semibold text-slate-900">Зургаас видео</h2>
+          <p className="mt-2 text-sm text-slate-600">Нэг зурагнаас AI видео үүсгэнэ.</p>
+        </Link>
+        <Link
+          href="/dashboard/audio"
+          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <h2 className="text-lg font-semibold text-slate-900">Аудио үүсгэх</h2>
+          <p className="mt-2 text-sm text-slate-600">ElevenLabs-ээр ярианы аудио үүсгэнэ.</p>
         </Link>
         <Link
           href="/dashboard/history"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
-          <h2 className="text-lg font-semibold text-slate-900">History</h2>
-          <p className="mt-2 text-sm text-slate-600">Review your latest generated assets.</p>
+          <h2 className="text-lg font-semibold text-slate-900">Түүх</h2>
+          <p className="mt-2 text-sm text-slate-600">Өмнөх үүсгэсэн контентуудаа харна.</p>
         </Link>
         <Link
           href="/dashboard/billing"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
-          <h2 className="text-lg font-semibold text-slate-900">Credit Requests</h2>
-          <p className="mt-2 text-sm text-slate-600">Submit and track credit top-up requests.</p>
+          <h2 className="text-lg font-semibold text-slate-900">Кредитийн хүсэлт</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Кредит нэмэх хүсэлт илгээж, төлөвөө шалгана.
+          </p>
         </Link>
         <Link
           href="/dashboard/settings"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
-          <h2 className="text-lg font-semibold text-slate-900">Settings</h2>
-          <p className="mt-2 text-sm text-slate-600">Manage your account preferences.</p>
+          <h2 className="text-lg font-semibold text-slate-900">Тохиргоо</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Данс болон мэдэгдлийн тохиргоогоо удирдана.
+          </p>
         </Link>
       </section>
 
       <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">Latest generations</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Сүүлийн үүсгэлтүүд</h2>
           <Link href="/dashboard/history" className="text-sm font-medium text-cyan-700 hover:text-cyan-600">
-            View all
+            Бүгдийг харах
           </Link>
         </div>
 
         {generations.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">No generations yet.</p>
+          <p className="mt-4 text-sm text-slate-500">Одоогоор үүсгэлт алга.</p>
         ) : (
           <div className="mt-4 space-y-3">
             {generations.map((generation) => (
@@ -132,7 +162,7 @@ export default async function DashboardPage() {
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-900">{generation.prompt}</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {generation.model_name} · {generation.cost} credits · {formatDate(generation.created_at)}
+                    {generation.model_name} · {generation.cost} кредит · {formatDate(generation.created_at)}
                   </p>
                 </div>
 
@@ -142,7 +172,7 @@ export default async function DashboardPage() {
                   rel="noopener noreferrer"
                   className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  Open
+                  Нээх
                 </a>
               </div>
             ))}

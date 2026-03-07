@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { ElevenLabsVoice } from "@/lib/audio-models/types";
 import { ELEVENLABS_VOICES } from "@/lib/audio-models/types";
+import type { ElevenLabsVoice } from "@/lib/audio-models/types";
 
 type DialogueLine = {
   text: string;
@@ -30,20 +30,26 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
 
   function updateLine(index: number, field: keyof DialogueLine, value: string) {
     setLines((prev) =>
-      prev.map((line, i) =>
-        i === index ? { ...line, [field]: value } : line,
+      prev.map((line, currentIndex) =>
+        currentIndex === index ? { ...line, [field]: value } : line,
       ),
     );
   }
 
   function addLine() {
-    if (lines.length >= 20) return;
+    if (lines.length >= 20) {
+      return;
+    }
+
     setLines((prev) => [...prev, { text: "", voice: "Brian" }]);
   }
 
   function removeLine(index: number) {
-    if (lines.length <= 1) return;
-    setLines((prev) => prev.filter((_, i) => i !== index));
+    if (lines.length <= 1) {
+      return;
+    }
+
+    setLines((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -51,10 +57,10 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
     setError(null);
     setResult(null);
 
-    const filledLines = lines.filter((l) => l.text.trim().length > 0);
+    const filledLines = lines.filter((line) => line.text.trim().length > 0);
 
     if (filledLines.length === 0) {
-      setError("At least one dialogue line is required.");
+      setError("Хамгийн багадаа нэг ярианы мөр шаардлагатай.");
       return;
     }
 
@@ -73,18 +79,20 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
       const payload = (await response.json()) as Record<string, unknown>;
 
       if (!response.ok) {
-        setError(typeof payload.error === "string" ? payload.error : "Audio generation failed.");
+        setError(
+          typeof payload.error === "string" ? payload.error : "Аудио үүсгэхэд алдаа гарлаа.",
+        );
         return;
       }
 
-      setResult(payload as unknown as GenerateAudioResult);
+      setResult(payload as GenerateAudioResult);
       setLines([
         { text: "", voice: "Brian" },
         { text: "", voice: "Adam" },
       ]);
       router.refresh();
     } catch {
-      setError("Unexpected error. Please try again.");
+      setError("Санамсаргүй алдаа гарлаа. Дахин оролдоно уу.");
     } finally {
       setIsPending(false);
     }
@@ -94,44 +102,45 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Generate Audio</h2>
-          <p className="text-xs text-slate-500 mt-0.5">ElevenLabs Text-to-Dialogue v3</p>
+          <h2 className="text-xl font-semibold text-slate-900">Аудио үүсгэх</h2>
+          <p className="mt-0.5 text-xs text-slate-500">ElevenLabs Text-to-Dialogue v3</p>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-          Credits: {currentCredits}
+          Кредит: {currentCredits}
         </span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Dialogue lines */}
         <div className="space-y-3">
-          <p className="text-sm font-medium text-slate-700">Dialogue Lines</p>
+          <p className="text-sm font-medium text-slate-700">Ярианы мөрүүд</p>
           {lines.map((line, index) => (
-            <div key={index} className="flex gap-2 items-start">
+            <div key={index} className="flex items-start gap-2">
               <select
                 value={line.voice}
-                onChange={(e) => updateLine(index, "voice", e.target.value)}
+                onChange={(event) => updateLine(index, "voice", event.target.value)}
                 className="w-32 shrink-0 rounded-xl border border-slate-300 px-2 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
               >
-                {ELEVENLABS_VOICES.map((v) => (
-                  <option key={v} value={v}>{v}</option>
+                {ELEVENLABS_VOICES.map((voice) => (
+                  <option key={voice} value={voice}>
+                    {voice}
+                  </option>
                 ))}
               </select>
               <textarea
                 value={line.text}
-                onChange={(e) => updateLine(index, "text", e.target.value)}
-                placeholder={`Line ${index + 1}...`}
+                onChange={(event) => updateLine(index, "text", event.target.value)}
+                placeholder={`${index + 1}-р мөр`}
                 rows={2}
-                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500 resize-none"
+                className="flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
               />
               {lines.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeLine(index)}
-                  className="mt-1 text-slate-400 hover:text-rose-500 text-lg leading-none"
-                  aria-label="Remove line"
+                  className="mt-1 text-lg leading-none text-slate-400 hover:text-rose-500"
+                  aria-label="Мөр устгах"
                 >
-                  ✕
+                  ×
                 </button>
               )}
             </div>
@@ -141,28 +150,27 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
             <button
               type="button"
               onClick={addLine}
-              className="text-sm text-slate-500 hover:text-slate-800 underline"
+              className="text-sm text-slate-500 underline hover:text-slate-800"
             >
-              + Add line
+              + Мөр нэмэх
             </button>
           )}
         </div>
 
-        {/* Stability */}
         <label className="block text-sm font-medium text-slate-700">
-          Stability: {stability.toFixed(1)}
+          Тогтвортой байдал: {stability.toFixed(1)}
           <input
             type="range"
             min={0}
             max={1}
             step={0.1}
             value={stability}
-            onChange={(e) => setStability(Number(e.target.value))}
+            onChange={(event) => setStability(Number(event.target.value))}
             className="mt-1 w-full accent-slate-700"
           />
-          <span className="flex justify-between text-xs text-slate-400 mt-0.5">
-            <span>More variable</span>
-            <span>More stable</span>
+          <span className="mt-0.5 flex justify-between text-xs text-slate-400">
+            <span>Илүү хувирамтгай</span>
+            <span>Илүү тогтвортой</span>
           </span>
         </label>
 
@@ -173,19 +181,19 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
           disabled={isPending}
           className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {isPending ? "Generating..." : "Generate Audio"}
+          {isPending ? "Үүсгэж байна..." : "Аудио үүсгэх"}
         </button>
       </form>
 
       {result ? (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+        <div className="mt-6 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-sm text-emerald-800">
-            Audio generated successfully. {result.cost} credits deducted.
+            Аудио амжилттай үүслээ. {result.cost} кредит хасагдлаа.
           </p>
           <audio controls src={result.audio_url} className="w-full" />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm font-medium text-emerald-900">
-              Credits remaining: {result.credits_remaining}
+              Үлдсэн кредит: {result.credits_remaining}
             </span>
             <a
               href={result.audio_url}
@@ -194,7 +202,7 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
               download
               className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
             >
-              Download
+              Татах
             </a>
           </div>
         </div>

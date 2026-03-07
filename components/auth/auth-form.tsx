@@ -25,17 +25,17 @@ export function AuthForm() {
     setMessage(null);
 
     if (!email.trim()) {
-      setError("Email is required.");
+      setError("Имэйл хаяг оруулна уу.");
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError("Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой.");
       return;
     }
 
     if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Нууц үг таарахгүй байна.");
       return;
     }
 
@@ -70,7 +70,7 @@ export function AuthForm() {
     }
 
     if (!data.session) {
-      setMessage("Account created. Check your email to verify and then log in.");
+      setMessage("Бүртгэл амжилттай үүслээ. Имэйлээ баталгаажуулаад дараа нь нэвтэрнэ үү.");
       setMode("login");
       setPassword("");
       setConfirmPassword("");
@@ -96,7 +96,7 @@ export function AuthForm() {
             mode === "login" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
           }`}
         >
-          Log In
+          Нэвтрэх
         </button>
         <button
           type="button"
@@ -109,38 +109,38 @@ export function AuthForm() {
             mode === "signup" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
           }`}
         >
-          Sign Up
+          Бүртгүүлэх
         </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block text-sm font-medium text-slate-700">
-          Email
+          Имэйл
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
-            placeholder="you@example.com"
+            placeholder="name@example.com"
             required
           />
         </label>
 
         <label className="block text-sm font-medium text-slate-700">
-          Password
+          Нууц үг
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
-            placeholder="At least 6 characters"
+            placeholder="Хамгийн багадаа 6 тэмдэгт"
             required
           />
         </label>
 
         {mode === "signup" ? (
           <label className="block text-sm font-medium text-slate-700">
-            Confirm Password
+            Нууц үг давтах
             <input
               type="password"
               value={confirmPassword}
@@ -159,10 +159,9 @@ export function AuthForm() {
           disabled={isPending}
           className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {isPending ? "Please wait..." : mode === "login" ? "Log In" : "Create Account"}
+          {isPending ? "Түр хүлээнэ үү..." : mode === "login" ? "Нэвтрэх" : "Бүртгэл үүсгэх"}
         </button>
       </form>
     </div>
   );
 }
-

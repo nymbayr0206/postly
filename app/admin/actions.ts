@@ -22,7 +22,7 @@ async function requireAdmin() {
     .maybeSingle();
 
   if (profileError || !profile || profile.role !== "admin") {
-    throw new Error("Admin permissions required.");
+    throw new Error("Админы эрх шаардлагатай.");
   }
 
   return supabase;
@@ -33,7 +33,7 @@ export async function updateTariffAction(formData: FormData) {
   const multiplier = Number(formData.get("multiplier"));
 
   if (!tariffId || !Number.isInteger(multiplier) || multiplier <= 0) {
-    throw new Error("Invalid tariff update.");
+    throw new Error("Тарифын утга буруу байна.");
   }
 
   const supabase = await requireAdmin();
@@ -55,7 +55,7 @@ export async function updateModelCostAction(formData: FormData) {
   const baseCost = Number(formData.get("base_cost"));
 
   if (!modelId || !Number.isInteger(baseCost) || baseCost <= 0) {
-    throw new Error("Invalid model update.");
+    throw new Error("Моделийн үнэ буруу байна.");
   }
 
   const supabase = await requireAdmin();
@@ -74,7 +74,7 @@ async function processCreditRequest(formData: FormData, status: "approved" | "re
   const requestId = String(formData.get("request_id") ?? "");
 
   if (!requestId) {
-    throw new Error("Invalid credit request.");
+    throw new Error("Кредит хүсэлтийн мэдээлэл буруу байна.");
   }
 
   const supabase = await requireAdmin();

@@ -28,7 +28,7 @@ export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
     });
 
     if (userInsertError && !isDuplicateViolation(userInsertError.code)) {
-      throw new Error(`Unable to create user profile: ${userInsertError.message}`);
+      throw new Error(`Хэрэглэгчийн профайл үүсгэж чадсангүй: ${userInsertError.message}`);
     }
   }
 
@@ -45,7 +45,7 @@ export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
     });
 
     if (walletInsertError && !isDuplicateViolation(walletInsertError.code)) {
-      throw new Error(`Unable to create wallet: ${walletInsertError.message}`);
+      throw new Error(`Хэтэвч үүсгэж чадсангүй: ${walletInsertError.message}`);
     }
   }
 }
@@ -58,11 +58,11 @@ export async function getUserProfile(supabase: SupabaseClient, userId: string) {
     .maybeSingle<UserRow>();
 
   if (error) {
-    throw new Error(`Unable to load profile: ${error.message}`);
+    throw new Error(`Профайл ачаалж чадсангүй: ${error.message}`);
   }
 
   if (!data) {
-    throw new Error("Profile does not exist.");
+    throw new Error("Профайл олдсонгүй.");
   }
 
   return data;
@@ -76,11 +76,11 @@ export async function getWallet(supabase: SupabaseClient, userId: string) {
     .maybeSingle<WalletRow>();
 
   if (error) {
-    throw new Error(`Unable to load wallet: ${error.message}`);
+    throw new Error(`Хэтэвч ачаалж чадсангүй: ${error.message}`);
   }
 
   if (!data) {
-    throw new Error("Wallet does not exist.");
+    throw new Error("Хэтэвч олдсонгүй.");
   }
 
   return data;
@@ -94,11 +94,11 @@ export async function getTariffById(supabase: SupabaseClient, tariffId: string) 
     .maybeSingle<TariffRow>();
 
   if (error) {
-    throw new Error(`Unable to load tariff: ${error.message}`);
+    throw new Error(`Тариф ачаалж чадсангүй: ${error.message}`);
   }
 
   if (!data) {
-    throw new Error("Tariff does not exist.");
+    throw new Error("Тариф олдсонгүй.");
   }
 
   return data;
@@ -112,11 +112,11 @@ export async function getModelByName(supabase: SupabaseClient, modelName: string
     .maybeSingle<ModelRow>();
 
   if (error) {
-    throw new Error(`Unable to load model: ${error.message}`);
+    throw new Error(`Модель ачаалж чадсангүй: ${error.message}`);
   }
 
   if (!data) {
-    throw new Error("Model does not exist.");
+    throw new Error("Модель олдсонгүй.");
   }
 
   return data;

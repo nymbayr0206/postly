@@ -23,11 +23,11 @@ async function fileToDataUrl(file: File): Promise<string> {
       if (typeof result === "string") {
         resolve(result);
       } else {
-        reject(new Error("Unable to read file."));
+        reject(new Error("Файлыг уншиж чадсангүй."));
       }
     };
 
-    reader.onerror = () => reject(new Error("Unable to read file."));
+    reader.onerror = () => reject(new Error("Файлыг уншиж чадсангүй."));
     reader.readAsDataURL(file);
   });
 }
@@ -49,18 +49,18 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
     setResult(null);
 
     if (!prompt.trim()) {
-      setError("Prompt is required.");
+      setError("Промпт оруулна уу.");
       return;
     }
 
     if (files.length > 3) {
-      setError("You can upload up to 3 reference images.");
+      setError("Хамгийн ихдээ 3 лавлах зураг оруулах боломжтой.");
       return;
     }
 
     for (const file of files) {
       if (file.size > 5 * 1024 * 1024) {
-        setError(`File \"${file.name}\" exceeds 5MB.`);
+        setError(`"${file.name}" файл 5MB-ээс их байна.`);
         return;
       }
     }
@@ -85,18 +85,18 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
       const payload = (await response.json()) as Record<string, unknown>;
 
       if (!response.ok) {
-        setError(typeof payload.error === "string" ? payload.error : "Image generation failed.");
+        setError(
+          typeof payload.error === "string" ? payload.error : "Зураг үүсгэх үед алдаа гарлаа.",
+        );
         return;
       }
 
-      const success = payload as unknown as GenerateResult;
-
-      setResult(success);
+      setResult(payload as GenerateResult);
       setPrompt("");
       setFiles([]);
       router.refresh();
     } catch {
-      setError("Unexpected error. Please try again.");
+      setError("Санамсаргүй алдаа гарлаа. Дахин оролдоно уу.");
     } finally {
       setIsPending(false);
     }
@@ -105,26 +105,26 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-slate-900">Generate Image</h2>
+        <h2 className="text-xl font-semibold text-slate-900">Зураг үүсгэх</h2>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-          Credits: {currentCredits}
+          Кредит: {currentCredits}
         </span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block text-sm font-medium text-slate-700">
-          Prompt
+          Промпт
           <textarea
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             className="mt-1 h-28 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
-            placeholder="Describe the image you want to generate"
+            placeholder="Ямар зураг хүсэж байгаагаа дэлгэрэнгүй бичнэ үү"
             required
           />
         </label>
 
         <label className="block text-sm font-medium text-slate-700">
-          Aspect Ratio
+          Харьцаа
           <select
             value={aspectRatio}
             onChange={(event) => setAspectRatio(event.target.value as ImageAspectRatio)}
@@ -139,7 +139,7 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
         </label>
 
         <label className="block text-sm font-medium text-slate-700">
-          Reference Images (optional, max 3)
+          Лавлах зураг (заавал биш, хамгийн ихдээ 3)
           <input
             type="file"
             accept="image/*"
@@ -167,21 +167,25 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
           disabled={isPending}
           className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {isPending ? "Generating..." : "Generate Image"}
+          {isPending ? "Үүсгэж байна..." : "Зураг үүсгэх"}
         </button>
       </form>
 
       {result ? (
         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-sm text-emerald-800">Image generated successfully. {result.cost} credits deducted.</p>
+          <p className="text-sm text-emerald-800">
+            Зураг амжилттай үүслээ. {result.cost} кредит хасагдлаа.
+          </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={result.image_url}
-            alt="Generated result"
+            alt="Үүсгэсэн зураг"
             className="mt-3 w-full rounded-xl border border-emerald-200 object-cover"
           />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm font-medium text-emerald-900">Credits remaining: {result.credits_remaining}</span>
+            <span className="text-sm font-medium text-emerald-900">
+              Үлдэгдэл: {result.credits_remaining} кредит
+            </span>
             <a
               href={result.image_url}
               target="_blank"
@@ -189,7 +193,7 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
               download
               className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
             >
-              Download
+              Татах
             </a>
           </div>
         </div>
@@ -197,4 +201,3 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
     </section>
   );
 }
-

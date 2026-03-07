@@ -17,9 +17,12 @@ export default async function AuthPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-cyan-100 px-6 py-16">
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 max-w-2xl">
-          <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Postly Image Studio</h1>
+          <h1 className="text-4xl font-semibold tracking-tight text-slate-900">
+            Postly контент студи
+          </h1>
           <p className="mt-3 text-base text-slate-700">
-            Generate NanoBanana images with credit-based billing. Sign in to start creating.
+            NanoBanana ашиглан зураг үүсгэж, кредитээр тооцоо хийх платформ. Үргэлжлүүлэхийн
+            тулд нэвтэрнэ үү.
           </p>
         </div>
 
@@ -28,4 +31,3 @@ export default async function AuthPage() {
     </main>
   );
 }
-
