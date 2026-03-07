@@ -122,9 +122,6 @@ export function AudioGeneratorClient({
             <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
-                  <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
-                    ElevenLabs
-                  </span>
                   <div>
                     <h1 className="text-2xl font-semibold text-slate-950">Аудио үүсгэх</h1>
                     <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
@@ -351,7 +348,7 @@ export function AudioGeneratorClient({
                 </div>
                 <h4 className="mt-5 text-xl font-semibold text-slate-950">Аудио үүсгэж байна...</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  ElevenLabs хүсэлтийг боловсруулж байна. Дуусмагц тоглуулагч болон татах товч гарч ирнэ.
+                  Хүсэлтийг боловсруулж байна. Дуусмагц тоглуулагч болон татах товч гарч ирнэ.
                 </p>
               </div>
             ) : result ? (
@@ -425,7 +422,6 @@ export function AudioGeneratorClient({
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
                         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                           <span className="rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
-                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.model_name}</span>
                           <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
                         </div>
                       </div>

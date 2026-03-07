@@ -246,9 +246,6 @@ export default async function HistoryPage() {
                         {item.duration} сек · {item.quality}
                       </span>
                     )}
-                    {item.type === "audio" && (
-                      <span className="rounded-full bg-slate-100 px-3 py-1">{item.model_name}</span>
-                    )}
                   </div>
                 </div>
 

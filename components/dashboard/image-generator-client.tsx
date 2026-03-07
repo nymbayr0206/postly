@@ -175,9 +175,6 @@ export function ImageGeneratorClient({
             <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
-                  <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
-                    NanoBanana
-                  </span>
                   <div>
                     <h1 className="text-2xl font-semibold text-slate-950">Зураг үүсгэх</h1>
                     <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
@@ -392,8 +389,8 @@ export function ImageGeneratorClient({
                   <p className="mt-2 text-lg font-semibold">{files.length}</p>
                 </div>
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Загвар</p>
-                  <p className="mt-2 text-lg font-semibold">NanoBanana</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Формат</p>
+                  <p className="mt-2 text-lg font-semibold">PNG</p>
                 </div>
               </div>
             </div>
@@ -426,7 +423,7 @@ export function ImageGeneratorClient({
               </div>
               <h3 className="mt-5 text-xl font-semibold text-slate-950">Зураг үүсгэж байна...</h3>
               <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                NanoBanana хүсэлтийг боловсруулж байна. Дуусмагц энд preview болон download товч гарч ирнэ.
+                Хүсэлтийг боловсруулж байна. Дуусмагц энд preview болон download товч гарч ирнэ.
               </p>
             </div>
           ) : result ? (
