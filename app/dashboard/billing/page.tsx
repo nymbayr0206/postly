@@ -6,6 +6,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow } from "@/lib/types";
 import { ensureUserRecords, getWallet } from "@/lib/user-data";
 
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("mn-MN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 export default async function BillingPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -31,7 +38,10 @@ export default async function BillingPage() {
     throw new Error(creditRequestResponse.error.message);
   }
 
-  const requests = (creditRequestResponse.data ?? []) as CreditRequestRow[];
+  const requests = ((creditRequestResponse.data ?? []) as CreditRequestRow[]).map((request) => ({
+    ...request,
+    created_at_label: formatDate(request.created_at),
+  }));
   const pendingCount = requests.filter((request) => request.status === "pending").length;
   const approvedCredits = requests
     .filter((request) => request.status === "approved")

@@ -18,12 +18,9 @@ type BankDetails = {
   accountHolder: string;
 };
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("mn-MN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+type CreditRequestListItem = CreditRequestRow & {
+  created_at_label: string;
+};
 
 function formatMnt(value: number) {
   return `${new Intl.NumberFormat("mn-MN").format(value)}₮`;
@@ -71,7 +68,7 @@ export function CreditRequestPanel({
   bankDetails,
   reviewMinutes,
 }: {
-  requests: CreditRequestRow[];
+  requests: CreditRequestListItem[];
   bankDetails: BankDetails;
   reviewMinutes: number;
 }) {
@@ -392,7 +389,7 @@ export function CreditRequestPanel({
                         {statusLabel(request.status)}
                       </span>
                     </td>
-                    <td className="py-3 text-slate-600">{formatDate(request.created_at)}</td>
+                    <td className="py-3 text-slate-600">{request.created_at_label}</td>
                   </tr>
                 ))}
               </tbody>
