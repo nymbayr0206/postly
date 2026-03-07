@@ -2,6 +2,7 @@ import {
   approveCreditRequestAction,
   rejectCreditRequestAction,
 } from "@/app/admin/actions";
+import { getCreditPackageByKey } from "@/lib/credit-packages";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow, UserRow, WalletRow } from "@/lib/types";
 
@@ -40,6 +41,14 @@ function formatRole(role: UserRow["role"] | undefined) {
   return "-";
 }
 
+function formatMnt(value: number) {
+  return `${new Intl.NumberFormat("mn-MN").format(value)}₮`;
+}
+
+function formatCredits(value: number) {
+  return new Intl.NumberFormat("mn-MN").format(value);
+}
+
 function statusClasses(status: CreditRequestRow["status"]) {
   if (status === "approved") {
     return "bg-emerald-100 text-emerald-800";
@@ -52,12 +61,20 @@ function statusClasses(status: CreditRequestRow["status"]) {
   return "bg-amber-100 text-amber-800";
 }
 
+function packageLabel(request: CreditRequestRow) {
+  if (!request.package_key) {
+    return "Хуучин хүсэлт";
+  }
+
+  return getCreditPackageByKey(request.package_key)?.label ?? "Тусгай хүсэлт";
+}
+
 export default async function AdminCreditsPage() {
   const supabase = await createSupabaseServerClient();
   const [creditRequestsResponse, usersResponse, walletsResponse] = await Promise.all([
     supabase
       .from("credit_requests")
-      .select("id,user_id,amount,status,created_at")
+      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,status,created_at")
       .order("created_at", { ascending: false }),
     supabase.from("users").select("id,email,role,tariff_id,created_at"),
     supabase.from("wallets").select("id,user_id,credits,created_at"),
@@ -77,10 +94,13 @@ export default async function AdminCreditsPage() {
   const approvedCredits = requests
     .filter((request) => request.status === "approved")
     .reduce((sum, request) => sum + request.amount, 0);
+  const approvedRevenue = requests
+    .filter((request) => request.status === "approved")
+    .reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Нийт хүсэлт</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{requests.length}</p>
@@ -91,7 +111,11 @@ export default async function AdminCreditsPage() {
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Зөвшөөрсөн кредит</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{approvedCredits}</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{formatCredits(approvedCredits)}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Зөвшөөрсөн орлого</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{formatMnt(approvedRevenue)}</p>
         </article>
       </section>
 
@@ -99,7 +123,7 @@ export default async function AdminCreditsPage() {
         <div className="border-b border-slate-200 px-6 py-4">
           <h1 className="text-xl font-semibold text-slate-900">Кредит хүсэлтүүд</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Хэрэглэгчдийн хүсэлтийг шалгаад зөвшөөрөх эсвэл татгалзана.
+            Хэрэглэгчдийн сонгосон багц, төлбөр, бонус кредитийг шалгаад зөвшөөрнө эсвэл татгалзана.
           </p>
         </div>
 
@@ -109,12 +133,15 @@ export default async function AdminCreditsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
+            <table className="w-full min-w-[1080px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="px-6 py-3 font-medium">Хэрэглэгч</th>
                   <th className="px-6 py-3 font-medium">Эрх</th>
-                  <th className="px-6 py-3 font-medium">Дүн</th>
+                  <th className="px-6 py-3 font-medium">Багц</th>
+                  <th className="px-6 py-3 font-medium">Төлбөр</th>
+                  <th className="px-6 py-3 font-medium">Олгох кредит</th>
+                  <th className="px-6 py-3 font-medium">Бонус</th>
                   <th className="px-6 py-3 font-medium">Үлдэгдэл</th>
                   <th className="px-6 py-3 font-medium">Төлөв</th>
                   <th className="px-6 py-3 font-medium">Илгээсэн</th>
@@ -129,13 +156,18 @@ export default async function AdminCreditsPage() {
                   return (
                     <tr key={request.id} className="border-b border-slate-100 align-top">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">
-                          {user?.email ?? request.user_id}
-                        </div>
+                        <div className="font-medium text-slate-900">{user?.email ?? request.user_id}</div>
                         <div className="mt-1 text-xs text-slate-500">{request.id}</div>
                       </td>
                       <td className="px-6 py-4 text-slate-700">{formatRole(user?.role)}</td>
-                      <td className="px-6 py-4 text-slate-900">{request.amount}</td>
+                      <td className="px-6 py-4 text-slate-900">{packageLabel(request)}</td>
+                      <td className="px-6 py-4 text-slate-900">
+                        {request.amount_mnt ? formatMnt(request.amount_mnt) : "-"}
+                      </td>
+                      <td className="px-6 py-4 text-slate-900">{formatCredits(request.amount)}</td>
+                      <td className="px-6 py-4 text-slate-700">
+                        {request.bonus_credits > 0 ? formatCredits(request.bonus_credits) : "Байхгүй"}
+                      </td>
                       <td className="px-6 py-4 text-slate-700">{wallet?.credits ?? 0}</td>
                       <td className="px-6 py-4">
                         <span

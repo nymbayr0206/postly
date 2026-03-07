@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getCreditPackageByKey, getTotalCredits } from "@/lib/credit-packages";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function signOutAction() {
@@ -12,10 +13,11 @@ export async function signOutAction() {
 }
 
 export async function createCreditRequestAction(formData: FormData) {
-  const amountValue = Number(formData.get("amount"));
+  const packageKey = String(formData.get("package_key") ?? "");
+  const selectedPackage = getCreditPackageByKey(packageKey);
 
-  if (!Number.isInteger(amountValue) || amountValue <= 0) {
-    throw new Error("Дүн нь 0-ээс их бүхэл тоо байх ёстой.");
+  if (!selectedPackage) {
+    throw new Error("Кредитийн багц буруу байна.");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -30,7 +32,10 @@ export async function createCreditRequestAction(formData: FormData) {
 
   const { error } = await supabase.from("credit_requests").insert({
     user_id: user.id,
-    amount: amountValue,
+    amount: getTotalCredits(selectedPackage),
+    amount_mnt: selectedPackage.priceMnt,
+    bonus_credits: Math.round((selectedPackage.baseCredits * selectedPackage.bonusPercent) / 100),
+    package_key: selectedPackage.key,
     status: "pending",
   });
 
@@ -43,4 +48,3 @@ export async function createCreditRequestAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/credits");
 }
-

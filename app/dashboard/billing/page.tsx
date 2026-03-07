@@ -22,7 +22,7 @@ export default async function BillingPage() {
     getWallet(supabase, user.id),
     supabase
       .from("credit_requests")
-      .select("id,user_id,amount,status,created_at")
+      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,status,created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
   ]);
@@ -33,14 +33,17 @@ export default async function BillingPage() {
 
   const requests = (creditRequestResponse.data ?? []) as CreditRequestRow[];
   const pendingCount = requests.filter((request) => request.status === "pending").length;
-  const approvedTotal = requests
+  const approvedCredits = requests
     .filter((request) => request.status === "approved")
     .reduce((sum, request) => sum + request.amount, 0);
+  const approvedRevenue = requests
+    .filter((request) => request.status === "approved")
+    .reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
       <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <div>
             <p className="text-sm text-slate-300">Одоогийн кредит</p>
             <p className="mt-2 text-4xl font-semibold">{wallet.credits}</p>
@@ -51,7 +54,13 @@ export default async function BillingPage() {
           </div>
           <div>
             <p className="text-sm text-slate-300">Зөвшөөрөгдсөн кредит</p>
-            <p className="mt-2 text-4xl font-semibold">{approvedTotal}</p>
+            <p className="mt-2 text-4xl font-semibold">{approvedCredits}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-300">Зөвшөөрөгдсөн дүн</p>
+            <p className="mt-2 text-4xl font-semibold">
+              {new Intl.NumberFormat("mn-MN").format(approvedRevenue)}₮
+            </p>
           </div>
         </div>
       </section>

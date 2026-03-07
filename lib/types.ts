@@ -48,6 +48,9 @@ export type CreditRequestRow = {
   id: string;
   user_id: string;
   amount: number;
+  amount_mnt: number | null;
+  bonus_credits: number;
+  package_key: string | null;
   status: CreditRequestStatus;
   created_at: string;
 };
