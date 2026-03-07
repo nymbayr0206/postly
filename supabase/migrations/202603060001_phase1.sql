@@ -242,14 +242,14 @@ begin
   end if;
 
   if p_status = 'approved' then
-    update public.wallets
-    set credits = credits + req.amount
-    where user_id = req.user_id
-    returning credits into new_balance;
+    update public.wallets as w
+    set credits = w.credits + req.amount
+    where w.user_id = req.user_id
+    returning w.credits into new_balance;
   else
-    select credits into new_balance
-    from public.wallets
-    where user_id = req.user_id;
+    select w.credits into new_balance
+    from public.wallets as w
+    where w.user_id = req.user_id;
   end if;
 
   update public.credit_requests
