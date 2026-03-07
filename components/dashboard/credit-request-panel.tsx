@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   CREDIT_PACKAGES,
@@ -10,6 +11,12 @@ import {
   type CreditPackageKey,
 } from "@/lib/credit-packages";
 import type { CreditRequestRow } from "@/lib/types";
+
+type BankDetails = {
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+};
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -61,25 +68,125 @@ function packageLabel(request: CreditRequestRow) {
 
 export function CreditRequestPanel({
   requests,
-  action,
+  bankDetails,
+  reviewMinutes,
 }: {
   requests: CreditRequestRow[];
-  action: (formData: FormData) => Promise<void>;
+  bankDetails: BankDetails;
+  reviewMinutes: number;
 }) {
   const [selectedKey, setSelectedKey] = useState<CreditPackageKey>("growth");
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const paymentRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const selectedPackage = useMemo(
     () => CREDIT_PACKAGES.find((pkg) => pkg.key === selectedKey) ?? CREDIT_PACKAGES[1],
     [selectedKey],
   );
 
+  function openPayment(packageKey: CreditPackageKey) {
+    setSelectedKey(packageKey);
+    setPaymentOpen(true);
+    setError(null);
+    setMessage(null);
+
+    requestAnimationFrame(() => {
+      paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const selected = event.target.files?.[0] ?? null;
+    setFile(selected);
+    setError(null);
+    setMessage(null);
+
+    if (selected) {
+      setPreview(URL.createObjectURL(selected));
+    } else {
+      setPreview(null);
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+
+    if (!file) {
+      setError("Шилжүүлгийн screenshot-оо хавсаргана уу.");
+      return;
+    }
+
+    setIsPending(true);
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+
+      const uploadResponse = await fetch("/api/upload-image", {
+        method: "POST",
+        body: uploadFormData,
+      });
+      const uploadPayload = (await uploadResponse.json()) as Record<string, unknown>;
+
+      if (!uploadResponse.ok) {
+        setError(
+          typeof uploadPayload.error === "string"
+            ? uploadPayload.error
+            : "Screenshot байршуулахад алдаа гарлаа.",
+        );
+        return;
+      }
+
+      const requestResponse = await fetch("/api/credit-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          package_key: selectedPackage.key,
+          payment_screenshot_url: uploadPayload.url,
+        }),
+      });
+      const requestPayload = (await requestResponse.json()) as Record<string, unknown>;
+
+      if (!requestResponse.ok) {
+        setError(
+          typeof requestPayload.error === "string"
+            ? requestPayload.error
+            : "Кредитийн хүсэлт илгээхэд алдаа гарлаа.",
+        );
+        return;
+      }
+
+      setMessage("Төлбөрийн баримт амжилттай илгээгдлээ. Админ шалгаад кредитийг тань цэнэглэнэ.");
+      setFile(null);
+      setPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      router.refresh();
+    } catch {
+      setError("Санамсаргүй алдаа гарлаа. Дахин оролдоно уу.");
+    } finally {
+      setIsPending(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[28px] bg-[#090d18] text-white shadow-[0_20px_60px_rgba(2,8,23,0.35)]">
         <div className="border-b border-white/10 px-6 py-6 sm:px-8">
-          <h2 className="text-2xl font-semibold">Кредит нэмэх</h2>
+          <h2 className="text-2xl font-semibold">Кредит худалдаж авах</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-300">
-            Багцаа сонгоод хүсэлт илгээнэ үү. Админ баталгаажуулсны дараа сонгосон кредит таны дансанд орно.
+            Багцаа сонгоод `Худалдаж авах` дээр дарна уу. Төлбөрийн хэсэгт шилжиж,
+            шилжүүлгийн screenshot-оо хавсаргасны дараа хүсэлт илгээгдэнэ.
           </p>
         </div>
 
@@ -88,7 +195,7 @@ export function CreditRequestPanel({
             <p className="mb-4 text-sm font-medium text-slate-300">Багц сонгох</p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {CREDIT_PACKAGES.map((pkg) => {
-                const selected = pkg.key === selectedKey;
+                const selected = paymentOpen && pkg.key === selectedKey;
                 const totalCredits = getTotalCredits(pkg);
                 const bonusCredits = getBonusCredits(pkg);
 
@@ -96,7 +203,7 @@ export function CreditRequestPanel({
                   <button
                     key={pkg.key}
                     type="button"
-                    onClick={() => setSelectedKey(pkg.key)}
+                    onClick={() => openPayment(pkg.key)}
                     className={`relative overflow-hidden rounded-2xl border p-5 text-left transition ${
                       selected
                         ? "border-blue-400 bg-gradient-to-br from-blue-500 to-cyan-400 shadow-[0_18px_45px_rgba(59,130,246,0.35)]"
@@ -123,96 +230,135 @@ export function CreditRequestPanel({
                         Суурь кредит багц
                       </div>
                     )}
+
+                    <div className="mt-5 inline-flex rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white">
+                      Худалдаж авах
+                    </div>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="text-sm font-medium text-slate-300">Сонгосон багц</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-xs uppercase tracking-wide text-slate-400">Төлбөр</div>
-                  <div className="mt-2 text-xl font-semibold text-white">
-                    {formatMnt(selectedPackage.priceMnt)}
+          {paymentOpen ? (
+            <div ref={paymentRef} className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Төлбөрийн хэсэг</p>
+                    <h3 className="mt-1 text-xl font-semibold text-white">{selectedPackage.label} багц</h3>
                   </div>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-xs uppercase tracking-wide text-slate-400">Үндсэн кредит</div>
-                  <div className="mt-2 text-xl font-semibold text-white">
-                    {formatCredits(selectedPackage.baseCredits)}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-xs uppercase tracking-wide text-slate-400">Нийт олгох</div>
-                  <div className="mt-2 text-xl font-semibold text-white">
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">
                     {formatCredits(getTotalCredits(selectedPackage))}
-                  </div>
-                </div>
-              </div>
-              {selectedPackage.bonusPercent > 0 ? (
-                <p className="mt-4 text-sm text-sky-300">
-                  Энэ багцад {selectedPackage.bonusPercent}% бонус орсон.
-                </p>
-              ) : (
-                <p className="mt-4 text-sm text-slate-400">Энэ багц бонусгүй стандарт багц.</p>
-              )}
-            </div>
-
-            <form action={action} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <input type="hidden" name="package_key" value={selectedKey} />
-              <p className="text-sm font-medium text-slate-300">Хүсэлт илгээх</p>
-              <p className="mt-2 text-sm text-slate-400">
-                Багцаа баталгаажуулаад админд кредит нэмэх хүсэлт илгээнэ үү.
-              </p>
-
-              <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-400">Багц</span>
-                  <span className="font-medium text-white">{selectedPackage.label}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-400">Төлбөр</span>
-                  <span className="font-medium text-white">{formatMnt(selectedPackage.priceMnt)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-400">Бонус</span>
-                  <span className="font-medium text-white">
-                    {selectedPackage.bonusPercent > 0
-                      ? `+${formatCredits(getBonusCredits(selectedPackage))}`
-                      : "Байхгүй"}
                   </span>
                 </div>
+
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    <span className="text-slate-400">Дансны дугаар</span>
+                    <span className="font-medium text-white">{bankDetails.accountNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    <span className="text-slate-400">Банкны нэр</span>
+                    <span className="font-medium text-white">{bankDetails.bankName}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    <span className="text-slate-400">Хүлээн авагч</span>
+                    <span className="font-medium text-white">{bankDetails.accountHolder}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3">
+                    <span className="text-cyan-100">Шилжүүлэх дүн</span>
+                    <span className="text-lg font-semibold text-white">
+                      {formatMnt(selectedPackage.priceMnt)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
+                  <p className="text-sm font-medium text-amber-100">Санамж</p>
+                  <p className="mt-2 text-sm text-amber-50">
+                    Админ {reviewMinutes} минутын дотор таны кредитийг цэнэглэнэ.
+                    Шилжүүлгийн screenshot тод, бүтэн харагдаж байх шаардлагатай.
+                  </p>
+                </div>
               </div>
 
-              <button
-                type="submit"
-                className="mt-5 w-full rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-400"
-              >
-                Кредитийн хүсэлт илгээх
-              </button>
-            </form>
-          </div>
+              <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
+                <p className="text-sm font-medium text-slate-300">Баримт хавсаргах</p>
+                <p className="mt-2 text-sm text-slate-400">
+                  Шилжүүлгээ хийсний дараа screenshot-оо оруулаад хүсэлтээ илгээнэ үү.
+                </p>
+
+                <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-slate-400">Багц</span>
+                    <span className="font-medium text-white">{selectedPackage.label}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-slate-400">Төлбөр</span>
+                    <span className="font-medium text-white">{formatMnt(selectedPackage.priceMnt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-slate-400">Олгох кредит</span>
+                    <span className="font-medium text-white">
+                      {formatCredits(getTotalCredits(selectedPackage))}
+                    </span>
+                  </div>
+                </div>
+
+                <label className="mt-5 block text-sm font-medium text-slate-200">
+                  Шилжүүлгийн screenshot
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="mt-2 block w-full cursor-pointer rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200"
+                  />
+                </label>
+
+                {preview ? (
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview} alt="Шилжүүлгийн screenshot" className="w-full object-cover" />
+                  </div>
+                ) : null}
+
+                {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
+                {message ? <p className="mt-4 text-sm text-emerald-300">{message}</p> : null}
+
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="mt-5 w-full rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:bg-blue-300"
+                >
+                  {isPending ? "Илгээж байна..." : "Хүсэлт илгээх"}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.04] px-5 py-6 text-sm text-slate-400">
+              Багцын `Худалдаж авах` товч дээр дарж төлбөрийн хэсгийг нээнэ үү.
+            </div>
+          )}
         </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="text-xl font-semibold text-slate-900">Хүсэлтийн түүх</h3>
         <p className="mt-1 text-sm text-slate-600">
-          Илгээсэн багцын хүсэлтүүд, бонус, төлөвийг эндээс харна.
+          Илгээсэн багц, төлбөр, screenshot, төлөвийг эндээс харна.
         </p>
 
         {requests.length ? (
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[860px] text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="py-3 pr-4 font-medium">Багц</th>
                   <th className="py-3 pr-4 font-medium">Төлбөр</th>
                   <th className="py-3 pr-4 font-medium">Олгох кредит</th>
-                  <th className="py-3 pr-4 font-medium">Бонус</th>
+                  <th className="py-3 pr-4 font-medium">Баримт</th>
                   <th className="py-3 pr-4 font-medium">Төлөв</th>
                   <th className="py-3 font-medium">Огноо</th>
                 </tr>
@@ -226,7 +372,18 @@ export function CreditRequestPanel({
                     </td>
                     <td className="py-3 pr-4 text-slate-800">{formatCredits(request.amount)}</td>
                     <td className="py-3 pr-4 text-slate-600">
-                      {request.bonus_credits > 0 ? formatCredits(request.bonus_credits) : "Байхгүй"}
+                      {request.payment_screenshot_url ? (
+                        <a
+                          href={request.payment_screenshot_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-cyan-700 hover:text-cyan-600"
+                        >
+                          Үзэх
+                        </a>
+                      ) : (
+                        "-"
+                      )}
                     </td>
                     <td className="py-3 pr-4">
                       <span

@@ -199,8 +199,8 @@ export default async function DashboardPage() {
           href="/dashboard/billing"
           className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md"
         >
-          <h2 className="text-lg font-semibold text-slate-900">Кредитийн хүсэлт</h2>
-          <p className="mt-2 text-sm text-slate-600">Кредит нэмэх хүсэлт илгээж, төлөвөө шалгана.</p>
+          <h2 className="text-lg font-semibold text-slate-900">Кредит худалдаж авах</h2>
+          <p className="mt-2 text-sm text-slate-600">Багц сонгож төлбөрийн баримт илгээн кредит авна.</p>
         </Link>
         <Link
           href="/dashboard/settings"

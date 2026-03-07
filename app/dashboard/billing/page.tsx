@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { createCreditRequestAction } from "@/app/dashboard/actions";
 import { CreditRequestPanel } from "@/components/dashboard/credit-request-panel";
+import { PAYMENT_REVIEW_MINUTES, getAdminBankDetails } from "@/lib/payment-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow } from "@/lib/types";
 import { ensureUserRecords, getWallet } from "@/lib/user-data";
@@ -22,7 +22,7 @@ export default async function BillingPage() {
     getWallet(supabase, user.id),
     supabase
       .from("credit_requests")
-      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,status,created_at")
+      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,payment_screenshot_url,status,created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
   ]);
@@ -65,7 +65,11 @@ export default async function BillingPage() {
         </div>
       </section>
 
-      <CreditRequestPanel requests={requests} action={createCreditRequestAction} />
+      <CreditRequestPanel
+        requests={requests}
+        bankDetails={getAdminBankDetails()}
+        reviewMinutes={PAYMENT_REVIEW_MINUTES}
+      />
     </div>
   );
 }

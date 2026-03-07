@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { AgentOnboardingPanel } from "@/components/dashboard/agent-onboarding-panel";
-import { AGENT_APPROVAL_CREDITS, AGENT_SIGNUP_PRICE_MNT, getAgentBankDetails } from "@/lib/agent-config";
+import { AGENT_APPROVAL_CREDITS, AGENT_SIGNUP_PRICE_MNT } from "@/lib/agent-config";
+import { getAdminBankDetails } from "@/lib/payment-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserRecords, getAgentRequestByUserId, getUserProfile } from "@/lib/user-data";
 
@@ -26,7 +27,7 @@ export default async function AgentOnboardingPage() {
     <AgentOnboardingPanel
       role={profile.role}
       request={request}
-      bankDetails={getAgentBankDetails()}
+      bankDetails={getAdminBankDetails()}
       priceMnt={AGENT_SIGNUP_PRICE_MNT}
       bonusCredits={AGENT_APPROVAL_CREDITS}
     />

@@ -51,6 +51,7 @@ export type CreditRequestRow = {
   amount_mnt: number | null;
   bonus_credits: number;
   package_key: string | null;
+  payment_screenshot_url: string | null;
   status: CreditRequestStatus;
   created_at: string;
 };

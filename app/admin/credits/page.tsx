@@ -74,7 +74,7 @@ export default async function AdminCreditsPage() {
   const [creditRequestsResponse, usersResponse, walletsResponse] = await Promise.all([
     supabase
       .from("credit_requests")
-      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,status,created_at")
+      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,payment_screenshot_url,status,created_at")
       .order("created_at", { ascending: false }),
     supabase.from("users").select("id,email,role,tariff_id,created_at"),
     supabase.from("wallets").select("id,user_id,credits,created_at"),
@@ -121,9 +121,9 @@ export default async function AdminCreditsPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-6 py-4">
-          <h1 className="text-xl font-semibold text-slate-900">Кредит хүсэлтүүд</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Кредит худалдан авалтын хүсэлтүүд</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Хэрэглэгчдийн сонгосон багц, төлбөр, бонус кредитийг шалгаад зөвшөөрнө эсвэл татгалзана.
+            Хэрэглэгчийн сонгосон багц, шилжүүлгийн баримт, бонус кредитийг шалгаад шийдвэрлэнэ.
           </p>
         </div>
 
@@ -133,7 +133,7 @@ export default async function AdminCreditsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] text-left text-sm">
+            <table className="w-full min-w-[1220px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="px-6 py-3 font-medium">Хэрэглэгч</th>
@@ -142,6 +142,7 @@ export default async function AdminCreditsPage() {
                   <th className="px-6 py-3 font-medium">Төлбөр</th>
                   <th className="px-6 py-3 font-medium">Олгох кредит</th>
                   <th className="px-6 py-3 font-medium">Бонус</th>
+                  <th className="px-6 py-3 font-medium">Баримт</th>
                   <th className="px-6 py-3 font-medium">Үлдэгдэл</th>
                   <th className="px-6 py-3 font-medium">Төлөв</th>
                   <th className="px-6 py-3 font-medium">Илгээсэн</th>
@@ -167,6 +168,30 @@ export default async function AdminCreditsPage() {
                       <td className="px-6 py-4 text-slate-900">{formatCredits(request.amount)}</td>
                       <td className="px-6 py-4 text-slate-700">
                         {request.bonus_credits > 0 ? formatCredits(request.bonus_credits) : "Байхгүй"}
+                      </td>
+                      <td className="px-6 py-4">
+                        {request.payment_screenshot_url ? (
+                          <div className="flex items-start gap-3">
+                            <a
+                              href={request.payment_screenshot_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              Баримт нээх
+                            </a>
+                            <div className="overflow-hidden rounded-xl border border-slate-200">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={request.payment_screenshot_url}
+                                alt="Шилжүүлгийн баримт"
+                                className="h-20 w-28 object-cover"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">Баримтгүй</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-slate-700">{wallet?.credits ?? 0}</td>
                       <td className="px-6 py-4">
