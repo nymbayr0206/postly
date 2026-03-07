@@ -5,6 +5,14 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function mapAdminRpcError(message: string) {
+  if (message.includes("PAYMENT_PROOF_REQUIRED")) {
+    return "Шилжүүлгийн баримтгүй хүсэлтийг зөвшөөрөх боломжгүй.";
+  }
+
+  return message;
+}
+
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -116,7 +124,7 @@ async function processAgentRequest(formData: FormData, status: "approved" | "rej
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(mapAdminRpcError(error.message));
   }
 
   revalidateAdminAndDashboardPaths();

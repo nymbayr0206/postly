@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { getServerEnv } from "@/lib/env";
+import { getActiveModelNames } from "@/lib/env";
+import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getImageModelProvider } from "@/lib/image-models/registry";
 import { ASPECT_RATIOS, ImageModelError } from "@/lib/image-models/types";
 import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
     console.log("[generate-image] step: getUserProfile");
     const profile = await getUserProfile(supabase, user.id);
 
-    const modelName = getServerEnv().nanoBananaModelName;
+    const { nanoBananaModelName: modelName } = getActiveModelNames();
     console.log("[generate-image] step: getModelByName →", modelName);
     const model = await getModelByName(supabase, modelName);
     console.log("[generate-image] model found →", model);
@@ -147,14 +148,19 @@ export async function POST(request: Request) {
       aspectRatio: parsed.data.aspect_ratio,
       referenceImages: resolvedImages,
     });
+    const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
+      userId: user.id,
+      modelName: model.name,
+      kind: "image",
+    });
 
     const { data: deducted, error: deductionError } = await supabase.rpc("create_generation_and_deduct", {
       p_user_id: user.id,
       p_model_name: model.name,
       p_prompt: parsed.data.prompt,
       p_aspect_ratio: parsed.data.aspect_ratio,
-      p_cost: cost,
       p_image_url: generation.imageUrl,
+      p_server_token: serverToken,
     });
 
     if (deductionError) {
@@ -179,9 +185,9 @@ export async function POST(request: Request) {
 
     return Response.json({
       image_url: generation.imageUrl,
-      cost,
+      cost: result?.charged_cost ?? cost,
       generation_id: result?.generation_id ?? null,
-      credits_remaining: result?.remaining_credits ?? wallet.credits - cost,
+      credits_remaining: result?.remaining_credits ?? wallet.credits - (result?.charged_cost ?? cost),
     });
   } catch (error) {
     console.error("[generate-image] ERROR:", error);

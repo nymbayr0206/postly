@@ -1,4 +1,4 @@
-import {
+﻿import {
   approveAgentRequestAction,
   rejectAgentRequestAction,
 } from "@/app/admin/actions";
@@ -70,18 +70,21 @@ export default async function AdminAgentsPage() {
   const requests = (agentRequestsResponse.data ?? []) as AgentRequestRow[];
   const users = (usersResponse.data ?? []) as UserRow[];
   const wallets = (walletsResponse.data ?? []) as WalletRow[];
+  const visibleRequests = requests.filter(
+    (request) => request.status !== "pending" || Boolean(request.payment_screenshot_url),
+  );
 
   const userById = new Map(users.map((user) => [user.id, user]));
   const walletByUserId = new Map(wallets.map((wallet) => [wallet.user_id, wallet]));
-  const pendingCount = requests.filter((request) => request.status === "pending").length;
-  const approvedCount = requests.filter((request) => request.status === "approved").length;
+  const pendingCount = visibleRequests.filter((request) => request.status === "pending").length;
+  const approvedCount = visibleRequests.filter((request) => request.status === "approved").length;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
       <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Нийт агент хүсэлт</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{requests.length}</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{visibleRequests.length}</p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Хүлээгдэж буй</p>
@@ -101,7 +104,7 @@ export default async function AdminAgentsPage() {
           </p>
         </div>
 
-        {requests.length === 0 ? (
+        {visibleRequests.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-slate-500">
             Одоогоор агент хүсэлт алга байна.
           </div>
@@ -121,9 +124,10 @@ export default async function AdminAgentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((request) => {
+                {visibleRequests.map((request) => {
                   const user = userById.get(request.user_id);
                   const wallet = walletByUserId.get(request.user_id);
+                  const canApprove = Boolean(request.payment_screenshot_url);
 
                   return (
                     <tr key={request.id} className="border-b border-slate-100 align-top">
@@ -168,25 +172,31 @@ export default async function AdminAgentsPage() {
                       <td className="px-6 py-4 text-slate-600">{formatDate(request.created_at)}</td>
                       <td className="px-6 py-4">
                         {request.status === "pending" ? (
-                          <div className="flex gap-2">
-                            <form action={approveAgentRequestAction}>
-                              <input type="hidden" name="request_id" value={request.id} />
-                              <button
-                                type="submit"
-                                className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600"
-                              >
-                                Зөвшөөрөх
-                              </button>
-                            </form>
-                            <form action={rejectAgentRequestAction}>
-                              <input type="hidden" name="request_id" value={request.id} />
-                              <button
-                                type="submit"
-                                className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-600"
-                              >
-                                Татгалзах
-                              </button>
-                            </form>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <form action={approveAgentRequestAction}>
+                                <input type="hidden" name="request_id" value={request.id} />
+                                <button
+                                  type="submit"
+                                  disabled={!canApprove}
+                                  className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                                >
+                                  Зөвшөөрөх
+                                </button>
+                              </form>
+                              <form action={rejectAgentRequestAction}>
+                                <input type="hidden" name="request_id" value={request.id} />
+                                <button
+                                  type="submit"
+                                  className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-600"
+                                >
+                                  Татгалзах
+                                </button>
+                              </form>
+                            </div>
+                            {!canApprove ? (
+                              <p className="text-xs text-amber-600">Баримт орсны дараа approve хийнэ.</p>
+                            ) : null}
                           </div>
                         ) : (
                           <span className="text-xs text-slate-500">Шийдвэрлэсэн</span>

@@ -1,5 +1,5 @@
 import { updateModelCostAction, updateTariffAction } from "@/app/admin/actions";
-import { getServerEnv } from "@/lib/env";
+import { getActiveModelNames } from "@/lib/env";
 import {
   calculateFinalCreditCost,
   getModelDisplayName,
@@ -26,7 +26,7 @@ function roleLabel(name: string) {
 export default async function AdminPricingPage() {
   const supabase = await createSupabaseServerClient();
   const [tariffs, models] = await Promise.all([getTariffs(supabase), getModels(supabase)]);
-  const env = getServerEnv();
+  const env = getActiveModelNames();
 
   const regularTariff = tariffs.find((tariff) => tariff.name === "Regular User");
   const agentTariff = tariffs.find((tariff) => tariff.name === "Agent");

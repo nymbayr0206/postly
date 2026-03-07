@@ -1,4 +1,4 @@
-import { getServerEnv } from "@/lib/env";
+import { getRunwayEnv } from "@/lib/env";
 import {
   type VideoGenerationInput,
   type VideoGenerationOutput,
@@ -69,7 +69,7 @@ export class RunwayProvider {
   name = "runway";
 
   async generateVideo(input: VideoGenerationInput): Promise<VideoGenerationOutput> {
-    const { runwayApiKey, runwayGenerateUrl, runwayPollUrl, runwayTimeoutMs } = getServerEnv();
+    const { runwayApiKey, runwayGenerateUrl, runwayPollUrl, runwayTimeoutMs } = getRunwayEnv();
 
     if (!input.prompt.trim()) {
       throw new VideoModelError("Промпт заавал шаардлагатай.", 400);

@@ -1,9 +1,11 @@
 import { z } from "zod";
 
-import { getServerEnv } from "@/lib/env";
+import { getActiveModelNames } from "@/lib/env";
+import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getAudioModelProvider } from "@/lib/audio-models/registry";
 import { ELEVENLABS_VOICES, AudioModelError } from "@/lib/audio-models/types";
 import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
 
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
     await ensureUserRecords(supabase, user);
 
     const profile = await getUserProfile(supabase, user.id);
-    const modelName = getServerEnv().elevenlabsModelName;
+    const { elevenlabsModelName: modelName } = getActiveModelNames();
     const model = await getModelByName(supabase, modelName);
     const wallet = await getWallet(supabase, user.id);
 
@@ -83,6 +85,11 @@ export async function POST(request: Request) {
       dialogue: parsed.data.dialogue,
       stability: parsed.data.stability,
     });
+    const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
+      userId: user.id,
+      modelName: model.name,
+      kind: "audio",
+    });
 
     // Build a text summary of the dialogue for the prompt field
     const promptSummary = parsed.data.dialogue
@@ -96,8 +103,8 @@ export async function POST(request: Request) {
         p_user_id: user.id,
         p_model_name: model.name,
         p_prompt: promptSummary,
-        p_cost: cost,
         p_audio_url: generation.audioUrl,
+        p_server_token: serverToken,
       },
     );
 
@@ -119,9 +126,9 @@ export async function POST(request: Request) {
 
     return Response.json({
       audio_url: generation.audioUrl,
-      cost,
+      cost: result?.charged_cost ?? cost,
       generation_id: result?.generation_id ?? null,
-      credits_remaining: result?.remaining_credits ?? wallet.credits - cost,
+      credits_remaining: result?.remaining_credits ?? wallet.credits - (result?.charged_cost ?? cost),
     });
   } catch (error) {
     console.error("[generate-audio] ERROR:", error);

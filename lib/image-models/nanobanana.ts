@@ -1,4 +1,4 @@
-import { getServerEnv } from "@/lib/env";
+import { getNanoBananaEnv } from "@/lib/env";
 import {
   type ImageGenerationInput,
   type ImageGenerationOutput,
@@ -63,7 +63,7 @@ export class NanoBananaProvider {
 
   async generateImage(input: ImageGenerationInput): Promise<ImageGenerationOutput> {
     const { nanoBananaApiKey, nanoBananaApiUrl, nanoBananaTimeoutMs, nanoBananaModelName } =
-      getServerEnv();
+      getNanoBananaEnv();
 
     if (!input.prompt.trim()) {
       throw new ImageModelError("Промпт заавал шаардлагатай.", 400);

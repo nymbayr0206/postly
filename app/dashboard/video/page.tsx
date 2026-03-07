@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { VideoGeneratorClient } from "@/components/dashboard/video-generator-client";
-import { getServerEnv } from "@/lib/env";
+import { getActiveModelNames } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getGenerationPricingPreview, getUserProfile, getWallet } from "@/lib/user-data";
 
@@ -32,10 +32,11 @@ export default async function VideoPage() {
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
+  const { runwayModelName } = getActiveModelNames();
   const pricing = await getGenerationPricingPreview(
     supabase,
     profile,
-    getServerEnv().runwayModelName,
+    runwayModelName,
   );
 
   const items = (history ?? []).map((item) => ({

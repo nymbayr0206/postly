@@ -1,9 +1,11 @@
 import { z } from "zod";
 
-import { getServerEnv } from "@/lib/env";
+import { getActiveModelNames } from "@/lib/env";
+import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getVideoModelProvider } from "@/lib/video-models/registry";
 import { VIDEO_QUALITIES, VideoModelError } from "@/lib/video-models/types";
 import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
 
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
     await ensureUserRecords(supabase, user);
 
     const profile = await getUserProfile(supabase, user.id);
-    const modelName = getServerEnv().runwayModelName;
+    const { runwayModelName: modelName } = getActiveModelNames();
     const model = await getModelByName(supabase, modelName);
     const wallet = await getWallet(supabase, user.id);
 
@@ -82,6 +84,11 @@ export async function POST(request: Request) {
       duration: parsed.data.duration,
       quality: parsed.data.quality,
     });
+    const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
+      userId: user.id,
+      modelName: model.name,
+      kind: "video",
+    });
 
     const { data: deducted, error: deductionError } = await supabase.rpc(
       "create_video_generation_and_deduct",
@@ -93,7 +100,7 @@ export async function POST(request: Request) {
         p_video_url: generation.videoUrl,
         p_duration: parsed.data.duration,
         p_quality: parsed.data.quality,
-        p_cost: cost,
+        p_server_token: serverToken,
       },
     );
 
@@ -114,9 +121,9 @@ export async function POST(request: Request) {
 
     return Response.json({
       video_url: generation.videoUrl,
-      cost,
+      cost: result?.charged_cost ?? cost,
       generation_id: result?.generation_id ?? null,
-      credits_remaining: result?.remaining_credits ?? wallet.credits - cost,
+      credits_remaining: result?.remaining_credits ?? wallet.credits - (result?.charged_cost ?? cost),
     });
   } catch (error) {
     console.error("[generate-video] ERROR:", error);

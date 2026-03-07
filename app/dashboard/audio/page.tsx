@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AudioGeneratorClient } from "@/components/dashboard/audio-generator-client";
-import { getServerEnv } from "@/lib/env";
+import { getActiveModelNames } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getGenerationPricingPreview, getUserProfile, getWallet } from "@/lib/user-data";
 
@@ -32,10 +32,11 @@ export default async function AudioPage() {
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
+  const { elevenlabsModelName } = getActiveModelNames();
   const pricing = await getGenerationPricingPreview(
     supabase,
     profile,
-    getServerEnv().elevenlabsModelName,
+    elevenlabsModelName,
   );
 
   const items = (history ?? []).map((item) => ({

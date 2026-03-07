@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ImageGeneratorClient } from "@/components/dashboard/image-generator-client";
-import { getServerEnv } from "@/lib/env";
+import { getActiveModelNames } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getGenerationPricingPreview, getUserProfile, getWallet } from "@/lib/user-data";
 
@@ -19,10 +19,11 @@ export default async function ImagePage() {
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
   ]);
+  const { nanoBananaModelName } = getActiveModelNames();
   const pricing = await getGenerationPricingPreview(
     supabase,
     profile,
-    getServerEnv().nanoBananaModelName,
+    nanoBananaModelName,
   );
 
   return (

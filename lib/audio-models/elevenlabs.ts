@@ -1,4 +1,4 @@
-import { getServerEnv } from "@/lib/env";
+import { getElevenLabsEnv } from "@/lib/env";
 import {
   type AudioGenerationInput,
   type AudioGenerationOutput,
@@ -68,7 +68,7 @@ export class ElevenLabsProvider {
 
   async generateAudio(input: AudioGenerationInput): Promise<AudioGenerationOutput> {
     const { elevenlabsApiKey, elevenlabsApiUrl, elevenlabsTimeoutMs, elevenlabsModelName } =
-      getServerEnv();
+      getElevenLabsEnv();
 
     if (!input.dialogue || input.dialogue.length === 0) {
       throw new AudioModelError("Хамгийн багадаа нэг ярианы мөр шаардлагатай.", 400);
