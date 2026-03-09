@@ -44,8 +44,9 @@ export function ReferralPanel({
           <div className="text-sm font-semibold text-cyan-700">Урилгын систем</div>
           <h2 className="mt-1 text-2xl font-black text-slate-950">Өөрийн урилгын линкээ хуваалцаарай</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Энэ линкээр бүртгүүлсэн хэрэглэгчийн баталгаажсан кредит цэнэглэлт бүрээс та 5%
-            кредитийн урамшуулал авна.
+            Энэ линкээр бүртгүүлсэн энгийн хэрэглэгчийн баталгаажсан кредит цэнэглэлт бүрээс та
+            10% кредитийн урамшуулал авна. Хэрэв агент агент уриад 150,000₮-ийн төлбөр нь
+            баталгаажвал урьсан агент 30%-ийн урамшуулал авна.
           </p>
 
           <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
@@ -88,14 +89,14 @@ export function ReferralPanel({
           </article>
 
           <article className="rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-4 shadow-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Баталгаажсан цэнэглэлт</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Урамшуулал өгсөн баталгаа</div>
             <div className="mt-2 text-3xl font-black text-slate-950">
               {formatNumber(summary.approved_topups)}
             </div>
           </article>
 
           <article className="rounded-[1.5rem] border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-cyan-700">Олсон referral credit</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-cyan-700">Олсон урамшууллын кредит</div>
             <div className="mt-2 text-3xl font-black text-slate-950">
               {formatNumber(summary.earned_credits)}
             </div>
