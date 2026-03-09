@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "r
 import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
+import { getVideoCredits } from "@/lib/generation-pricing";
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
-import type { GenerationPricingPreview } from "@/lib/types";
 import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
 
 type GenerateVideoResult = {
@@ -29,11 +29,9 @@ type VideoHistoryItem = {
 export function VideoGeneratorClient({
   currentCredits,
   history,
-  pricing,
 }: {
   currentCredits: number;
   history: VideoHistoryItem[];
-  pricing: GenerationPricingPreview;
 }) {
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -107,6 +105,7 @@ export function VideoGeneratorClient({
   async function handleSubmit() {
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
+    const currentCost = getVideoCredits(duration, quality);
 
     if (!file) {
       setError("Эх зураг сонгоно уу.");
@@ -123,8 +122,8 @@ export function VideoGeneratorClient({
       return;
     }
 
-    if (availableCredits < pricing.current_cost) {
-      setError(`Кредит хүрэлцэхгүй байна. ${pricing.current_cost} кредит шаардлагатай.`);
+    if (availableCredits < currentCost) {
+      setError(`Кредит хүрэлцэхгүй байна. ${currentCost} кредит шаардлагатай.`);
       return;
     }
 
@@ -182,7 +181,8 @@ export function VideoGeneratorClient({
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
-  const hasEnoughCredits = creditsRemaining >= pricing.current_cost;
+  const currentCost = getVideoCredits(duration, quality);
+  const hasEnoughCredits = creditsRemaining >= currentCost;
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,29rem)_minmax(0,1fr)]">
@@ -211,7 +211,31 @@ export function VideoGeneratorClient({
               </div>
             </div>
 
-            <GenerationPricingCard pricing={pricing} />
+            <GenerationPricingCard
+              currentCost={currentCost}
+              description="Runway pricing нь хугацаа болон чанараас хамаарна."
+              metrics={[
+                {
+                  label: "Үргэлжлэх хугацаа",
+                  value: `${duration} сек`,
+                  detail: quality === "720p" && duration === 5 ? "12 кредит" : "30 кредит",
+                },
+                {
+                  label: "Чанар",
+                  value: quality,
+                  detail:
+                    quality === "720p" && duration === 5
+                      ? "5с 720p = 12 кредит"
+                      : "10с 720p эсвэл 5с 1080p = 30 кредит",
+                },
+                {
+                  label: "Гарах үнэ",
+                  value: `${currentCost} кредит`,
+                  detail: "Видео бүрээр бодогдоно",
+                },
+              ]}
+              note="High-tier top-up (+10% bonus) үед effective үнэ 5с 720p-д ойролцоогоор $0.055, харин 10с 720p эсвэл 5с 1080p-д $0.136 байна."
+            />
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
@@ -381,7 +405,7 @@ export function VideoGeneratorClient({
                     Видео боловсруулж байна...
                   </>
                 ) : (
-                  `Видео үүсгэх · ${pricing.current_cost} кр`
+                  `Видео үүсгэх · ${currentCost} кр`
                 )}
               </button>
 
@@ -396,7 +420,7 @@ export function VideoGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {pricing.current_cost} кредит шаардлагатай.
+                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит шаардлагатай.
               </p>
             ) : null}
           </div>

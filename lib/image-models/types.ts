@@ -1,10 +1,13 @@
 export const ASPECT_RATIOS = ["1:1", "4:5", "16:9"] as const;
+export const IMAGE_RESOLUTIONS = ["1k", "2k", "4k"] as const;
 
 export type AspectRatio = (typeof ASPECT_RATIOS)[number];
+export type ImageResolution = (typeof IMAGE_RESOLUTIONS)[number];
 
 export type ImageGenerationInput = {
   prompt: string;
   aspectRatio: AspectRatio;
+  resolution: ImageResolution;
   referenceImages: string[];
 };
 

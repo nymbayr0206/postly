@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 import { getActiveModelNames } from "@/lib/env";
+import { getImageResolutionCost, type ImageResolution } from "@/lib/generation-pricing";
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getImageModelProvider } from "@/lib/image-models/registry";
 import { ASPECT_RATIOS, ImageModelError } from "@/lib/image-models/types";
-import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
+import { ensureUserRecords, getModelByName, getWallet } from "@/lib/user-data";
 
 const BUCKET = "reference-images";
 
@@ -58,6 +58,7 @@ async function resolveReferenceImages(images: string[], userId: string): Promise
 const requestSchema = z.object({
   prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой.").max(1000, "Промпт хэт урт байна."),
   aspect_ratio: z.enum(ASPECT_RATIOS),
+  resolution: z.enum(["1k", "2k", "4k"] as const).default("1k"),
   reference_images: z.array(z.string().min(1)).max(3).default([]),
 });
 
@@ -92,37 +93,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    console.log("[generate-image] step: ensureUserRecords");
     await ensureUserRecords(supabase, user);
 
-    console.log("[generate-image] step: getUserProfile");
-    const profile = await getUserProfile(supabase, user.id);
-
     const { nanoBananaModelName: modelName } = getActiveModelNames();
-    console.log("[generate-image] step: getModelByName →", modelName);
     const model = await getModelByName(supabase, modelName);
-    console.log("[generate-image] model found →", model);
-
     const wallet = await getWallet(supabase, user.id);
-    console.log("[generate-image] step: getWallet → credits:", wallet.credits);
-
-    const tariff = profile.tariff_id
-      ? await getTariffById(supabase, profile.tariff_id)
-      : await supabase
-          .from("tariffs")
-          .select("id,name,multiplier,created_at")
-          .eq("name", getDefaultTariffNameForRole(profile.role))
-          .maybeSingle()
-          .then(({ data, error }) => {
-            if (error || !data) {
-              throw new Error("Тариф олдсонгүй.");
-            }
-
-            return data;
-          });
-
-    const cost = calculateFinalCreditCost(model.base_cost, tariff.multiplier);
-    console.log("[generate-image] step: cost calculated →", cost, "tariff:", tariff.name);
+    const cost = getImageResolutionCost(parsed.data.resolution as ImageResolution);
 
     if (wallet.credits < cost) {
       return Response.json(
@@ -133,25 +109,22 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("[generate-image] step: getImageModelProvider →", model.name);
     const provider = getImageModelProvider(model.name);
 
     // base64 data URL-ийг Supabase Storage-ийн нийтийн https:// URL болгон хөрвүүлнэ
     // NanoBanana API зөвхөн https:// URL хүлээн авдаг
-    console.log("[generate-image] step: resolveReferenceImages");
     const resolvedImages = await resolveReferenceImages(parsed.data.reference_images, user.id);
-    console.log("[generate-image] resolved images:", resolvedImages.map((u) => u.slice(0, 60)));
-
-    console.log("[generate-image] step: calling provider.generateImage");
     const generation = await provider.generateImage({
       prompt: parsed.data.prompt,
       aspectRatio: parsed.data.aspect_ratio,
+      resolution: parsed.data.resolution,
       referenceImages: resolvedImages,
     });
     const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
       userId: user.id,
       modelName: model.name,
       kind: "image",
+      chargedCost: cost,
     });
 
     const { data: deducted, error: deductionError } = await supabase.rpc("create_generation_and_deduct", {

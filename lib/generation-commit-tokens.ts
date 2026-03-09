@@ -12,6 +12,7 @@ export async function issueGenerationCommitToken(
     userId: string;
     modelName: string;
     kind: GenerationKind;
+    chargedCost: number;
   },
 ) {
   const token = randomUUID();
@@ -22,6 +23,7 @@ export async function issueGenerationCommitToken(
     user_id: params.userId,
     model_name: params.modelName,
     generation_kind: params.kind,
+    charged_cost: params.chargedCost,
     expires_at: expiresAt,
   });
 

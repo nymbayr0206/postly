@@ -1,9 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-import { buildGenerationPricingPreview } from "@/lib/pricing";
 import type {
   AgentRequestRow,
-  GenerationPricingPreview,
   ModelRow,
   ReferralSummaryRow,
   TariffRow,
@@ -153,25 +151,6 @@ export async function getModels(supabase: SupabaseClient) {
   }
 
   return data ?? [];
-}
-
-export async function getGenerationPricingPreview(
-  supabase: SupabaseClient,
-  profile: Pick<UserRow, "role" | "tariff_id">,
-  modelName: string,
-): Promise<GenerationPricingPreview> {
-  const [model, tariffs] = await Promise.all([
-    getModelByName(supabase, modelName),
-    getTariffs(supabase),
-  ]);
-
-  return buildGenerationPricingPreview({
-    modelName: model.name,
-    baseCost: model.base_cost,
-    tariffs,
-    currentRole: profile.role,
-    currentTariffId: profile.tariff_id,
-  });
 }
 
 export async function getAgentRequestByUserId(supabase: SupabaseClient, userId: string) {

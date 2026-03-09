@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { VideoGeneratorClient } from "@/components/dashboard/video-generator-client";
-import { getActiveModelNames } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getGenerationPricingPreview, getUserProfile, getWallet } from "@/lib/user-data";
+import { getWallet } from "@/lib/user-data";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -22,8 +21,7 @@ export default async function VideoPage() {
     redirect("/auth");
   }
 
-  const [profile, wallet, { data: history }] = await Promise.all([
-    getUserProfile(supabase, user.id),
+  const [wallet, { data: history }] = await Promise.all([
     getWallet(supabase, user.id),
     supabase
       .from("video_generations")
@@ -32,12 +30,6 @@ export default async function VideoPage() {
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
-  const { runwayModelName } = getActiveModelNames();
-  const pricing = await getGenerationPricingPreview(
-    supabase,
-    profile,
-    runwayModelName,
-  );
 
   const items = (history ?? []).map((item) => ({
     ...item,
@@ -47,7 +39,7 @@ export default async function VideoPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
       <section className="brand-surface overflow-hidden rounded-[2rem]">
-        <VideoGeneratorClient currentCredits={wallet.credits} history={items} pricing={pricing} />
+        <VideoGeneratorClient currentCredits={wallet.credits} history={items} />
       </section>
     </div>
   );

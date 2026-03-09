@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 import { getActiveModelNames } from "@/lib/env";
+import { calculateAudioCreditsByCharacterCount, countDialogueCharacters } from "@/lib/generation-pricing";
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getAudioModelProvider } from "@/lib/audio-models/registry";
 import { ELEVENLABS_VOICES, AudioModelError } from "@/lib/audio-models/types";
-import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
+import { ensureUserRecords, getModelByName, getWallet } from "@/lib/user-data";
 
 const dialogueLineSchema = z.object({
   text: z.string().trim().min(1, "Ярианы текст хоосон байж болохгүй.").max(5000),
@@ -53,24 +53,11 @@ export async function POST(request: Request) {
   try {
     await ensureUserRecords(supabase, user);
 
-    const profile = await getUserProfile(supabase, user.id);
     const { elevenlabsModelName: modelName } = getActiveModelNames();
     const model = await getModelByName(supabase, modelName);
     const wallet = await getWallet(supabase, user.id);
-
-    const tariff = profile.tariff_id
-      ? await getTariffById(supabase, profile.tariff_id)
-      : await supabase
-          .from("tariffs")
-          .select("id,name,multiplier,created_at")
-          .eq("name", getDefaultTariffNameForRole(profile.role))
-          .maybeSingle()
-          .then(({ data, error }) => {
-            if (error || !data) throw new Error("Тариф олдсонгүй.");
-            return data;
-          });
-
-    const cost = calculateFinalCreditCost(model.base_cost, tariff.multiplier);
+    const totalCharacters = countDialogueCharacters(parsed.data.dialogue);
+    const cost = calculateAudioCreditsByCharacterCount(totalCharacters);
 
     if (wallet.credits < cost) {
       return Response.json(
@@ -89,6 +76,7 @@ export async function POST(request: Request) {
       userId: user.id,
       modelName: model.name,
       kind: "audio",
+      chargedCost: cost,
     });
 
     // Build a text summary of the dialogue for the prompt field

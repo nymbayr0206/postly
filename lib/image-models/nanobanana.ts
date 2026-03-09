@@ -97,6 +97,7 @@ export class NanoBananaProvider {
           input: {
             prompt: input.prompt,
             aspect_ratio: input.aspectRatio,
+            resolution: input.resolution,
             image_input: input.referenceImages,
           },
         }),

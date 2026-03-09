@@ -6,7 +6,11 @@ import { useRouter } from "next/navigation";
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import { ELEVENLABS_VOICES } from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
-import type { GenerationPricingPreview } from "@/lib/types";
+import {
+  calculateAudioCreditsByCharacterCount,
+  countDialogueCharacters,
+  formatCredits,
+} from "@/lib/generation-pricing";
 
 type DialogueLine = { text: string; voice: ElevenLabsVoice };
 
@@ -36,11 +40,9 @@ function createInitialLines(): DialogueLine[] {
 export function AudioGeneratorClient({
   currentCredits,
   history,
-  pricing,
 }: {
   currentCredits: number;
   history: AudioHistoryItem[];
-  pricing: GenerationPricingPreview;
 }) {
   const [lines, setLines] = useState<DialogueLine[]>(() => createInitialLines());
   const [stability, setStability] = useState(0.5);
@@ -77,14 +79,15 @@ export function AudioGeneratorClient({
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
     const filledLines = lines.filter((line) => line.text.trim().length > 0);
+    const currentCost = calculateAudioCreditsByCharacterCount(countDialogueCharacters(filledLines));
 
     if (filledLines.length === 0) {
       setError("Хамгийн багадаа нэг мөр текст оруулна уу.");
       return;
     }
 
-    if (availableCredits < pricing.current_cost) {
-      setError(`Кредит хүрэлцэхгүй байна. ${pricing.current_cost} кредит шаардлагатай.`);
+    if (availableCredits < currentCost) {
+      setError(`Кредит хүрэлцэхгүй байна. ${currentCost} кредит шаардлагатай.`);
       return;
     }
 
@@ -121,7 +124,9 @@ export function AudioGeneratorClient({
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
   const filledCount = lines.filter((line) => line.text.trim().length > 0).length;
-  const hasEnoughCredits = creditsRemaining >= pricing.current_cost;
+  const characterCount = countDialogueCharacters(lines);
+  const currentCost = calculateAudioCreditsByCharacterCount(characterCount);
+  const hasEnoughCredits = creditsRemaining >= currentCost;
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
@@ -147,7 +152,28 @@ export function AudioGeneratorClient({
               </div>
             </div>
 
-            <GenerationPricingCard pricing={pricing} />
+            <GenerationPricingCard
+              currentCost={currentCost}
+              description="ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд 14 кредитээр бодогдоно."
+              metrics={[
+                {
+                  label: "Нийт тэмдэгт",
+                  value: `${formatCredits(characterCount)}`,
+                  detail: "Оруулсан бүх мөрийн нийлбэр",
+                },
+                {
+                  label: "Тариф",
+                  value: "14 кредит",
+                  detail: "1,000 тэмдэгт тутамд",
+                },
+                {
+                  label: "Идэвхтэй мөр",
+                  value: `${filledCount}`,
+                  detail: "Хоосон бус мөр",
+                },
+              ]}
+              note="High-tier top-up (+10% bonus) үед effective үнэ ойролцоогоор $0.063 / 1,000 тэмдэгт болно."
+            />
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
@@ -275,7 +301,7 @@ export function AudioGeneratorClient({
                     Аудио боловсруулж байна...
                   </>
                 ) : (
-                  `Аудио үүсгэх · ${pricing.current_cost} кр`
+                  `Аудио үүсгэх · ${currentCost} кр`
                 )}
               </button>
 
@@ -290,7 +316,7 @@ export function AudioGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {pricing.current_cost} кредит шаардлагатай.
+                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит шаардлагатай.
               </p>
             ) : null}
           </div>

@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 import { getActiveModelNames } from "@/lib/env";
+import { getVideoCredits } from "@/lib/generation-pricing";
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getVideoModelProvider } from "@/lib/video-models/registry";
 import { VIDEO_QUALITIES, VideoModelError } from "@/lib/video-models/types";
-import { calculateFinalCreditCost, getDefaultTariffNameForRole } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords, getModelByName, getTariffById, getUserProfile, getWallet } from "@/lib/user-data";
+import { ensureUserRecords, getModelByName, getWallet } from "@/lib/user-data";
 
 const requestSchema = z.object({
   prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой.").max(1000),
@@ -50,24 +50,10 @@ export async function POST(request: Request) {
   try {
     await ensureUserRecords(supabase, user);
 
-    const profile = await getUserProfile(supabase, user.id);
     const { runwayModelName: modelName } = getActiveModelNames();
     const model = await getModelByName(supabase, modelName);
     const wallet = await getWallet(supabase, user.id);
-
-    const tariff = profile.tariff_id
-      ? await getTariffById(supabase, profile.tariff_id)
-      : await supabase
-          .from("tariffs")
-          .select("id,name,multiplier,created_at")
-          .eq("name", getDefaultTariffNameForRole(profile.role))
-          .maybeSingle()
-          .then(({ data, error }) => {
-            if (error || !data) throw new Error("Тариф олдсонгүй.");
-            return data;
-          });
-
-    const cost = calculateFinalCreditCost(model.base_cost, tariff.multiplier);
+    const cost = getVideoCredits(parsed.data.duration, parsed.data.quality);
 
     if (wallet.credits < cost) {
       return Response.json(
@@ -88,6 +74,7 @@ export async function POST(request: Request) {
       userId: user.id,
       modelName: model.name,
       kind: "video",
+      chargedCost: cost,
     });
 
     const { data: deducted, error: deductionError } = await supabase.rpc(

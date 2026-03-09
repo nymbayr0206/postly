@@ -4,7 +4,13 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
-import type { GenerationPricingPreview, ImageAspectRatio } from "@/lib/types";
+import {
+  getImageResolutionCost,
+  getImageResolutionDetail,
+  getImageResolutionLabel,
+  type ImageResolution,
+} from "@/lib/generation-pricing";
+import type { ImageAspectRatio } from "@/lib/types";
 
 type GenerateResult = {
   image_url: string;
@@ -34,6 +40,16 @@ const ASPECT_RATIOS: Array<{ value: ImageAspectRatio; label: string; detail: str
   { value: "16:9", label: "16:9", detail: "Cover болон баннер" },
 ];
 
+const IMAGE_RESOLUTION_OPTIONS: Array<{
+  value: ImageResolution;
+  label: string;
+  detail: string;
+}> = [
+  { value: "1k", label: "1K", detail: "8 кредит" },
+  { value: "2k", label: "2K", detail: "12 кредит" },
+  { value: "4k", label: "4K", detail: "18 кредит" },
+];
+
 const PROMPT_HINTS = [
   "Өнгө, гэрэлтүүлэг, камерын өнцгөө тодорхой бич.",
   "Брэндийн мэдрэмж, орчин, уур амьсгалаа оруул.",
@@ -42,13 +58,12 @@ const PROMPT_HINTS = [
 
 export function ImageGeneratorClient({
   currentCredits,
-  pricing,
 }: {
   currentCredits: number;
-  pricing: GenerationPricingPreview;
 }) {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState<ImageAspectRatio>("1:1");
+  const [resolution, setResolution] = useState<ImageResolution>("1k");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isPending, setIsPending] = useState(false);
@@ -122,14 +137,15 @@ export function ImageGeneratorClient({
     event.preventDefault();
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
+    const currentCost = getImageResolutionCost(resolution);
 
     if (!prompt.trim()) {
       setError("Prompt хоосон байна.");
       return;
     }
 
-    if (availableCredits < pricing.current_cost) {
-      setError(`Кредит хүрэлцэхгүй байна. ${pricing.current_cost} кредит шаардлагатай.`);
+    if (availableCredits < currentCost) {
+      setError(`Кредит хүрэлцэхгүй байна. ${currentCost} кредит шаардлагатай.`);
       return;
     }
 
@@ -143,6 +159,7 @@ export function ImageGeneratorClient({
         body: JSON.stringify({
           prompt,
           aspect_ratio: aspectRatio,
+          resolution,
           reference_images: referenceImages,
         }),
       });
@@ -172,7 +189,8 @@ export function ImageGeneratorClient({
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
-  const hasEnoughCredits = creditsRemaining >= pricing.current_cost;
+  const currentCost = getImageResolutionCost(resolution);
+  const hasEnoughCredits = creditsRemaining >= currentCost;
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
@@ -198,7 +216,28 @@ export function ImageGeneratorClient({
               </div>
             </div>
 
-            <GenerationPricingCard pricing={pricing} />
+            <GenerationPricingCard
+              currentCost={currentCost}
+              description="Nano Banana 2 нь resolution-оосоо хамаарч 1K, 2K, 4K сонголтоор өөр үнэ бодно."
+              metrics={[
+                {
+                  label: "Сонгосон нягтрал",
+                  value: getImageResolutionLabel(resolution),
+                  detail: getImageResolutionDetail(resolution),
+                },
+                {
+                  label: "Харьцаа",
+                  value: aspectRatio,
+                  detail: "Зургийн хэлбэр",
+                },
+                {
+                  label: "Лавлах зураг",
+                  value: `${files.length}/3`,
+                  detail: "Хүсвэл хавсаргана",
+                },
+              ]}
+              note="High-tier top-up (+10% bonus) үед effective үнэ 1K-д ойролцоогоор $0.036, 2K-д $0.054, 4K-д $0.081 болно."
+            />
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
@@ -331,6 +370,30 @@ export function ImageGeneratorClient({
                   </button>
                 ))}
               </div>
+
+              <div className="mt-5">
+                <h2 className="text-sm font-semibold text-slate-900">Нягтрал</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Nano Banana 2 pricing нь resolution-оосоо хамаарч өөр өөр байна.
+                </p>
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  {IMAGE_RESOLUTION_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setResolution(option.value)}
+                      className={`rounded-[1.25rem] border px-4 py-4 text-left transition ${
+                        resolution === option.value
+                          ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                      }`}
+                    >
+                      <p className="text-base font-semibold">{option.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">{option.detail}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </section>
           </div>
 
@@ -356,7 +419,7 @@ export function ImageGeneratorClient({
                     Зураг боловсруулж байна...
                   </>
                 ) : (
-                  `Зураг үүсгэх · ${pricing.current_cost} кр`
+                  `Зураг үүсгэх · ${currentCost} кр`
                 )}
               </button>
 
@@ -371,7 +434,7 @@ export function ImageGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {pricing.current_cost} кредит шаардлагатай.
+                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит шаардлагатай.
               </p>
             ) : null}
           </div>
@@ -403,8 +466,8 @@ export function ImageGeneratorClient({
                   <p className="mt-2 text-lg font-semibold">{files.length}</p>
                 </div>
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Формат</p>
-                  <p className="mt-2 text-lg font-semibold">PNG</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Нягтрал</p>
+                  <p className="mt-2 text-lg font-semibold">{getImageResolutionLabel(resolution)}</p>
                 </div>
               </div>
             </div>
