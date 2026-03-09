@@ -1,4 +1,4 @@
-import { getNanoBananaEnv } from "@/lib/env";
+﻿import { getNanoBananaEnv } from "@/lib/env";
 import {
   type ImageGenerationInput,
   type ImageGenerationOutput,
@@ -31,6 +31,18 @@ type ResultJson = {
   url?: string;
   imageUrl?: string;
 };
+
+function toProviderResolution(resolution: ImageGenerationInput["resolution"]) {
+  if (resolution === "2k") {
+    return "2K";
+  }
+
+  if (resolution === "4k") {
+    return "4K";
+  }
+
+  return "1K";
+}
 
 function getBaseApiUrl(createTaskUrl: string): string {
   // e.g. https://api.kie.ai/api/v1/jobs/createTask -> https://api.kie.ai/api/v1/jobs
@@ -82,6 +94,7 @@ export class NanoBananaProvider {
 
     const baseUrl = getBaseApiUrl(nanoBananaApiUrl);
     const deadline = Date.now() + nanoBananaTimeoutMs;
+    const providerResolution = toProviderResolution(input.resolution);
 
     // Step 1: Create the task
     let createResponse: Response;
@@ -97,7 +110,9 @@ export class NanoBananaProvider {
           input: {
             prompt: input.prompt,
             aspect_ratio: input.aspectRatio,
-            resolution: input.resolution,
+            resolution: providerResolution,
+            output_format: "jpg",
+            google_search: false,
             image_input: input.referenceImages,
           },
         }),
@@ -113,9 +128,13 @@ export class NanoBananaProvider {
       throw new ImageModelError("NanoBanana-аас ирсэн хариу буруу байна.", 502);
     }
 
-    if (!createResponse.ok || !createData.data?.taskId) {
+    if (!createResponse.ok || createData.code !== 200 || !createData.data?.taskId) {
+      const providerMessage = createData.msg?.trim();
+
       throw new ImageModelError(
-        "NanoBanana үүсгэлтийн даалгаврыг эхлүүлж чадсангүй. Дахин оролдоно уу.",
+        providerMessage && providerMessage !== "success"
+          ? `NanoBanana эхлүүлэх хүсэлт амжилтгүй боллоо: ${providerMessage}`
+          : "NanoBanana үүсгэлтийн даалгаврыг эхлүүлж чадсангүй. Дахин оролдоно уу.",
         createResponse.status >= 500 ? 502 : 400,
       );
     }

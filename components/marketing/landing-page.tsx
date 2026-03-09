@@ -1,10 +1,11 @@
+﻿import Image from "next/image";
 import Link from "next/link";
 
 import { PostlyLogo } from "@/components/brand/postly-logo";
 
 type ShowcaseKind = "image" | "video" | "audio";
 
-const showcaseItems: Array<{
+type ShowcaseItem = {
   kind: ShowcaseKind;
   eyebrow: string;
   title: string;
@@ -13,7 +14,9 @@ const showcaseItems: Array<{
   outputLabel: string;
   outputSummary: string;
   detail: string;
-}> = [
+};
+
+const showcaseItems: ShowcaseItem[] = [
   {
     kind: "video",
     eyebrow: "Видео үүсгэх",
@@ -33,10 +36,10 @@ const showcaseItems: Array<{
     description:
       "Бүтээгдэхүүний сурталчилгаа, social post, key visual зэргийг English prompt-оор тогтвортой бүтээнэ.",
     prompt:
-      "A cinematic product shot of a turquoise perfume bottle on reflective glass, soft cyan rim light, luxury advertising style, ultra clean background, premium commercial photography",
+      "A luxury perfume bottle centered on reflective black glass, turquoise glowing liquid, elegant gold cap, dramatic dark background, premium studio lighting, photorealistic advertising shot, high-end fragrance campaign",
     outputLabel: "Жишээ гарц",
-    outputSummary: "Luxury product campaign image",
-    detail: "1:1 format · clean cyan light · ad-ready composition",
+    outputSummary: "Luxury perfume campaign image",
+    detail: "Centered bottle · reflective black base · premium gold highlight",
   },
   {
     kind: "audio",
@@ -55,13 +58,16 @@ const showcaseItems: Array<{
 function ShowcasePreview({ kind }: { kind: ShowcaseKind }) {
   if (kind === "image") {
     return (
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-cyan-200/50 bg-[radial-gradient(circle_at_top,rgba(135,242,255,0.55),transparent_32%),linear-gradient(160deg,#081625,#0f2944_55%,#15395a)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(36,173,222,0.28),transparent_24%),radial-gradient(circle_at_80%_20%,rgba(165,249,255,0.22),transparent_26%)]" />
-        <div className="absolute bottom-8 left-1/2 h-10 w-48 -translate-x-1/2 rounded-full bg-cyan-300/30 blur-2xl" />
-        <div className="absolute left-1/2 top-[53%] h-48 w-28 -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-white/25 bg-[linear-gradient(180deg,rgba(175,250,255,0.92),rgba(44,188,230,0.78))] shadow-[0_25px_55px_rgba(27,194,231,0.35)]">
-          <div className="absolute left-1/2 top-4 h-8 w-14 -translate-x-1/2 rounded-b-[1.1rem] rounded-t-[0.8rem] border border-white/35 bg-white/55" />
-          <div className="absolute inset-x-4 bottom-5 h-20 rounded-[1.3rem] bg-[linear-gradient(180deg,rgba(8,21,37,0.18),rgba(8,21,37,0.38))]" />
-        </div>
+      <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-cyan-200/50 bg-[radial-gradient(circle_at_top,rgba(135,242,255,0.34),transparent_30%),linear-gradient(160deg,#071525,#0d2741_52%,#143553)]">
+        <Image
+          src="/unertei-us.jpg"
+          alt="Luxury perfume bottle showcase"
+          fill
+          priority
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,21,37,0.08),rgba(7,21,37,0.2))]" />
         <div className="absolute right-5 top-5 rounded-full border border-white/15 bg-white/8 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-cyan-100">
           Preview
         </div>
@@ -126,13 +132,7 @@ function ShowcasePreview({ kind }: { kind: ShowcaseKind }) {
   );
 }
 
-function PromptCard({
-  prompt,
-  eyebrow,
-}: {
-  prompt: string;
-  eyebrow: string;
-}) {
+function PromptCard({ prompt, eyebrow }: { prompt: string; eyebrow: string }) {
   return (
     <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/75 p-4 shadow-[0_20px_45px_rgba(3,10,19,0.22)]">
       <div className="flex items-center justify-between gap-3">
@@ -148,13 +148,7 @@ function PromptCard({
   );
 }
 
-function ShowcaseSection({
-  item,
-  reverse = false,
-}: {
-  item: (typeof showcaseItems)[number];
-  reverse?: boolean;
-}) {
+function ShowcaseSection({ item, reverse = false }: { item: ShowcaseItem; reverse?: boolean }) {
   return (
     <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-4 sm:p-6 lg:p-8">
       <div className={`grid gap-5 lg:grid-cols-2 lg:items-center ${reverse ? "lg:[&>*:first-child]:order-2" : ""}`}>
@@ -222,9 +216,8 @@ export function LandingPage() {
                   Prompt-оосоо зураг, видео, аудио бүтээдэг контент студио
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                  Postly.mn нь social post, campaign visual, short video, voiceover зэрэг контентоо
-                  нэг dashboard дотроос бүтээх урсгал. Prompt-оо English дээр бичээд, үр дүнгээ Монгол
-                  хэрэглээндээ шууд ашиглахад зориулагдсан.
+                  Postly.mn нь social post, campaign visual, short video, voiceover зэрэг контентоо нэг dashboard дотроос
+                  бүтээх урсгал. Prompt-оо English дээр бичээд, үр дүнгээ Монгол хэрэглээндээ шууд ашиглахад зориулагдсан.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
@@ -281,15 +274,13 @@ export function LandingPage() {
                   <div className="rounded-[1.5rem] border border-cyan-200/14 bg-white/6 p-4 text-white">
                     <div className="text-xs uppercase tracking-[0.22em] text-cyan-100">Prompt зөвлөмж</div>
                     <p className="mt-3 text-sm leading-6 text-slate-300">
-                      Subject, lighting, camera angle, mood-оо English дээр тодорхой бичих тусам үр дүн
-                      тогтвортой гарна.
+                      Subject, lighting, camera angle, mood-оо English дээр тодорхой бичих тусам үр дүн тогтвортой гарна.
                     </p>
                   </div>
                   <div className="rounded-[1.5rem] border border-cyan-200/14 bg-white/6 p-4 text-white">
                     <div className="text-xs uppercase tracking-[0.22em] text-cyan-100">Mobile flow</div>
                     <p className="mt-3 text-sm leading-6 text-slate-300">
-                      Доороос дээш action layout, том preview area, хурдан generate flow-оор гар утсанд
-                      илүү тохирсон.
+                      Доороос дээш action layout, том preview area, хурдан generate flow-оор гар утсанд илүү тохирсон.
                     </p>
                   </div>
                 </div>
@@ -323,20 +314,14 @@ export function LandingPage() {
 
           <div className="space-y-6">
             {showcaseItems.map((item, index) => (
-              <ShowcaseSection
-                key={item.kind}
-                item={item}
-                reverse={index % 2 === 1}
-              />
+              <ShowcaseSection key={item.kind} item={item} reverse={index % 2 === 1} />
             ))}
           </div>
 
           <section className="brand-surface rounded-[2rem] px-5 py-6 sm:px-7 lg:px-8">
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
-                <div className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-700">
-                  Дараагийн алхам
-                </div>
+                <div className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-700">Дараагийн алхам</div>
                 <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
                   Өөрийн prompt-оор шууд туршиж үзэхэд бэлэн
                 </h2>
@@ -347,10 +332,7 @@ export function LandingPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/auth"
-                  className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-                >
+                <Link href="/auth" className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
                   Нэвтрэх
                 </Link>
                 <Link
