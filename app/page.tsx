@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { LandingPage } from "@/components/marketing/landing-page";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -12,6 +13,6 @@ export default async function HomePage() {
     redirect("/dashboard");
   }
 
-  redirect("/auth");
+  return <LandingPage />;
 }
 
