@@ -39,9 +39,9 @@ export default async function AuthPage() {
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
-                ["NanoBanana", "Зураг үүсгэх"],
-                ["KIE.ai", "Видео үүсгэх"],
-                ["11Labs", "Аудио үүсгэх"],
+                ["Зураг үүсгэх", "Пост, product visual, campaign image"],
+                ["Видео үүсгэх", "Motion preview, reel, social clip"],
+                ["Аудио үүсгэх", "Voiceover, dialogue, ad audio"],
               ].map(([title, description]) => (
                 <div key={title} className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
                   <div className="text-sm font-semibold text-white">{title}</div>

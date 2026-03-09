@@ -190,13 +190,13 @@ export default async function DashboardPage() {
         <QuickCard
           href="/dashboard/image"
           title="Зураг үүсгэх"
-          description="NanoBanana-аар social пост, product visual, campaign image бүтээнэ."
+          description="Social пост, product visual, campaign image үүсгэнэ."
           accent="bg-[linear-gradient(135deg,#84E0EF,#2FBCE6)]"
         />
         <QuickCard
           href="/dashboard/video"
-          title="Зургаас видео"
-          description="Нэг зураг дээр тулгуурлан motion-тэй богино видео үүсгэнэ."
+          title="Видео үүсгэх"
+          description="Нэг зураг дээр тулгуурлан хөдөлгөөнт богино видео үүсгэнэ."
           accent="bg-[linear-gradient(135deg,#68E3D0,#2FBCE6)]"
         />
         <QuickCard
@@ -260,7 +260,7 @@ export default async function DashboardPage() {
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-slate-950">{generation.prompt}</div>
                     <div className="mt-2 text-xs text-slate-500">
-                      {generation.model_name} · {generation.cost} кредит · {formatDate(generation.created_at)}
+                      {generation.cost} кредит · {formatDate(generation.created_at)}
                     </div>
                   </div>
                   <a
