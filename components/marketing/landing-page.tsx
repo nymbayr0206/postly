@@ -20,9 +20,9 @@ const showcaseItems: ShowcaseItem[] = [
   {
     kind: "image",
     eyebrow: "Зураг үүсгэх",
-    title: "Campaign visual, poster, product shot-оо prompt-оос гаргана",
+    title: "Санаагаа poster, campaign visual, product shot болгоно",
     description:
-      "Бүтээгдэхүүний сурталчилгаа, social post, key visual зэргийг English prompt-оор тогтвортой бүтээнэ.",
+      "Бүтээгдэхүүний сурталчилгаа, social post, key visual зэргийг English тайлбараар тогтвортой бүтээнэ.",
     prompt:
       "A luxury perfume bottle centered on reflective black glass, turquoise glowing liquid, elegant gold cap, dramatic dark background, premium studio lighting, photorealistic advertising shot, high-end fragrance campaign",
     outputLabel: "Жишээ гарц",
@@ -32,9 +32,9 @@ const showcaseItems: ShowcaseItem[] = [
   {
     kind: "video",
     eyebrow: "Видео үүсгэх",
-    title: "Нэг зурагнаас хөдөлгөөнтэй богино reel бүтээнэ",
+    title: "Нэг зургаа хөдөлгөөнтэй teaser video болгоно",
     description:
-      "Зураг, scene motion, camera direction-оо нэг дор өгөөд social-ready богино видео гаргана.",
+      "Эх зураг, хөдөлгөөн, camera direction-оо нэг дор тайлбарлаад social-ready богино видео гаргана.",
     prompt:
       "Luxury cinematic perfume commercial animation. A turquoise glass perfume bottle labeled \"AURA\" standing on a glossy reflective surface in a dark elegant studio. Slow cinematic camera push-in. Soft golden light reflections move across the glass bottle and cap. Subtle mist and glowing perfume aura particles gently flow around the bottle. Elegant light rays appear from behind creating a luxury atmosphere. The reflection on the floor slowly shimmers. Ultra realistic, high-end perfume advertisement style, dramatic lighting, shallow depth of field, 4K cinematic look, smooth slow motion.",
     outputLabel: "Жишээ гарц",
@@ -132,7 +132,7 @@ function PromptCard({ prompt, eyebrow }: { prompt: string; eyebrow: string }) {
         <span className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100">
           {eyebrow}
         </span>
-        <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">English prompt</span>
+        <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">English example</span>
       </div>
       <div className="mt-4 rounded-[1.2rem] border border-white/8 bg-black/25 p-4 font-mono text-[13px] leading-6 text-slate-200">
         {prompt}
@@ -206,11 +206,11 @@ export function LandingPage() {
                   Mobile-first AI workspace
                 </div>
                 <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  Prompt-оосоо зураг, видео, аудио бүтээдэг контент студио
+                  Санаагаа poster, video, audio болгоорой
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
                   Postly.mn нь social post, campaign visual, short video, voiceover зэрэг контентоо нэг dashboard дотроос
-                  бүтээх урсгал. Prompt-оо English дээр бичээд, үр дүнгээ Монгол хэрэглээндээ шууд ашиглахад зориулагдсан.
+                  бүтээх урсгал. Хүссэн санаагаа English-ээр тайлбарлаад, гарсан үр дүнгээ Монгол хэрэглээндээ шууд ашиглахад зориулагдсан.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
@@ -235,7 +235,7 @@ export function LandingPage() {
                   </div>
                   <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-4">
                     <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Видео үүсгэх</div>
-                    <div className="mt-2 text-sm leading-6 text-slate-200">Prompt + source image-оос teaser clip</div>
+                    <div className="mt-2 text-sm leading-6 text-slate-200">Эх зураг + хөдөлгөөний тайлбараас teaser clip</div>
                   </div>
                   <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-4">
                     <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Аудио үүсгэх</div>
@@ -265,9 +265,9 @@ export function LandingPage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-[1.5rem] border border-cyan-200/14 bg-white/6 p-4 text-white">
-                    <div className="text-xs uppercase tracking-[0.22em] text-cyan-100">Prompt зөвлөмж</div>
+                    <div className="text-xs uppercase tracking-[0.22em] text-cyan-100">Тайлбарын зөвлөмж</div>
                     <p className="mt-3 text-sm leading-6 text-slate-300">
-                      Subject, lighting, camera angle, mood-оо English дээр тодорхой бичих тусам үр дүн тогтвортой гарна.
+                      Subject, lighting, camera angle, mood-оо English дээр тодорхой хэлэх тусам үр дүн илүү тогтвортой гарна.
                     </p>
                   </div>
                   <div className="rounded-[1.5rem] border border-cyan-200/14 bg-white/6 p-4 text-white">
