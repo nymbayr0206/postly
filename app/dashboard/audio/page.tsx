@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { AudioGeneratorClient } from "@/components/dashboard/audio-generator-client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getWallet } from "@/lib/user-data";
+import { getPlatformSettings, getWallet } from "@/lib/user-data";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -21,8 +21,9 @@ export default async function AudioPage() {
     redirect("/auth");
   }
 
-  const [wallet, { data: history }] = await Promise.all([
+  const [wallet, platformSettings, { data: history }] = await Promise.all([
     getWallet(supabase, user.id),
+    getPlatformSettings(supabase),
     supabase
       .from("audio_generations")
       .select("id,prompt,audio_url,model_name,cost,created_at")
@@ -39,7 +40,11 @@ export default async function AudioPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
       <section className="brand-surface overflow-hidden rounded-[2rem]">
-        <AudioGeneratorClient currentCredits={wallet.credits} history={items} />
+        <AudioGeneratorClient
+          currentCredits={wallet.credits}
+          history={items}
+          creditPriceMnt={platformSettings.credit_price_mnt}
+        />
       </section>
     </div>
   );

@@ -3,6 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type {
   AgentRequestRow,
   ModelRow,
+  PlatformSettingsRow,
   ReferralSummaryRow,
   TariffRow,
   UserRow,
@@ -183,4 +184,24 @@ export async function getReferralSummary(supabase: SupabaseClient, userId: strin
     approved_topups: Number(row?.approved_topups ?? 0),
     earned_credits: Number(row?.earned_credits ?? 0),
   } satisfies ReferralSummaryRow;
+}
+
+export async function getPlatformSettings(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from("platform_settings")
+    .select("id,credit_price_mnt,created_at,updated_at")
+    .maybeSingle<PlatformSettingsRow>();
+
+  if (error) {
+    throw new Error(`Платформын үнийн тохиргоо ачаалж чадсангүй: ${error.message}`);
+  }
+
+  return (
+    data ?? {
+      id: true,
+      credit_price_mnt: 10,
+      created_at: new Date(0).toISOString(),
+      updated_at: new Date(0).toISOString(),
+    }
+  );
 }

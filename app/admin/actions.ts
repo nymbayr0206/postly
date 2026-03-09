@@ -88,6 +88,28 @@ export async function updateModelCostAction(formData: FormData) {
   revalidateAdminAndDashboardPaths();
 }
 
+export async function updateCreditUnitPriceAction(formData: FormData) {
+  const creditPriceMnt = Number(formData.get("credit_price_mnt"));
+
+  if (!Number.isInteger(creditPriceMnt) || creditPriceMnt <= 0) {
+    throw new Error("1 кредитийн төгрөгийн үнэ буруу байна.");
+  }
+
+  const supabase = await requireAdmin();
+
+  const { error } = await supabase.from("platform_settings").upsert({
+    id: true,
+    credit_price_mnt: creditPriceMnt,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidateAdminAndDashboardPaths();
+}
+
 async function processCreditRequest(formData: FormData, status: "approved" | "rejected") {
   const requestId = String(formData.get("request_id") ?? "");
 

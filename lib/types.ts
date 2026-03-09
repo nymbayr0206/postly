@@ -89,3 +89,10 @@ export type ReferralSummaryRow = {
   earned_credits: number;
 };
 
+export type PlatformSettingsRow = {
+  id: true;
+  credit_price_mnt: number;
+  created_at: string;
+  updated_at: string;
+};
+

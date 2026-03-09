@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "r
 import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
-import { getVideoCredits } from "@/lib/generation-pricing";
+import { creditsToMnt, formatMnt, getVideoCredits } from "@/lib/generation-pricing";
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
 import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
 
@@ -29,9 +29,11 @@ type VideoHistoryItem = {
 export function VideoGeneratorClient({
   currentCredits,
   history,
+  creditPriceMnt,
 }: {
   currentCredits: number;
   history: VideoHistoryItem[];
+  creditPriceMnt: number;
 }) {
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -182,6 +184,7 @@ export function VideoGeneratorClient({
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
   const currentCost = getVideoCredits(duration, quality);
+  const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
 
   return (
@@ -213,12 +216,16 @@ export function VideoGeneratorClient({
 
             <GenerationPricingCard
               currentCost={currentCost}
+              currentCostDetail={formatMnt(currentCostMnt)}
               description="Runway pricing нь хугацаа болон чанараас хамаарна."
               metrics={[
                 {
                   label: "Үргэлжлэх хугацаа",
                   value: `${duration} сек`,
-                  detail: quality === "720p" && duration === 5 ? "12 кредит" : "30 кредит",
+                  detail:
+                    quality === "720p" && duration === 5
+                      ? `12 кредит · ${formatMnt(creditsToMnt(12, creditPriceMnt))}`
+                      : `30 кредит · ${formatMnt(creditsToMnt(30, creditPriceMnt))}`,
                 },
                 {
                   label: "Чанар",
@@ -405,7 +412,7 @@ export function VideoGeneratorClient({
                     Видео боловсруулж байна...
                   </>
                 ) : (
-                  `Видео үүсгэх · ${currentCost} кр`
+                  `Видео үүсгэх · ${currentCost} кр · ${formatMnt(currentCostMnt)}`
                 )}
               </button>
 
@@ -420,7 +427,7 @@ export function VideoGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит шаардлагатай.
+                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит буюу {formatMnt(currentCostMnt)} шаардлагатай.
               </p>
             ) : null}
           </div>

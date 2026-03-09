@@ -9,7 +9,9 @@ import type { ElevenLabsVoice } from "@/lib/audio-models/types";
 import {
   calculateAudioCreditsByCharacterCount,
   countDialogueCharacters,
+  creditsToMnt,
   formatCredits,
+  formatMnt,
 } from "@/lib/generation-pricing";
 
 type DialogueLine = { text: string; voice: ElevenLabsVoice };
@@ -40,9 +42,11 @@ function createInitialLines(): DialogueLine[] {
 export function AudioGeneratorClient({
   currentCredits,
   history,
+  creditPriceMnt,
 }: {
   currentCredits: number;
   history: AudioHistoryItem[];
+  creditPriceMnt: number;
 }) {
   const [lines, setLines] = useState<DialogueLine[]>(() => createInitialLines());
   const [stability, setStability] = useState(0.5);
@@ -126,6 +130,7 @@ export function AudioGeneratorClient({
   const filledCount = lines.filter((line) => line.text.trim().length > 0).length;
   const characterCount = countDialogueCharacters(lines);
   const currentCost = calculateAudioCreditsByCharacterCount(characterCount);
+  const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
 
   return (
@@ -154,6 +159,7 @@ export function AudioGeneratorClient({
 
             <GenerationPricingCard
               currentCost={currentCost}
+              currentCostDetail={formatMnt(currentCostMnt)}
               description="ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд 14 кредитээр бодогдоно."
               metrics={[
                 {
@@ -164,7 +170,7 @@ export function AudioGeneratorClient({
                 {
                   label: "Тариф",
                   value: "14 кредит",
-                  detail: "1,000 тэмдэгт тутамд",
+                  detail: `1,000 тэмдэгт тутамд · ${formatMnt(creditsToMnt(14, creditPriceMnt))}`,
                 },
                 {
                   label: "Идэвхтэй мөр",
@@ -301,7 +307,7 @@ export function AudioGeneratorClient({
                     Аудио боловсруулж байна...
                   </>
                 ) : (
-                  `Аудио үүсгэх · ${currentCost} кр`
+                  `Аудио үүсгэх · ${currentCost} кр · ${formatMnt(currentCostMnt)}`
                 )}
               </button>
 
@@ -316,7 +322,7 @@ export function AudioGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит шаардлагатай.
+                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит буюу {formatMnt(currentCostMnt)} шаардлагатай.
               </p>
             ) : null}
           </div>

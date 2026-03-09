@@ -13,6 +13,14 @@ export function formatCredits(value: number) {
   return new Intl.NumberFormat("mn-MN").format(value);
 }
 
+export function formatMnt(value: number) {
+  return `${new Intl.NumberFormat("mn-MN").format(value)}₮`;
+}
+
+export function creditsToMnt(credits: number, creditPriceMnt: number) {
+  return credits * creditPriceMnt;
+}
+
 export function getImageResolutionLabel(resolution: ImageResolution) {
   if (resolution === "1k") {
     return "1K";
@@ -98,14 +106,14 @@ export function getStartingCreditsForModel(modelName: string) {
   return 1;
 }
 
-export function getAdminPricingSummary(modelName: string) {
+export function getAdminPricingSummary(modelName: string, creditPriceMnt: number) {
   if (modelName === "elevenlabs/text-to-dialogue-v3") {
     return {
       title: "14 кредит / 1,000 тэмдэгт",
       description:
         "ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд 14 кредит. Дээд багцын +10% бонусоор effective үнэ ойролцоогоор $0.063 / 1,000 тэмдэгт болно.",
       bullets: [
-        "1,000 тэмдэгт: 14 кредит ≈ $0.07",
+        `1,000 тэмдэгт: 14 кредит · ${formatMnt(creditsToMnt(14, creditPriceMnt))}`,
         "High-tier top-up effective үнэ: ≈ $0.063 / 1,000 тэмдэгт",
       ],
     };
@@ -117,9 +125,9 @@ export function getAdminPricingSummary(modelName: string) {
       description:
         "Runway 5 секунд 720p нь 12 кредит. 10 секунд 720p эсвэл 5 секунд 1080p нь 30 кредит байна.",
       bullets: [
-        "5 секунд · 720p: 12 кредит ≈ $0.06",
-        "10 секунд · 720p: 30 кредит ≈ $0.15",
-        "5 секунд · 1080p: 30 кредит ≈ $0.15",
+        `5 секунд · 720p: 12 кредит · ${formatMnt(creditsToMnt(12, creditPriceMnt))}`,
+        `10 секунд · 720p: 30 кредит · ${formatMnt(creditsToMnt(30, creditPriceMnt))}`,
+        `5 секунд · 1080p: 30 кредит · ${formatMnt(creditsToMnt(30, creditPriceMnt))}`,
         "High-tier top-up effective үнэ: ≈ $0.055 болон ≈ $0.136",
       ],
     };
@@ -131,9 +139,9 @@ export function getAdminPricingSummary(modelName: string) {
       description:
         "Nano Banana 2 нь resolution-оосоо хамаарч 1K-д 8 кредит, 2K-д 12 кредит, 4K-д 18 кредит байна.",
       bullets: [
-        "1K: 8 кредит ≈ $0.04",
-        "2K: 12 кредит ≈ $0.06",
-        "4K: 18 кредит ≈ $0.09",
+        `1K: 8 кредит · ${formatMnt(creditsToMnt(8, creditPriceMnt))}`,
+        `2K: 12 кредит · ${formatMnt(creditsToMnt(12, creditPriceMnt))}`,
+        `4K: 18 кредит · ${formatMnt(creditsToMnt(18, creditPriceMnt))}`,
         "High-tier top-up effective үнэ: ≈ $0.036 / $0.054 / $0.081",
       ],
     };

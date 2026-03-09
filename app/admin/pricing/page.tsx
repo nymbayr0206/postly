@@ -1,14 +1,20 @@
-import { updateModelCostAction, updateTariffAction } from "@/app/admin/actions";
+import {
+  updateCreditUnitPriceAction,
+  updateModelCostAction,
+  updateTariffAction,
+} from "@/app/admin/actions";
 import { getActiveModelNames } from "@/lib/env";
 import {
+  creditsToMnt,
   formatCredits,
+  formatMnt,
   getAdminPricingSummary,
   getStartingCreditsForModel,
   isFixedPricingModel,
 } from "@/lib/generation-pricing";
 import { getModelDisplayName } from "@/lib/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getModels, getTariffs } from "@/lib/user-data";
+import { getModels, getPlatformSettings, getTariffs } from "@/lib/user-data";
 
 function roleLabel(name: string) {
   if (name === "Agent") {
@@ -24,8 +30,16 @@ function roleLabel(name: string) {
 
 export default async function AdminPricingPage() {
   const supabase = await createSupabaseServerClient();
-  const [tariffs, models] = await Promise.all([getTariffs(supabase), getModels(supabase)]);
+  const [tariffs, models, platformSettings] = await Promise.all([
+    getTariffs(supabase),
+    getModels(supabase),
+    getPlatformSettings(supabase),
+  ]);
   const env = getActiveModelNames();
+
+  const regularTariffMultiplier =
+    tariffs.find((tariff) => tariff.name === "Regular User")?.multiplier ?? 1;
+  const agentTariffMultiplier = tariffs.find((tariff) => tariff.name === "Agent")?.multiplier ?? 1;
 
   const activeModelMap = new Map<string, string>([
     [env.nanoBananaModelName, "Зураг үүсгэх"],
@@ -46,10 +60,16 @@ export default async function AdminPricingPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-5">
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Нийт model</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{models.length}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">1 кредитийн үнэ</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">
+            {formatMnt(platformSettings.credit_price_mnt)}
+          </p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Зургийн үнэ</p>
@@ -67,7 +87,73 @@ export default async function AdminPricingPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-6 py-4">
-          <h1 className="text-xl font-semibold text-slate-900">Тарифын үржүүлэгч</h1>
+          <h1 className="text-xl font-semibold text-slate-900">1 кредитийн төгрөгийн үнэ</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Админ энд `1 кредит = X₮` гэж тохируулна. Хэрэглэгч generate хийхийн өмнө credit-ийн
+            хажууд төгрөгийн эквивалент автоматаар гарна.
+          </p>
+        </div>
+
+        <div className="px-6 py-5">
+          <form action={updateCreditUnitPriceAction} className="grid gap-4 lg:grid-cols-[minmax(0,16rem)_1fr]">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Одоогийн утга</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900">
+                {formatMnt(platformSettings.credit_price_mnt)}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <label className="flex-1">
+                  <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    1 кредитийн үнэ (₮)
+                  </span>
+                  <input
+                    type="number"
+                    name="credit_price_mnt"
+                    min={1}
+                    step={1}
+                    defaultValue={platformSettings.credit_price_mnt}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Хадгалах
+                </button>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">8 кредит</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-950">
+                    {formatMnt(creditsToMnt(8, platformSettings.credit_price_mnt))}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">14 кредит</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-950">
+                    {formatMnt(creditsToMnt(14, platformSettings.credit_price_mnt))}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">30 кредит</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-950">
+                    {formatMnt(creditsToMnt(30, platformSettings.credit_price_mnt))}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h2 className="text-xl font-semibold text-slate-900">Тарифын үржүүлэгч</h2>
           <p className="mt-1 text-sm text-slate-500">
             Идэвхтэй image, audio, video flow нь fixed pricing ашиглаж байна. Доорх үржүүлэгч нь
             нөөц болон legacy model-уудад л үйлчилнэ.
@@ -91,7 +177,7 @@ export default async function AdminPricingPage() {
                 <input type="hidden" name="tariff_id" value={tariff.id} />
                 <label className="flex-1">
                   <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                      Үржүүлэгч
+                    Үржүүлэгч
                   </span>
                   <input
                     type="number"
@@ -127,7 +213,7 @@ export default async function AdminPricingPage() {
           {orderedModels.map((model) => {
             const usageLabel = activeModelMap.get(model.name);
             const fixedPricing = isFixedPricingModel(model.name);
-            const summary = getAdminPricingSummary(model.name);
+            const summary = getAdminPricingSummary(model.name, platformSettings.credit_price_mnt);
 
             return (
               <article key={model.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -152,6 +238,14 @@ export default async function AdminPricingPage() {
                         <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Эхлэх үнэ</p>
                         <p className="mt-2 text-lg font-semibold text-slate-950">
                           {formatCredits(getStartingCreditsForModel(model.name))} кредит
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatMnt(
+                            creditsToMnt(
+                              getStartingCreditsForModel(model.name),
+                              platformSettings.credit_price_mnt,
+                            ),
+                          )}
                         </p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
@@ -183,13 +277,13 @@ export default async function AdminPricingPage() {
                       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                         <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Энгийн хэрэглэгч</p>
                         <p className="mt-2 text-lg font-semibold text-slate-950">
-                          {formatCredits(model.base_cost * (tariffs.find((tariff) => tariff.name === "Regular User")?.multiplier ?? 1))}
+                          {formatCredits(model.base_cost * regularTariffMultiplier)}
                         </p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                         <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Агент</p>
                         <p className="mt-2 text-lg font-semibold text-slate-950">
-                          {formatCredits(model.base_cost * (tariffs.find((tariff) => tariff.name === "Agent")?.multiplier ?? 1))}
+                          {formatCredits(model.base_cost * agentTariffMultiplier)}
                         </p>
                       </div>
                     </div>

@@ -10,12 +10,14 @@ function titleCaseValue(value: number | string) {
 
 export function GenerationPricingCard({
   currentCost,
+  currentCostDetail,
   description,
   metrics,
   note,
   className = "",
 }: {
   currentCost: number | string;
+  currentCostDetail?: string;
   description: string;
   metrics: PricingMetric[];
   note?: string;
@@ -36,6 +38,7 @@ export function GenerationPricingCard({
             {titleCaseValue(currentCost)}
             {typeof currentCost === "number" ? " кр" : ""}
           </p>
+          {currentCostDetail ? <p className="mt-1 text-xs text-cyan-800">{currentCostDetail}</p> : null}
         </div>
       </div>
 

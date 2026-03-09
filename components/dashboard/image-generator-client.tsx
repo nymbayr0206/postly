@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import {
+  creditsToMnt,
+  formatMnt,
   getImageResolutionCost,
   getImageResolutionDetail,
   getImageResolutionLabel,
@@ -58,8 +60,10 @@ const PROMPT_HINTS = [
 
 export function ImageGeneratorClient({
   currentCredits,
+  creditPriceMnt,
 }: {
   currentCredits: number;
+  creditPriceMnt: number;
 }) {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState<ImageAspectRatio>("1:1");
@@ -190,6 +194,7 @@ export function ImageGeneratorClient({
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
   const currentCost = getImageResolutionCost(resolution);
+  const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
 
   return (
@@ -218,12 +223,13 @@ export function ImageGeneratorClient({
 
             <GenerationPricingCard
               currentCost={currentCost}
+              currentCostDetail={formatMnt(currentCostMnt)}
               description="Nano Banana 2 нь resolution-оосоо хамаарч 1K, 2K, 4K сонголтоор өөр үнэ бодно."
               metrics={[
                 {
                   label: "Сонгосон нягтрал",
                   value: getImageResolutionLabel(resolution),
-                  detail: getImageResolutionDetail(resolution),
+                  detail: `${getImageResolutionDetail(resolution)} · ${formatMnt(currentCostMnt)}`,
                 },
                 {
                   label: "Харьцаа",
@@ -419,7 +425,7 @@ export function ImageGeneratorClient({
                     Зураг боловсруулж байна...
                   </>
                 ) : (
-                  `Зураг үүсгэх · ${currentCost} кр`
+                  `Зураг үүсгэх · ${currentCost} кр · ${formatMnt(currentCostMnt)}`
                 )}
               </button>
 
@@ -434,7 +440,7 @@ export function ImageGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит шаардлагатай.
+                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит буюу {formatMnt(currentCostMnt)} шаардлагатай.
               </p>
             ) : null}
           </div>

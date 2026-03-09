@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { VideoGeneratorClient } from "@/components/dashboard/video-generator-client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getWallet } from "@/lib/user-data";
+import { getPlatformSettings, getWallet } from "@/lib/user-data";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -21,8 +21,9 @@ export default async function VideoPage() {
     redirect("/auth");
   }
 
-  const [wallet, { data: history }] = await Promise.all([
+  const [wallet, platformSettings, { data: history }] = await Promise.all([
     getWallet(supabase, user.id),
+    getPlatformSettings(supabase),
     supabase
       .from("video_generations")
       .select("id,prompt,video_url,image_url,duration,quality,cost,created_at")
@@ -39,7 +40,11 @@ export default async function VideoPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
       <section className="brand-surface overflow-hidden rounded-[2rem]">
-        <VideoGeneratorClient currentCredits={wallet.credits} history={items} />
+        <VideoGeneratorClient
+          currentCredits={wallet.credits}
+          history={items}
+          creditPriceMnt={platformSettings.credit_price_mnt}
+        />
       </section>
     </div>
   );
