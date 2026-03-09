@@ -5,6 +5,7 @@ import type {
   AgentRequestRow,
   GenerationPricingPreview,
   ModelRow,
+  ReferralSummaryRow,
   TariffRow,
   UserRow,
   WalletRow,
@@ -15,7 +16,11 @@ function isDuplicateViolation(code: string | undefined) {
 }
 
 export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
-  const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
+  const { data: profile } = await supabase
+    .from("users")
+    .select("id,referral_code")
+    .eq("id", user.id)
+    .maybeSingle<{ id: string; referral_code: string | null }>();
 
   if (!profile) {
     const { data: regularTariff } = await supabase
@@ -53,7 +58,7 @@ export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
 export async function getUserProfile(supabase: SupabaseClient, userId: string) {
   const { data, error } = await supabase
     .from("users")
-    .select("id,email,role,tariff_id,created_at")
+    .select("id,email,role,tariff_id,referral_code,referred_by_user_id,created_at")
     .eq("id", userId)
     .maybeSingle<UserRow>();
 
@@ -181,4 +186,22 @@ export async function getAgentRequestByUserId(supabase: SupabaseClient, userId: 
   }
 
   return data ?? null;
+}
+
+export async function getReferralSummary(supabase: SupabaseClient, userId: string) {
+  const { data, error } = await supabase.rpc("get_referral_summary", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    throw new Error(`Урилгын мэдээлэл ачаалж чадсангүй: ${error.message}`);
+  }
+
+  const row = (Array.isArray(data) ? data[0] : data) as Partial<ReferralSummaryRow> | null;
+
+  return {
+    invited_users: Number(row?.invited_users ?? 0),
+    approved_topups: Number(row?.approved_topups ?? 0),
+    earned_credits: Number(row?.earned_credits ?? 0),
+  } satisfies ReferralSummaryRow;
 }

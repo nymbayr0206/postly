@@ -76,7 +76,7 @@ export default async function AdminCreditsPage() {
       .from("credit_requests")
       .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,payment_screenshot_url,status,created_at")
       .order("created_at", { ascending: false }),
-    supabase.from("users").select("id,email,role,tariff_id,created_at"),
+    supabase.from("users").select("id,email,role,tariff_id,referral_code,referred_by_user_id,created_at"),
     supabase.from("wallets").select("id,user_id,credits,created_at"),
   ]);
 

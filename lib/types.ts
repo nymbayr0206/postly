@@ -23,6 +23,8 @@ export type UserRow = {
   email: string;
   role: UserRole;
   tariff_id: string | null;
+  referral_code: string | null;
+  referred_by_user_id: string | null;
   created_at: string;
 };
 
@@ -79,5 +81,11 @@ export type GenerationPricingPreview = {
   regular_user_cost: number;
   agent_multiplier: number;
   agent_cost: number;
+};
+
+export type ReferralSummaryRow = {
+  invited_users: number;
+  approved_topups: number;
+  earned_credits: number;
 };
 

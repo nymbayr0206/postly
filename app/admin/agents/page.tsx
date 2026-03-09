@@ -59,7 +59,7 @@ export default async function AdminAgentsPage() {
       .from("agent_requests")
       .select("id,user_id,amount_mnt,payment_screenshot_url,status,created_at,updated_at")
       .order("created_at", { ascending: false }),
-    supabase.from("users").select("id,email,role,tariff_id,created_at"),
+    supabase.from("users").select("id,email,role,tariff_id,referral_code,referred_by_user_id,created_at"),
     supabase.from("wallets").select("id,user_id,credits,created_at"),
   ]);
 

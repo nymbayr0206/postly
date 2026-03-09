@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ReferralPanel } from "@/components/dashboard/referral-panel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GenerationRow } from "@/lib/types";
 import {
   ensureUserRecords,
   getAgentRequestByUserId,
+  getReferralSummary,
   getUserProfile,
   getWallet,
 } from "@/lib/user-data";
@@ -77,10 +79,11 @@ export default async function DashboardPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, agentRequest, generationsResponse] = await Promise.all([
+  const [profile, wallet, agentRequest, referralSummary, generationsResponse] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getAgentRequestByUserId(supabase, user.id),
+    getReferralSummary(supabase, user.id),
     supabase
       .from("generations")
       .select("id,user_id,model_name,prompt,aspect_ratio,cost,image_url,created_at")
@@ -107,8 +110,9 @@ export default async function DashboardPage() {
               Нэг dashboard дотор контентын бүх урсгалаа удирд.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-              Mobile дээр хурдан, desktop дээр бүтэн удирдлагатай ажиллах байдлаар зохиов.
-              Зураг, видео, аудио үүсгэлт болон кредитийн урсгалууд бүгд нэг орчинд байна.
+              Зураг, видео, аудио үүсгэлт болон кредитийн урсгалууд нэг орчинд байна. Одоо
+              өөрийн урилгын линкээ түгээж, бүртгүүлсэн хэрэглэгчдийн кредит цэнэглэлтээс 5%
+              урамшуулал авах боломжтой.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -146,6 +150,10 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      {profile.referral_code ? (
+        <ReferralPanel referralCode={profile.referral_code} summary={referralSummary} />
+      ) : null}
+
       {profile.role === "agent" ? (
         <section className="brand-surface rounded-[1.75rem] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -153,7 +161,7 @@ export default async function DashboardPage() {
               <div className="text-sm font-semibold text-cyan-700">Агентын статус</div>
               <h2 className="mt-1 text-xl font-black text-slate-950">Хичээлийн хэсэг идэвхтэй</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Агентын сургалтын материалууд тань бэлэн. Шинэ материалуудаа тэндээс үзнэ үү.
+                Агентын сургалтын материалууд тань бэлэн байна. Шинэ материалуудаа тэндээс үзнэ үү.
               </p>
             </div>
             <Link
@@ -173,7 +181,7 @@ export default async function DashboardPage() {
                 Төлөв: {requestStatusLabel(agentRequest.status)}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Төлбөрийн баримтаа шалгаж, шаардлагатай бол шинэчилж илгээх боломжтой.
+                Төлбөрийн баримтаа шалгаад, шаардлагатай бол шинэчилж илгээх боломжтой.
               </p>
             </div>
             <Link
@@ -190,7 +198,7 @@ export default async function DashboardPage() {
         <QuickCard
           href="/dashboard/image"
           title="Зураг үүсгэх"
-          description="Social пост, product visual, campaign image үүсгэнэ."
+          description="Сошиал пост, product visual, campaign image үүсгэнэ."
           accent="bg-[linear-gradient(135deg,#84E0EF,#2FBCE6)]"
         />
         <QuickCard
@@ -202,13 +210,13 @@ export default async function DashboardPage() {
         <QuickCard
           href="/dashboard/audio"
           title="Аудио үүсгэх"
-          description="Харилцан яриаг олон хоолойгоор AI аудио болгон хөрвүүлнэ."
+          description="Харилцан яриа, voiceover, ad audio-г хурдан бүтээнэ."
           accent="bg-[linear-gradient(135deg,#9EE7F5,#56C9EC)]"
         />
         <QuickCard
           href="/dashboard/billing"
           title="Кредит худалдаж авах"
-          description="Package сонгож, шилжүүлгийн баримт илгээж кредитээ цэнэглэнэ."
+          description="Багц сонгож, шилжүүлгийн баримт илгээн кредитээ цэнэглэнэ."
           accent="bg-[linear-gradient(135deg,#84E0EF,#169FD5)]"
         />
         <QuickCard

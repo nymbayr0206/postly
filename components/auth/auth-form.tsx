@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { AGENT_APPROVAL_CREDITS, AGENT_SIGNUP_PRICE_MNT } from "@/lib/agent-config";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -17,8 +17,16 @@ function formatMnt(value: number) {
   return `${formatNumber(value)}₮`;
 }
 
+function normalizeReferralCode(value: string | null) {
+  const normalized = value?.trim().toUpperCase() ?? "";
+  return normalized.length > 0 ? normalized : null;
+}
+
 export function AuthForm() {
-  const [mode, setMode] = useState<Mode>("login");
+  const searchParams = useSearchParams();
+  const referralCode = normalizeReferralCode(searchParams.get("ref"));
+
+  const [mode, setMode] = useState<Mode>(referralCode ? "signup" : "login");
   const [requestedRole, setRequestedRole] = useState<RequestedRole>("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,8 +34,8 @@ export function AuthForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
-  const router = useRouter();
 
+  const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -69,13 +77,16 @@ export function AuthForm() {
       return;
     }
 
+    const metadata = {
+      requested_role: requestedRole,
+      ...(referralCode ? { referral_code: referralCode } : {}),
+    };
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
-        data: {
-          requested_role: requestedRole,
-        },
+        data: metadata,
       },
     });
 
@@ -113,10 +124,20 @@ export function AuthForm() {
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           {mode === "login"
-            ? "Хамгийн их ашиглагддаг контентын урсгалууд руу шууд орно."
+            ? "Контент үүсгэх үндсэн урсгалууд руу шууд орно."
             : "Энгийн хэрэглэгчээр шууд эхлэх эсвэл агентын эрхийн урсгал руу орно."}
         </p>
       </div>
+
+      {referralCode ? (
+        <div className="mb-5 rounded-[1.25rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+          <div className="font-semibold">Урилгын линкээр орж ирсэн байна</div>
+          <p className="mt-1 leading-6 text-cyan-800">
+            Та энэ дансаа бүртгүүлбэл таны уригч хэрэглэгч таны баталгаажсан кредит цэнэглэлт
+            бүрээс 5% урамшуулал авна.
+          </p>
+        </div>
+      ) : null}
 
       <div className="mb-5 grid grid-cols-2 gap-2 rounded-[1.25rem] bg-slate-100 p-1.5">
         <button
@@ -185,12 +206,20 @@ export function AuthForm() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className={`text-base font-bold ${requestedRole === "agent" ? "text-white" : "text-slate-950"}`}>
+                    <div
+                      className={`text-base font-bold ${
+                        requestedRole === "agent" ? "text-white" : "text-slate-950"
+                      }`}
+                    >
                       Агент
                     </div>
-                    <p className={`mt-1 text-sm ${requestedRole === "agent" ? "text-slate-300" : "text-slate-500"}`}>
-                      Төлбөрийн баталгаажуулалттай onboarding урсгал. Зөвшөөрөгдвөл
-                      {` ${formatNumber(AGENT_APPROVAL_CREDITS)} `}кредит болон Хичээл tab нээгдэнэ.
+                    <p
+                      className={`mt-1 text-sm ${
+                        requestedRole === "agent" ? "text-slate-300" : "text-slate-500"
+                      }`}
+                    >
+                      Төлбөрийн баталгаажуулалттай onboarding урсгал. Зөвшөөрөгдвөл{" "}
+                      {formatNumber(AGENT_APPROVAL_CREDITS)} кредит болон Хичээл tab нээгдэнэ.
                     </p>
                   </div>
                   <span
