@@ -281,62 +281,11 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section className="grid gap-4 sm:grid-cols-3">
-            <div className="brand-surface rounded-[1.6rem] p-5">
-              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Жишээ prompt</div>
-              <div className="mt-3 text-3xl font-black text-slate-950">3 төрлийн demo</div>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Зураг, видео, аудио урсгал тус бүр дээр ямар prompt-оор ямар output гарч болохыг шууд харуулна.
-              </p>
-            </div>
-            <div className="brand-surface rounded-[1.6rem] p-5">
-              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Prompt хэл</div>
-              <div className="mt-3 text-3xl font-black text-slate-950">English input</div>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                User-facing тайлбар нь Монгол, харин prompt жишээнүүдийг English-ээр өгч тогтвортой preview үзүүлнэ.
-              </p>
-            </div>
-            <div className="brand-surface rounded-[1.6rem] p-5">
-              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">CTA</div>
-              <div className="mt-3 text-3xl font-black text-slate-950">Шууд эхлэх</div>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Landing page-ээсээ шууд бүртгэл рүү орж, wallet credit-ээрээ generation flow-оо эхлүүлнэ.
-              </p>
-            </div>
-          </section>
-
           <div className="space-y-6">
             {showcaseItems.map((item, index) => (
               <ShowcaseSection key={item.kind} item={item} reverse={index % 2 === 1} />
             ))}
           </div>
-
-          <section className="brand-surface rounded-[2rem] px-5 py-6 sm:px-7 lg:px-8">
-            <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div>
-                <div className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-700">Дараагийн алхам</div>
-                <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-                  Өөрийн prompt-оор шууд туршиж үзэхэд бэлэн
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">
-                  Бүртгүүлээд dashboard дотроос зураг, видео, аудио generation flow-оо эхлүүл. Prompt-оо English дээр
-                  бичиж, гарах үр дүнгээ Монгол контентын хэрэглээндээ шууд ашиглана.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Link href="/auth" className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-                  Нэвтрэх
-                </Link>
-                <Link
-                  href="/auth"
-                  className="rounded-full bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] px-5 py-3 text-sm font-black text-slate-950"
-                >
-                  Бүртгүүлэх
-                </Link>
-              </div>
-            </div>
-          </section>
         </main>
       </div>
     </div>
