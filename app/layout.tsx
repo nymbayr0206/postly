@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   title: "Postly.mn",
   description: "Postly контент үүсгэх платформ",
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/postly-icon.png", type: "image/png" }],
+    shortcut: [{ url: "/postly-icon.png", type: "image/png" }],
+    apple: [{ url: "/postly-icon.png", type: "image/png" }],
   },
 };
 

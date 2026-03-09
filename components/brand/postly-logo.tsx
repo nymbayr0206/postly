@@ -17,15 +17,15 @@ export function PostlyLogo({
   showTagline = false,
   className,
 }: PostlyLogoProps) {
-  const src = showTagline ? "/postly-logo-badge.svg" : "/postly-logo.svg";
-  const intrinsic = showTagline ? { width: 520, height: 156 } : { width: 960, height: 260 };
+  const src = "/postly-logo.png";
+  const intrinsic = { width: 1080, height: 413 };
   const sizeClass = showTagline
     ? compact
-      ? "w-[160px] sm:w-[172px]"
-      : "w-[216px] sm:w-[246px]"
+      ? "w-[134px] sm:w-[148px]"
+      : "w-[198px] sm:w-[228px]"
     : compact
-      ? "w-[142px] sm:w-[156px]"
-      : "w-[248px] sm:w-[288px]";
+      ? "w-[134px] sm:w-[148px]"
+      : "w-[220px] sm:w-[254px]";
   const shadowClass =
     tone === "light"
       ? "drop-shadow-[0_0_22px_rgba(91,240,255,0.24)]"
@@ -39,8 +39,8 @@ export function PostlyLogo({
         width={intrinsic.width}
         height={intrinsic.height}
         priority={showTagline}
-        sizes={compact ? "160px" : "280px"}
-        className={cx("h-auto w-full", shadowClass)}
+        sizes={compact ? "148px" : "254px"}
+        className={cx("h-auto w-full rounded-[1.2rem]", shadowClass)}
       />
     </div>
   );
