@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { AGENT_APPROVAL_CREDITS, AGENT_SIGNUP_PRICE_MNT } from "@/lib/agent-config";
+import { REFERRAL_SIGNUP_BONUS_MNT } from "@/lib/referral-config";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Mode = "login" | "signup";
@@ -133,8 +134,7 @@ export function AuthForm() {
         <div className="mb-5 rounded-[1.25rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
           <div className="font-semibold">Урилгын линкээр орж ирсэн байна</div>
           <p className="mt-1 leading-6 text-cyan-800">
-            Та энэ дансаа бүртгүүлбэл таны уригч хэрэглэгч таны баталгаажсан кредит цэнэглэлт
-            бүрээс 5% урамшуулал авна.
+            Энэ линкээр энгийн хэрэглэгчээр бүртгүүлбэл {formatMnt(REFERRAL_SIGNUP_BONUS_MNT)}-ийн үнэтэй үнэгүй кредит шууд авна.
           </p>
         </div>
       ) : null}

@@ -1,0 +1,1 @@
+export const REFERRAL_SIGNUP_BONUS_MNT = 5000;
