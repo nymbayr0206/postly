@@ -246,7 +246,6 @@ export function VideoGeneratorClient({
                   detail: "Видео бүрээр бодогдоно",
                 },
               ]}
-              note="High-tier top-up (+10% bonus) үед effective үнэ 5с 720p-д ойролцоогоор $0.055, харин 10с 720p эсвэл 5с 1080p-д $0.136 байна."
             />
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">

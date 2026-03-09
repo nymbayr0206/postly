@@ -183,7 +183,6 @@ export function AudioGeneratorClient({
                   detail: "Хоосон бус мөр",
                 },
               ]}
-              note="High-tier top-up (+10% bonus) үед effective үнэ ойролцоогоор $0.063 / 1,000 тэмдэгт болно."
             />
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
