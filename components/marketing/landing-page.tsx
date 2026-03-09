@@ -18,18 +18,6 @@ type ShowcaseItem = {
 
 const showcaseItems: ShowcaseItem[] = [
   {
-    kind: "video",
-    eyebrow: "Видео үүсгэх",
-    title: "Нэг зурагнаас хөдөлгөөнтэй богино reel бүтээнэ",
-    description:
-      "Зураг, scene motion, camera direction-оо нэг дор өгөөд social-ready богино видео гаргана.",
-    prompt:
-      "Luxury cinematic perfume commercial animation. A turquoise glass perfume bottle labeled \"AURA\" standing on a glossy reflective surface in a dark elegant studio. Slow cinematic camera push-in. Soft golden light reflections move across the glass bottle and cap. Subtle mist and glowing perfume aura particles gently flow around the bottle. Elegant light rays appear from behind creating a luxury atmosphere. The reflection on the floor slowly shimmers. Ultra realistic, high-end perfume advertisement style, dramatic lighting, shallow depth of field, 4K cinematic look, smooth slow motion.",
-    outputLabel: "Жишээ гарц",
-    outputSummary: "Luxury perfume commercial motion preview",
-    detail: "Slow push-in · glowing mist particles · reflective studio floor",
-  },
-  {
     kind: "image",
     eyebrow: "Зураг үүсгэх",
     title: "Campaign visual, poster, product shot-оо prompt-оос гаргана",
@@ -40,6 +28,18 @@ const showcaseItems: ShowcaseItem[] = [
     outputLabel: "Жишээ гарц",
     outputSummary: "Luxury perfume campaign image",
     detail: "Centered bottle · reflective black base · premium gold highlight",
+  },
+  {
+    kind: "video",
+    eyebrow: "Видео үүсгэх",
+    title: "Нэг зурагнаас хөдөлгөөнтэй богино reel бүтээнэ",
+    description:
+      "Зураг, scene motion, camera direction-оо нэг дор өгөөд social-ready богино видео гаргана.",
+    prompt:
+      "Luxury cinematic perfume commercial animation. A turquoise glass perfume bottle labeled \"AURA\" standing on a glossy reflective surface in a dark elegant studio. Slow cinematic camera push-in. Soft golden light reflections move across the glass bottle and cap. Subtle mist and glowing perfume aura particles gently flow around the bottle. Elegant light rays appear from behind creating a luxury atmosphere. The reflection on the floor slowly shimmers. Ultra realistic, high-end perfume advertisement style, dramatic lighting, shallow depth of field, 4K cinematic look, smooth slow motion.",
+    outputLabel: "Жишээ гарц",
+    outputSummary: "Luxury perfume commercial motion preview",
+    detail: "Slow push-in · glowing mist particles · reflective studio floor",
   },
   {
     kind: "audio",
