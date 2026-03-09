@@ -9,6 +9,7 @@ import type {
   UserRow,
   WalletRow,
 } from "@/lib/types";
+import { getDefaultTariffNameForRole } from "@/lib/pricing";
 
 function isDuplicateViolation(code: string | undefined) {
   return code === "23505";
@@ -120,6 +121,31 @@ export async function getTariffs(supabase: SupabaseClient) {
   }
 
   return data ?? [];
+}
+
+export async function getEffectiveTariffForProfile(
+  supabase: SupabaseClient,
+  profile: Pick<UserRow, "role" | "tariff_id">,
+) {
+  if (profile.tariff_id) {
+    return getTariffById(supabase, profile.tariff_id);
+  }
+
+  const tariffs = await getTariffs(supabase);
+  const fallbackTariffName = getDefaultTariffNameForRole(profile.role);
+  const fallbackTariff = tariffs.find((tariff) => tariff.name === fallbackTariffName);
+
+  if (fallbackTariff) {
+    return fallbackTariff;
+  }
+
+  const regularTariff = tariffs.find((tariff) => tariff.name === "Regular User");
+
+  if (regularTariff) {
+    return regularTariff;
+  }
+
+  throw new Error("Тарифын мэдээлэл олдсонгүй.");
 }
 
 export async function getModelByName(supabase: SupabaseClient, modelName: string) {

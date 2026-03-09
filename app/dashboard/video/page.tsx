@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 
 import { VideoGeneratorClient } from "@/components/dashboard/video-generator-client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getPlatformSettings, getWallet } from "@/lib/user-data";
+import {
+  getEffectiveTariffForProfile,
+  getPlatformSettings,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -21,7 +26,8 @@ export default async function VideoPage() {
     redirect("/auth");
   }
 
-  const [wallet, platformSettings, { data: history }] = await Promise.all([
+  const [profile, wallet, platformSettings, { data: history }] = await Promise.all([
+    getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
     supabase
@@ -36,6 +42,7 @@ export default async function VideoPage() {
     ...item,
     created_at_label: formatDate(item.created_at),
   }));
+  const tariff = await getEffectiveTariffForProfile(supabase, profile);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
@@ -44,6 +51,7 @@ export default async function VideoPage() {
           currentCredits={wallet.credits}
           history={items}
           creditPriceMnt={platformSettings.credit_price_mnt}
+          tariffMultiplier={tariff.multiplier}
         />
       </section>
     </div>

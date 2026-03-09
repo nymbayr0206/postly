@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 
 import { ImageGeneratorClient } from "@/components/dashboard/image-generator-client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getPlatformSettings, getWallet } from "@/lib/user-data";
+import {
+  getEffectiveTariffForProfile,
+  getPlatformSettings,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 export default async function ImagePage() {
   const supabase = await createSupabaseServerClient();
@@ -14,10 +19,12 @@ export default async function ImagePage() {
     redirect("/auth");
   }
 
-  const [wallet, platformSettings] = await Promise.all([
+  const [profile, wallet, platformSettings] = await Promise.all([
+    getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
   ]);
+  const tariff = await getEffectiveTariffForProfile(supabase, profile);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
@@ -25,6 +32,7 @@ export default async function ImagePage() {
         <ImageGeneratorClient
           currentCredits={wallet.credits}
           creditPriceMnt={platformSettings.credit_price_mnt}
+          tariffMultiplier={tariff.multiplier}
         />
       </section>
     </div>

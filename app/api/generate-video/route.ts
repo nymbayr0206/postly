@@ -5,9 +5,16 @@ import { getVideoCredits } from "@/lib/generation-pricing";
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getVideoModelProvider } from "@/lib/video-models/registry";
 import { VIDEO_QUALITIES, VideoModelError } from "@/lib/video-models/types";
+import { calculateFinalCreditCost } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords, getModelByName, getWallet } from "@/lib/user-data";
+import {
+  ensureUserRecords,
+  getEffectiveTariffForProfile,
+  getModelByName,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 const requestSchema = z.object({
   prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой.").max(1000),
@@ -51,9 +58,14 @@ export async function POST(request: Request) {
     await ensureUserRecords(supabase, user);
 
     const { runwayModelName: modelName } = getActiveModelNames();
-    const model = await getModelByName(supabase, modelName);
-    const wallet = await getWallet(supabase, user.id);
-    const cost = getVideoCredits(parsed.data.duration, parsed.data.quality);
+    const [profile, model, wallet] = await Promise.all([
+      getUserProfile(supabase, user.id),
+      getModelByName(supabase, modelName),
+      getWallet(supabase, user.id),
+    ]);
+    const tariff = await getEffectiveTariffForProfile(supabase, profile);
+    const baseCost = getVideoCredits(parsed.data.duration, parsed.data.quality);
+    const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {
       return Response.json(

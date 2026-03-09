@@ -12,6 +12,7 @@ import {
   getImageResolutionLabel,
   type ImageResolution,
 } from "@/lib/generation-pricing";
+import { calculateFinalCreditCost } from "@/lib/pricing";
 import type { ImageAspectRatio } from "@/lib/types";
 
 type GenerateResult = {
@@ -61,9 +62,11 @@ const PROMPT_HINTS = [
 export function ImageGeneratorClient({
   currentCredits,
   creditPriceMnt,
+  tariffMultiplier,
 }: {
   currentCredits: number;
   creditPriceMnt: number;
+  tariffMultiplier: number;
 }) {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState<ImageAspectRatio>("1:1");
@@ -141,7 +144,8 @@ export function ImageGeneratorClient({
     event.preventDefault();
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
-    const currentCost = getImageResolutionCost(resolution);
+    const baseCost = getImageResolutionCost(resolution);
+    const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (!prompt.trim()) {
       setError("Prompt хоосон байна.");
@@ -193,7 +197,8 @@ export function ImageGeneratorClient({
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
-  const currentCost = getImageResolutionCost(resolution);
+  const baseCost = getImageResolutionCost(resolution);
+  const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
 
@@ -229,7 +234,7 @@ export function ImageGeneratorClient({
                 {
                   label: "Сонгосон нягтрал",
                   value: getImageResolutionLabel(resolution),
-                  detail: `${getImageResolutionDetail(resolution)} · ${formatMnt(currentCostMnt)}`,
+                  detail: `${getImageResolutionDetail(resolution)} · ${formatMnt(creditsToMnt(baseCost, creditPriceMnt))}`,
                 },
                 {
                   label: "Харьцаа",

@@ -13,6 +13,7 @@ import {
   formatCredits,
   formatMnt,
 } from "@/lib/generation-pricing";
+import { calculateFinalCreditCost } from "@/lib/pricing";
 
 type DialogueLine = { text: string; voice: ElevenLabsVoice };
 
@@ -43,10 +44,12 @@ export function AudioGeneratorClient({
   currentCredits,
   history,
   creditPriceMnt,
+  tariffMultiplier,
 }: {
   currentCredits: number;
   history: AudioHistoryItem[];
   creditPriceMnt: number;
+  tariffMultiplier: number;
 }) {
   const [lines, setLines] = useState<DialogueLine[]>(() => createInitialLines());
   const [stability, setStability] = useState(0.5);
@@ -83,7 +86,8 @@ export function AudioGeneratorClient({
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
     const filledLines = lines.filter((line) => line.text.trim().length > 0);
-    const currentCost = calculateAudioCreditsByCharacterCount(countDialogueCharacters(filledLines));
+    const baseCost = calculateAudioCreditsByCharacterCount(countDialogueCharacters(filledLines));
+    const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (filledLines.length === 0) {
       setError("Хамгийн багадаа нэг мөр текст оруулна уу.");
@@ -129,7 +133,8 @@ export function AudioGeneratorClient({
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
   const filledCount = lines.filter((line) => line.text.trim().length > 0).length;
   const characterCount = countDialogueCharacters(lines);
-  const currentCost = calculateAudioCreditsByCharacterCount(characterCount);
+  const baseCost = calculateAudioCreditsByCharacterCount(characterCount);
+  const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
 

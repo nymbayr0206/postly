@@ -5,9 +5,16 @@ import { getImageResolutionCost, type ImageResolution } from "@/lib/generation-p
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getImageModelProvider } from "@/lib/image-models/registry";
 import { ASPECT_RATIOS, ImageModelError } from "@/lib/image-models/types";
+import { calculateFinalCreditCost } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords, getModelByName, getWallet } from "@/lib/user-data";
+import {
+  ensureUserRecords,
+  getEffectiveTariffForProfile,
+  getModelByName,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 const BUCKET = "reference-images";
 
@@ -96,9 +103,14 @@ export async function POST(request: Request) {
     await ensureUserRecords(supabase, user);
 
     const { nanoBananaModelName: modelName } = getActiveModelNames();
-    const model = await getModelByName(supabase, modelName);
-    const wallet = await getWallet(supabase, user.id);
-    const cost = getImageResolutionCost(parsed.data.resolution as ImageResolution);
+    const [profile, model, wallet] = await Promise.all([
+      getUserProfile(supabase, user.id),
+      getModelByName(supabase, modelName),
+      getWallet(supabase, user.id),
+    ]);
+    const tariff = await getEffectiveTariffForProfile(supabase, profile);
+    const baseCost = getImageResolutionCost(parsed.data.resolution as ImageResolution);
+    const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {
       return Response.json(

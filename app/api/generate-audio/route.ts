@@ -5,9 +5,16 @@ import { calculateAudioCreditsByCharacterCount, countDialogueCharacters } from "
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getAudioModelProvider } from "@/lib/audio-models/registry";
 import { ELEVENLABS_VOICES, AudioModelError } from "@/lib/audio-models/types";
+import { calculateFinalCreditCost } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords, getModelByName, getWallet } from "@/lib/user-data";
+import {
+  ensureUserRecords,
+  getEffectiveTariffForProfile,
+  getModelByName,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 const dialogueLineSchema = z.object({
   text: z.string().trim().min(1, "Ярианы текст хоосон байж болохгүй.").max(5000),
@@ -54,10 +61,15 @@ export async function POST(request: Request) {
     await ensureUserRecords(supabase, user);
 
     const { elevenlabsModelName: modelName } = getActiveModelNames();
-    const model = await getModelByName(supabase, modelName);
-    const wallet = await getWallet(supabase, user.id);
+    const [profile, model, wallet] = await Promise.all([
+      getUserProfile(supabase, user.id),
+      getModelByName(supabase, modelName),
+      getWallet(supabase, user.id),
+    ]);
+    const tariff = await getEffectiveTariffForProfile(supabase, profile);
     const totalCharacters = countDialogueCharacters(parsed.data.dialogue);
-    const cost = calculateAudioCreditsByCharacterCount(totalCharacters);
+    const baseCost = calculateAudioCreditsByCharacterCount(totalCharacters);
+    const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {
       return Response.json(

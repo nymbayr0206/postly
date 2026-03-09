@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import { creditsToMnt, formatMnt, getVideoCredits } from "@/lib/generation-pricing";
+import { calculateFinalCreditCost } from "@/lib/pricing";
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
 import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
 
@@ -30,10 +31,12 @@ export function VideoGeneratorClient({
   currentCredits,
   history,
   creditPriceMnt,
+  tariffMultiplier,
 }: {
   currentCredits: number;
   history: VideoHistoryItem[];
   creditPriceMnt: number;
+  tariffMultiplier: number;
 }) {
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -107,7 +110,8 @@ export function VideoGeneratorClient({
   async function handleSubmit() {
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
-    const currentCost = getVideoCredits(duration, quality);
+    const baseCost = getVideoCredits(duration, quality);
+    const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (!file) {
       setError("Эх зураг сонгоно уу.");
@@ -183,7 +187,8 @@ export function VideoGeneratorClient({
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
-  const currentCost = getVideoCredits(duration, quality);
+  const baseCost = getVideoCredits(duration, quality);
+  const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
 
