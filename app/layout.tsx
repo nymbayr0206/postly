@@ -29,8 +29,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="mn">
-      <body className={`${manrope.variable} ${jetBrainsMono.variable} antialiased`}>{children}</body>
+    <html lang="mn" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={`${manrope.variable} ${jetBrainsMono.variable} antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }
