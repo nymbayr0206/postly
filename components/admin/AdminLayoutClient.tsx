@@ -41,6 +41,24 @@ function CreditRequestsIcon({ className }: { className?: string }) {
   );
 }
 
+function WalletIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 7H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
+      <path d="M16 12h2" />
+      <path d="M4 7V5a2 2 0 0 1 2-2h12" />
+    </svg>
+  );
+}
+
 function PriceTagIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -209,6 +227,7 @@ const adminNavItems: NavItem[] = [
   { href: "/admin/pricing", label: "Үнэ ба model", icon: PriceTagIcon, exact: false },
   { href: "/admin/agents", label: "Агент хүсэлт", icon: AgentIcon, exact: false },
   { href: "/admin/credits", label: "Кредит хүсэлт", icon: CreditRequestsIcon, exact: false },
+  { href: "/admin/referrals", label: "Урамшууллын мөнгө", icon: WalletIcon, exact: false },
   { href: "/admin/users", label: "Хэрэглэгчид", icon: UsersIcon, exact: false, disabled: true },
   { href: "/admin/settings", label: "Тохиргоо", icon: SettingsIcon, exact: false, disabled: true },
 ];

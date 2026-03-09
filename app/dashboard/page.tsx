@@ -7,6 +7,7 @@ import type { GenerationRow } from "@/lib/types";
 import {
   ensureUserRecords,
   getAgentRequestByUserId,
+  getPlatformSettings,
   getReferralSummary,
   getUserProfile,
   getWallet,
@@ -79,11 +80,12 @@ export default async function DashboardPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, agentRequest, referralSummary, generationsResponse] = await Promise.all([
+  const [profile, wallet, agentRequest, referralSummary, platformSettings, generationsResponse] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getAgentRequestByUserId(supabase, user.id),
     getReferralSummary(supabase, user.id),
+    getPlatformSettings(supabase),
     supabase
       .from("generations")
       .select("id,user_id,model_name,prompt,aspect_ratio,cost,image_url,created_at")
@@ -112,8 +114,8 @@ export default async function DashboardPage() {
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
               Зураг, видео, аудио үүсгэлт болон кредитийн урсгалууд нэг орчинд байна. Одоо
               өөрийн урилгын линкээ түгээж, энгийн хэрэглэгчийн баталгаажсан кредит
-              цэнэглэлтээс 10%, агент агент уриад 150,000₮-ийн төлбөр нь баталгаажвал 30%
-              урамшуулал авах боломжтой.
+              цэнэглэлтээс 10%-ийн мөнгөн урамшуулал, агентын урилгын линкээр шинэ агент
+              баталгаажвал 30,000₮-ийн мөнгөн урамшуулал авах боломжтой.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -152,7 +154,11 @@ export default async function DashboardPage() {
       </section>
 
       {profile.referral_code ? (
-        <ReferralPanel referralCode={profile.referral_code} summary={referralSummary} />
+        <ReferralPanel
+          referralCode={profile.referral_code}
+          summary={referralSummary}
+          creditPriceMnt={platformSettings.credit_price_mnt}
+        />
       ) : null}
 
       {profile.role === "agent" ? (

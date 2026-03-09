@@ -85,8 +85,24 @@ export type GenerationPricingPreview = {
 
 export type ReferralSummaryRow = {
   invited_users: number;
-  approved_topups: number;
-  earned_credits: number;
+  reward_events: number;
+  earned_amount_mnt: number;
+  available_amount_mnt: number;
+  pending_payout_amount_mnt: number;
+  paid_out_amount_mnt: number;
+  converted_amount_mnt: number;
+};
+
+export type ReferralPayoutRequestRow = {
+  id: string;
+  user_id: string;
+  amount_mnt: number;
+  bank_name: string;
+  account_holder: string;
+  account_number: string;
+  status: CreditRequestStatus;
+  created_at: string;
+  updated_at: string;
 };
 
 export type PlatformSettingsRow = {

@@ -41,6 +41,7 @@ function revalidateAdminAndDashboardPaths() {
   revalidatePath("/admin/pricing");
   revalidatePath("/admin/credits");
   revalidatePath("/admin/agents");
+  revalidatePath("/admin/referrals");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/image");
   revalidatePath("/dashboard/audio");
@@ -152,6 +153,27 @@ async function processAgentRequest(formData: FormData, status: "approved" | "rej
   revalidateAdminAndDashboardPaths();
 }
 
+async function processReferralPayoutRequest(formData: FormData, status: "approved" | "rejected") {
+  const requestId = String(formData.get("request_id") ?? "");
+
+  if (!requestId) {
+    throw new Error("Урамшууллын мөнгөний хүсэлтийн мэдээлэл буруу байна.");
+  }
+
+  const supabase = await requireAdmin();
+
+  const { error } = await supabase.rpc("process_referral_payout_request", {
+    p_request_id: requestId,
+    p_status: status,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidateAdminAndDashboardPaths();
+}
+
 export async function approveCreditRequestAction(formData: FormData) {
   await processCreditRequest(formData, "approved");
 }
@@ -166,4 +188,12 @@ export async function approveAgentRequestAction(formData: FormData) {
 
 export async function rejectAgentRequestAction(formData: FormData) {
   await processAgentRequest(formData, "rejected");
+}
+
+export async function approveReferralPayoutRequestAction(formData: FormData) {
+  await processReferralPayoutRequest(formData, "approved");
+}
+
+export async function rejectReferralPayoutRequestAction(formData: FormData) {
+  await processReferralPayoutRequest(formData, "rejected");
 }

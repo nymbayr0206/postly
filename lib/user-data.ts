@@ -4,6 +4,7 @@ import type {
   AgentRequestRow,
   ModelRow,
   PlatformSettingsRow,
+  ReferralPayoutRequestRow,
   ReferralSummaryRow,
   TariffRow,
   UserRow,
@@ -207,9 +208,28 @@ export async function getReferralSummary(supabase: SupabaseClient, userId: strin
 
   return {
     invited_users: Number(row?.invited_users ?? 0),
-    approved_topups: Number(row?.approved_topups ?? 0),
-    earned_credits: Number(row?.earned_credits ?? 0),
+    reward_events: Number(row?.reward_events ?? 0),
+    earned_amount_mnt: Number(row?.earned_amount_mnt ?? 0),
+    available_amount_mnt: Number(row?.available_amount_mnt ?? 0),
+    pending_payout_amount_mnt: Number(row?.pending_payout_amount_mnt ?? 0),
+    paid_out_amount_mnt: Number(row?.paid_out_amount_mnt ?? 0),
+    converted_amount_mnt: Number(row?.converted_amount_mnt ?? 0),
   } satisfies ReferralSummaryRow;
+}
+
+export async function getReferralPayoutRequestsByUserId(supabase: SupabaseClient, userId: string) {
+  const { data, error } = await supabase
+    .from("referral_payout_requests")
+    .select("id,user_id,amount_mnt,bank_name,account_holder,account_number,status,created_at,updated_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .returns<ReferralPayoutRequestRow[]>();
+
+  if (error) {
+    throw new Error(`Урамшууллын мөнгөний хүсэлт ачаалж чадсангүй: ${error.message}`);
+  }
+
+  return data ?? [];
 }
 
 export async function getPlatformSettings(supabase: SupabaseClient) {
