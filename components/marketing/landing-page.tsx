@@ -24,10 +24,10 @@ const showcaseItems: ShowcaseItem[] = [
     description:
       "Зураг, scene motion, camera direction-оо нэг дор өгөөд social-ready богино видео гаргана.",
     prompt:
-      "The camera slowly pushes in as the violinist turns toward the warm window light, soft cloth movement, floating dust, cinematic depth of field, realistic skin motion",
+      "Luxury cinematic perfume commercial animation. A turquoise glass perfume bottle labeled \"AURA\" standing on a glossy reflective surface in a dark elegant studio. Slow cinematic camera push-in. Soft golden light reflections move across the glass bottle and cap. Subtle mist and glowing perfume aura particles gently flow around the bottle. Elegant light rays appear from behind creating a luxury atmosphere. The reflection on the floor slowly shimmers. Ultra realistic, high-end perfume advertisement style, dramatic lighting, shallow depth of field, 4K cinematic look, smooth slow motion.",
     outputLabel: "Жишээ гарц",
-    outputSummary: "5 секундийн cinematic teaser",
-    detail: "Warm studio scene · slow push-in · vertical social cut",
+    outputSummary: "Luxury perfume commercial motion preview",
+    detail: "Slow push-in · glowing mist particles · reflective studio floor",
   },
   {
     kind: "image",
@@ -78,28 +78,21 @@ function ShowcasePreview({ kind }: { kind: ShowcaseKind }) {
   if (kind === "video") {
     return (
       <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-cyan-200/50 bg-[linear-gradient(160deg,#071525,#0b2440_45%,#123558)]">
-        <div className="absolute inset-4 rounded-[1.25rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(248,194,126,0.34),transparent_28%),linear-gradient(160deg,rgba(85,47,19,0.95),rgba(17,16,22,0.95))] p-4">
-          <div className="flex h-full flex-col justify-between">
-            <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-amber-100/80">
-              Video preview
-            </div>
-            <div className="grid grid-cols-[0.7fr_1.3fr] gap-3">
-              <div className="rounded-[1rem] border border-white/8 bg-white/6 p-2">
-                <div className="aspect-[3/4] rounded-[0.85rem] bg-[radial-gradient(circle_at_top,rgba(255,230,182,0.55),transparent_24%),linear-gradient(180deg,#4f2f1c,#231811)]" />
-              </div>
-              <div className="rounded-[1rem] border border-white/8 bg-white/6 p-2">
-                <div className="aspect-video rounded-[0.85rem] bg-[radial-gradient(circle_at_center,rgba(255,230,185,0.55),transparent_18%),linear-gradient(180deg,#6d4422,#241911)]" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="h-2 rounded-full bg-white/10">
-                <div className="h-2 w-2/3 rounded-full bg-[linear-gradient(90deg,#84E0EF,#2FBCE6)]" />
-              </div>
-              <div className="flex gap-2">
-                <div className="h-8 w-8 rounded-full bg-white/10" />
-                <div className="h-8 flex-1 rounded-full bg-white/6" />
-              </div>
-            </div>
+        <video
+          src="/unerteius-bichleg.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="h-full w-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,21,37,0.12),rgba(7,21,37,0.28))]" />
+        <div className="absolute left-5 top-5 rounded-full border border-white/14 bg-black/24 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-amber-100/80">
+          Video preview
+        </div>
+        <div className="absolute bottom-5 left-5 right-5 rounded-[1.1rem] border border-white/10 bg-black/28 px-4 py-3">
+          <div className="h-2 rounded-full bg-white/10">
+            <div className="h-2 w-2/3 rounded-full bg-[linear-gradient(90deg,#84E0EF,#2FBCE6)]" />
           </div>
         </div>
       </div>
