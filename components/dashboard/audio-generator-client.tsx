@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
-import { ELEVENLABS_VOICES } from "@/lib/audio-models/types";
+import {
+  DEFAULT_DIALOGUE_VOICES,
+  ELEVENLABS_VOICE_OPTIONS,
+} from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
 import {
   calculateAudioCreditsByCharacterCount,
@@ -35,8 +38,8 @@ type AudioHistoryItem = {
 
 function createInitialLines(): DialogueLine[] {
   return [
-    { text: "", voice: "Brian" },
-    { text: "", voice: "Adam" },
+    { text: "", voice: DEFAULT_DIALOGUE_VOICES.female },
+    { text: "", voice: DEFAULT_DIALOGUE_VOICES.male },
   ];
 }
 
@@ -71,7 +74,7 @@ export function AudioGeneratorClient({
       return;
     }
 
-    setLines((prev) => [...prev, { text: "", voice: "Brian" }]);
+    setLines((prev) => [...prev, { text: "", voice: DEFAULT_DIALOGUE_VOICES.female }]);
   }
 
   function removeLine(index: number) {
@@ -213,10 +216,14 @@ export function AudioGeneratorClient({
                         onChange={(event) => updateLine(index, "voice", event.target.value)}
                         className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
                       >
-                        {ELEVENLABS_VOICES.map((voice) => (
-                          <option key={voice} value={voice}>
-                            {voice}
-                          </option>
+                        {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
+                          <optgroup key={group} label={group}>
+                            {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
+                              <option key={voice.id} value={voice.id}>
+                                {voice.label}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                       {lines.length > 1 && (

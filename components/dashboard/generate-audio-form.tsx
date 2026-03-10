@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ELEVENLABS_VOICES } from "@/lib/audio-models/types";
+import {
+  DEFAULT_DIALOGUE_VOICES,
+  ELEVENLABS_VOICE_OPTIONS,
+} from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
 
 type DialogueLine = {
@@ -19,8 +22,8 @@ type GenerateAudioResult = {
 
 export function GenerateAudioForm({ currentCredits }: { currentCredits: number }) {
   const [lines, setLines] = useState<DialogueLine[]>([
-    { text: "", voice: "Brian" },
-    { text: "", voice: "Adam" },
+    { text: "", voice: DEFAULT_DIALOGUE_VOICES.female },
+    { text: "", voice: DEFAULT_DIALOGUE_VOICES.male },
   ]);
   const [stability, setStability] = useState(0.5);
   const [isPending, setIsPending] = useState(false);
@@ -41,7 +44,7 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
       return;
     }
 
-    setLines((prev) => [...prev, { text: "", voice: "Brian" }]);
+    setLines((prev) => [...prev, { text: "", voice: DEFAULT_DIALOGUE_VOICES.female }]);
   }
 
   function removeLine(index: number) {
@@ -87,8 +90,8 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
 
       setResult(payload as GenerateAudioResult);
       setLines([
-        { text: "", voice: "Brian" },
-        { text: "", voice: "Adam" },
+        { text: "", voice: DEFAULT_DIALOGUE_VOICES.female },
+        { text: "", voice: DEFAULT_DIALOGUE_VOICES.male },
       ]);
       router.refresh();
     } catch {
@@ -120,10 +123,14 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
                 onChange={(event) => updateLine(index, "voice", event.target.value)}
                 className="w-32 shrink-0 rounded-xl border border-slate-300 px-2 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
               >
-                {ELEVENLABS_VOICES.map((voice) => (
-                  <option key={voice} value={voice}>
-                    {voice}
-                  </option>
+                {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
+                  <optgroup key={group} label={group}>
+                    {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
+                      <option key={voice.id} value={voice.id}>
+                        {voice.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               <textarea

@@ -4,7 +4,11 @@ import { getActiveModelNames } from "@/lib/env";
 import { calculateAudioCreditsByCharacterCount, countDialogueCharacters } from "@/lib/generation-pricing";
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
 import { getAudioModelProvider } from "@/lib/audio-models/registry";
-import { ELEVENLABS_VOICES, AudioModelError } from "@/lib/audio-models/types";
+import {
+  ELEVENLABS_VOICES,
+  AudioModelError,
+  getElevenLabsVoiceLabel,
+} from "@/lib/audio-models/types";
 import { calculateFinalCreditCost } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -93,7 +97,7 @@ export async function POST(request: Request) {
 
     // Build a text summary of the dialogue for the prompt field
     const promptSummary = parsed.data.dialogue
-      .map((line) => `${line.voice}: ${line.text}`)
+      .map((line) => `${getElevenLabsVoiceLabel(line.voice)}: ${line.text}`)
       .join(" | ")
       .slice(0, 500);
 
