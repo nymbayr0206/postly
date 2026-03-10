@@ -1,4 +1,4 @@
-function readOpenAiEnv(name: string): string {
+﻿function readOpenAiEnv(name: string): string {
   const value = process.env[name];
 
   if (!value) {
@@ -11,7 +11,7 @@ function readOpenAiEnv(name: string): string {
 function resolveTranscriptionModel() {
   const configuredModel = process.env.OPENAI_TRANSCRIPTION_MODEL?.trim();
 
-  // `whisper-1` нь Монгол хэл дээр чанар муутай байсан тул илүү шинэ model руу автоматаар шилжүүлнэ.
+  // whisper-1 нь Монгол яриан дээр тогтвортой биш байсан тул илүү шинэ transcription model руу шилжүүлнэ.
   if (!configuredModel || configuredModel === "whisper-1") {
     return "gpt-4o-transcribe";
   }
@@ -19,10 +19,22 @@ function resolveTranscriptionModel() {
   return configuredModel;
 }
 
+function resolveCleanupModel() {
+  return process.env.OPENAI_TEXT_CLEANUP_MODEL?.trim() || "gpt-4o-mini";
+}
+
 export function getOpenAiTranscriptionConfig() {
   return {
     apiKey: readOpenAiEnv("OPENAI_API_KEY"),
     model: resolveTranscriptionModel(),
     endpoint: "https://api.openai.com/v1/audio/transcriptions",
+  };
+}
+
+export function getOpenAiTextCleanupConfig() {
+  return {
+    apiKey: readOpenAiEnv("OPENAI_API_KEY"),
+    model: resolveCleanupModel(),
+    endpoint: "https://api.openai.com/v1/chat/completions",
   };
 }
