@@ -383,8 +383,22 @@ export async function POST(request: Request) {
     const statusError = normalizeRecognitionStatus(providerStatus);
 
     if (statusError) {
+      const shortRecordingMessage =
+        providerStatus === "NoMatch" && durationSeconds < 5
+          ? "Бичлэг хэт богино байна. 5-15 секунд тасралтгүй, ойр яриад дахин оролдоно уу."
+          : statusError;
+
+      console.warn("[speech-to-text] recognition-nomatch", {
+        userId: user.id,
+        language,
+        locale,
+        durationSeconds,
+        providerStatus,
+        providerConfidence: payload?.NBest?.[0]?.Confidence ?? null,
+        payload,
+      });
       return Response.json(
-        { error: statusError },
+        { error: shortRecordingMessage },
         { status: 422 },
       );
     }

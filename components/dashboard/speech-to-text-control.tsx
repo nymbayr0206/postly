@@ -39,6 +39,7 @@ type AudioContextWindow = Window & typeof globalThis & {
 
 const TARGET_SAMPLE_RATE = 16_000;
 const MAX_RECORDING_SECONDS = 20;
+const MIN_RMS_LEVEL = 0.003;
 
 function appendTranscript(base: string, addition: string) {
   const trimmed = addition.trim();
@@ -54,18 +55,59 @@ function appendTranscript(base: string, addition: string) {
   return `${base.trimEnd()} ${trimmed}`;
 }
 
-function getPreferredMimeType() {
-  if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
-    return "audio/webm";
+function getAudioContextCtor() {
+  if (typeof window === "undefined") {
+    return null;
   }
 
-  const candidates = [
-    "audio/webm;codecs=opus",
-    "audio/webm",
-    "audio/mp4",
-  ];
+  const audioWindow = window as AudioContextWindow;
+  return audioWindow.AudioContext ?? audioWindow.webkitAudioContext ?? null;
+}
 
-  return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? "audio/webm";
+function mergeFloat32Chunks(chunks: Float32Array[]) {
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const merged = new Float32Array(totalLength);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return merged;
+}
+
+function downsampleBuffer(buffer: Float32Array, inputSampleRate: number, outputSampleRate: number) {
+  if (buffer.length === 0) {
+    return new Float32Array();
+  }
+
+  if (inputSampleRate === outputSampleRate) {
+    return buffer;
+  }
+
+  const sampleRateRatio = inputSampleRate / outputSampleRate;
+  const newLength = Math.max(1, Math.round(buffer.length / sampleRateRatio));
+  const result = new Float32Array(newLength);
+  let offsetResult = 0;
+  let offsetBuffer = 0;
+
+  while (offsetResult < result.length) {
+    const nextOffsetBuffer = Math.min(buffer.length, Math.round((offsetResult + 1) * sampleRateRatio));
+    let accum = 0;
+    let count = 0;
+
+    for (let index = offsetBuffer; index < nextOffsetBuffer; index += 1) {
+      accum += buffer[index] ?? 0;
+      count += 1;
+    }
+
+    result[offsetResult] = count > 0 ? accum / count : 0;
+    offsetResult += 1;
+    offsetBuffer = nextOffsetBuffer;
+  }
+
+  return result;
 }
 
 function encodeWav(samples: Float32Array, sampleRate: number) {
@@ -103,44 +145,19 @@ function encodeWav(samples: Float32Array, sampleRate: number) {
   return buffer;
 }
 
-async function convertBlobToWav(blob: Blob) {
-  if (blob.type.includes("wav")) {
-    return blob;
+function calculateRms(samples: Float32Array) {
+  if (samples.length === 0) {
+    return 0;
   }
 
-  if (typeof window === "undefined") {
-    throw new Error("Аудио хөрвүүлэх боломжгүй орчин байна.");
+  let sum = 0;
+
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = samples[index] ?? 0;
+    sum += sample * sample;
   }
 
-  const audioWindow = window as AudioContextWindow;
-  const AudioContextCtor = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
-
-  if (!AudioContextCtor || typeof OfflineAudioContext === "undefined") {
-    throw new Error("Browser аудио хөрвүүлэлт дэмжихгүй байна.");
-  }
-
-  const audioContext = new AudioContextCtor();
-
-  try {
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-    const frameCount = Math.max(1, Math.ceil(audioBuffer.duration * TARGET_SAMPLE_RATE));
-    const offlineContext = new OfflineAudioContext(1, frameCount, TARGET_SAMPLE_RATE);
-    const source = offlineContext.createBufferSource();
-
-    source.buffer = audioBuffer;
-    source.connect(offlineContext.destination);
-    source.start(0);
-
-    const renderedBuffer = await offlineContext.startRendering();
-    const wavBuffer = encodeWav(renderedBuffer.getChannelData(0), TARGET_SAMPLE_RATE);
-
-    return new Blob([wavBuffer], { type: "audio/wav" });
-  } catch {
-    throw new Error("Бичлэгийг speech service-д тохирох wav формат руу хөрвүүлж чадсангүй.");
-  } finally {
-    await audioContext.close().catch(() => undefined);
-  }
+  return Math.sqrt(sum / samples.length);
 }
 
 function getQualityLabel(rating: TranscriptQualityRating) {
@@ -159,12 +176,18 @@ export function SpeechToTextControl({
   onChange,
   className,
 }: SpeechToTextControlProps) {
-  const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorNodeRef = useRef<ScriptProcessorNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const inputSampleRateRef = useRef(TARGET_SAMPLE_RATE);
   const valueRef = useRef(value);
   const recordingStartedAtRef = useRef<number | null>(null);
   const autoStoppedRef = useRef(false);
+  const stopInProgressRef = useRef(false);
+  const isRecordingRef = useRef(false);
   const [language, setLanguage] = useState<SpeechLanguage>("mn");
   const [cleanMode, setCleanMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -177,7 +200,7 @@ export function SpeechToTextControl({
     () => () => {},
     () =>
       typeof window !== "undefined" &&
-      typeof MediaRecorder !== "undefined" &&
+      Boolean(getAudioContextCtor()) &&
       Boolean(navigator.mediaDevices?.getUserMedia),
     () => false,
   );
@@ -202,14 +225,9 @@ export function SpeechToTextControl({
       const elapsedSeconds = Math.max(1, Math.round((performance.now() - startedAt) / 1000));
       setRecordingSeconds(elapsedSeconds);
 
-      if (
-        elapsedSeconds >= MAX_RECORDING_SECONDS &&
-        !autoStoppedRef.current &&
-        recorderRef.current?.state === "recording"
-      ) {
+      if (elapsedSeconds >= MAX_RECORDING_SECONDS && !autoStoppedRef.current) {
         autoStoppedRef.current = true;
-        setInfo("20 секунд хүрсэн тул бичлэгийг автоматаар зогсоолоо.");
-        recorderRef.current.stop();
+        void stopRecording("20 секунд хүрсэн тул бичлэгийг автоматаар зогсоолоо.");
       }
     }, 250);
 
@@ -218,18 +236,34 @@ export function SpeechToTextControl({
 
   useEffect(() => {
     return () => {
-      if (recorderRef.current && recorderRef.current.state !== "inactive") {
-        recorderRef.current.stop();
-      }
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      recorderRef.current = null;
-      streamRef.current = null;
+      void teardownAudioCapture();
     };
   }, []);
 
-  async function transcribeBlob(blob: Blob, durationMs: number) {
-    const wavBlob = await convertBlobToWav(blob);
-    const file = new File([wavBlob], "speech.wav", { type: "audio/wav" });
+  async function teardownAudioCapture() {
+    processorNodeRef.current?.disconnect();
+    sourceNodeRef.current?.disconnect();
+    gainNodeRef.current?.disconnect();
+
+    if (processorNodeRef.current) {
+      processorNodeRef.current.onaudioprocess = null;
+    }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      await audioContextRef.current.close().catch(() => undefined);
+    }
+
+    processorNodeRef.current = null;
+    sourceNodeRef.current = null;
+    gainNodeRef.current = null;
+    streamRef.current = null;
+    audioContextRef.current = null;
+  }
+
+  async function transcribeWavBlob(blob: Blob, durationMs: number) {
+    const file = new File([blob], "speech.wav", { type: "audio/wav" });
     const formData = new FormData();
     formData.append("file", file);
     formData.append("language", language);
@@ -262,6 +296,59 @@ export function SpeechToTextControl({
     );
   }
 
+  async function stopRecording(autoStopMessage?: string) {
+    if (stopInProgressRef.current) {
+      return;
+    }
+
+    stopInProgressRef.current = true;
+    isRecordingRef.current = false;
+
+    const durationMs = recordingStartedAtRef.current
+      ? performance.now() - recordingStartedAtRef.current
+      : recordingSeconds * 1000;
+    const mergedPcm = mergeFloat32Chunks(pcmChunksRef.current);
+    const downsampledPcm = downsampleBuffer(mergedPcm, inputSampleRateRef.current, TARGET_SAMPLE_RATE);
+    const rmsLevel = calculateRms(downsampledPcm);
+
+    await teardownAudioCapture();
+    setIsRecording(false);
+    recordingStartedAtRef.current = null;
+
+    if (autoStopMessage) {
+      setInfo(autoStopMessage);
+    }
+
+    if (downsampledPcm.length === 0) {
+      setError("Бичлэг хоосон байна. Дахин оролдоно уу.");
+      stopInProgressRef.current = false;
+      return;
+    }
+
+    if (rmsLevel < MIN_RMS_LEVEL) {
+      setError("Микрофоны дуу сул байна. Илүү ойр, тод яриад дахин оролдоно уу.");
+      stopInProgressRef.current = false;
+      return;
+    }
+
+    try {
+      setIsTranscribing(true);
+      const wavBuffer = encodeWav(downsampledPcm, TARGET_SAMPLE_RATE);
+      const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
+      await transcribeWavBlob(wavBlob, durationMs);
+    } catch (transcriptionError) {
+      setError(
+        transcriptionError instanceof Error
+          ? transcriptionError.message
+          : "Яриаг текст болгож чадсангүй.",
+      );
+    } finally {
+      setIsTranscribing(false);
+      stopInProgressRef.current = false;
+      pcmChunksRef.current = [];
+    }
+  }
+
   async function startRecording() {
     if (!isSupported) {
       setError("Энэ browser дээр микрофон бичлэг дэмжигдэхгүй байна.");
@@ -277,86 +364,72 @@ export function SpeechToTextControl({
       return;
     }
 
+    const AudioContextCtor = getAudioContextCtor();
+
+    if (!AudioContextCtor) {
+      setError("Audio capture ийн орчин дэмжигдэхгүй байна.");
+      return;
+    }
+
     try {
       setError(null);
       setInfo(null);
-      chunksRef.current = [];
+      pcmChunksRef.current = [];
       autoStoppedRef.current = false;
+      stopInProgressRef.current = false;
+      setTranscriptResult(null);
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
-          sampleRate: TARGET_SAMPLE_RATE,
-          sampleSize: 16,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         },
       });
-      const mimeType = getPreferredMimeType();
-      const recorder = new MediaRecorder(stream, {
-        mimeType,
-        audioBitsPerSecond: 192_000,
-      });
 
-      streamRef.current = stream;
-      recorderRef.current = recorder;
-      recordingStartedAtRef.current = performance.now();
+      const audioContext = new AudioContextCtor();
+      await audioContext.resume();
+      inputSampleRateRef.current = audioContext.sampleRate;
 
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
-        }
-      };
+      const sourceNode = audioContext.createMediaStreamSource(stream);
+      const processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 0;
 
-      recorder.onstop = async () => {
-        const durationMs = recordingStartedAtRef.current
-          ? performance.now() - recordingStartedAtRef.current
-          : recordingSeconds * 1000;
-        const audioBlob = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType });
-        stream.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-        recorderRef.current = null;
-        recordingStartedAtRef.current = null;
-        setIsRecording(false);
-
-        if (audioBlob.size === 0) {
-          setError("Бичлэг хоосон байна. Дахин оролдоно уу.");
+      processorNode.onaudioprocess = (event) => {
+        if (!isRecordingRef.current) {
           return;
         }
 
-        try {
-          setIsTranscribing(true);
-          await transcribeBlob(audioBlob, durationMs);
-        } catch (transcriptionError) {
-          setError(
-            transcriptionError instanceof Error
-              ? transcriptionError.message
-              : "Яриаг текст болгож чадсангүй.",
-          );
-        } finally {
-          setIsTranscribing(false);
-        }
+        const channelData = event.inputBuffer.getChannelData(0);
+        pcmChunksRef.current.push(new Float32Array(channelData));
       };
 
-      recorder.start(500);
+      sourceNode.connect(processorNode);
+      processorNode.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      streamRef.current = stream;
+      audioContextRef.current = audioContext;
+      sourceNodeRef.current = sourceNode;
+      processorNodeRef.current = processorNode;
+      gainNodeRef.current = gainNode;
+      recordingStartedAtRef.current = performance.now();
+      isRecordingRef.current = true;
+
       setRecordingSeconds(0);
-      setTranscriptResult(null);
       setIsRecording(true);
       setInfo("10-20 секундийн тод бичлэг хамгийн сайн танигдана.");
     } catch (recordingError) {
+      await teardownAudioCapture();
+
       if (recordingError instanceof DOMException && recordingError.name === "NotAllowedError") {
         setError("Микрофоны зөвшөөрлөө нээгээд дахин оролдоно уу.");
         return;
       }
 
       setError("Микрофон эхлүүлэх үед алдаа гарлаа. Browser-оо дахин ачаалаад оролдоно уу.");
-    }
-  }
-
-  function stopRecording() {
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      recorderRef.current.stop();
     }
   }
 
@@ -397,7 +470,7 @@ export function SpeechToTextControl({
 
           <button
             type="button"
-            onClick={isRecording ? stopRecording : startRecording}
+            onClick={() => void (isRecording ? stopRecording() : startRecording())}
             disabled={!isSupported || isTranscribing}
             className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
               isRecording
