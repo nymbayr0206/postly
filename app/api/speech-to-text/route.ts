@@ -1,10 +1,11 @@
 ﻿import { z } from "zod";
 
-import { getOpenAiTextCleanupConfig } from "@/lib/openai";
-import { getMicrosoftSpeechConfig } from "@/lib/microsoft-speech";
+import { getChimegeTranscriptionConfig } from "@/lib/chimege";
+import { getOpenAiTextCleanupConfig, getOpenAiTranscriptionConfig } from "@/lib/openai";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+const CHIMEGE_MAX_AUDIO_BYTES = 3 * 1024 * 1024;
 const MAX_DURATION_MS = 120_000;
 
 const languageSchema = z.enum(["mn", "en"]).default("mn");
@@ -21,17 +22,8 @@ const cleanupResultSchema = z.object({
 type SupportedLanguage = z.infer<typeof languageSchema>;
 type TranscriptQualityRating = "high" | "medium" | "low";
 
-type MicrosoftSpeechResponse = {
-  RecognitionStatus?: string;
-  DisplayText?: string;
-  Offset?: number;
-  Duration?: number;
-  NBest?: Array<{
-    Display?: string;
-    Confidence?: number;
-    Lexical?: string;
-    ITN?: string;
-  }>;
+type OpenAiTranscriptionResponse = {
+  text?: string;
   error?: {
     message?: string;
   };
@@ -48,8 +40,12 @@ type OpenAiChatCompletionsResponse = {
   };
 };
 
-function getMicrosoftLocale(language: SupportedLanguage) {
-  return language === "mn" ? "mn-MN" : "en-US";
+function getOpenAiTranscriptionPrompt(language: SupportedLanguage) {
+  if (language === "mn") {
+    return "The speaker is speaking Mongolian. Return the transcript in Mongolian Cyrillic. Preserve names, brands, and punctuation.";
+  }
+
+  return "The speaker is speaking English. Return the transcript in English. Preserve names, brands, and punctuation.";
 }
 
 function getCleanupSystemPrompt(language: SupportedLanguage, cleanMode: boolean) {
@@ -141,85 +137,91 @@ function estimateTranscriptQuality(options: {
   };
 }
 
-function normalizeProviderError(status: number, message: string) {
-  if (status === 401 || status === 403) {
-    return "Microsoft Speech key буруу эсвэл хүчинтэй биш байна.";
+function normalizeOpenAiError(status: number, message: string) {
+  if (status === 401) {
+    return "OpenAI API key буруу эсвэл хүчингүй байна.";
   }
 
-  if (status === 415) {
-    return "Аудио формат дэмжигдэхгүй байна. Дахин бичиж оролдоно уу.";
-  }
-
-  if (status === 429) {
-    return "Speech үйлчилгээний хүсэлтийн хязгаарт хүрлээ. Түр хүлээгээд дахин оролдоно уу.";
+  if (status === 413) {
+    return "Аудио файл хэт том байна. Богинохон бичлэг оруулна уу.";
   }
 
   if (status >= 500) {
-    return "Microsoft Speech үйлчилгээ түр ажиллахгүй байна. Дахин оролдоно уу.";
+    return "OpenAI transcription үйлчилгээ түр ажиллахгүй байна. Дахин оролдоно уу.";
   }
 
   return message || "Яриаг текст болгож чадсангүй.";
 }
 
-function normalizeRecognitionStatus(status: string | undefined) {
-  switch (status) {
-    case "Success":
-      return null;
-    case "NoMatch":
-      return "Яриа тодорхой танигдсангүй. Илүү ойроос, 10-20 секундийн богино бичлэгээр дахин оролдоно уу.";
-    case "InitialSilenceTimeout":
-      return "Бичлэгийн эхэнд яриа сонсогдсонгүй.";
-    case "BabbleTimeout":
-      return "Яриа хэт бүдэг эсвэл дуу чимээ ихтэй байна.";
-    case "Error":
-      return "Speech recognition боловсруулах үед алдаа гарлаа.";
+function normalizeChimegeError(status: number, errorCode: string | null, message: string) {
+  if (status === 403) {
+    return "Chimege token буруу эсвэл хүчинтэй биш байна.";
+  }
+
+  switch (errorCode) {
+    case "2000":
+      return "Аудио дамжуулах үед алдаа гарлаа. Дахин оролдоно уу.";
+    case "2001":
+      return "Аудио файл хэт том байна. Chimege short STT нь 3MB хүртэл WAV дэмжинэ.";
+    case "2002":
+      return "Аудио файл хэт жижиг байна. Илүү урт, тод бичлэг оруулна уу.";
+    case "2003":
+      return "Аудио хэт богино байна. Хамгийн багадаа 0.5 секунд бичнэ үү.";
+    case "2004":
+      return "Аудио формат буруу байна. Chimege STT нь WAV формат шаарддаг.";
+    case "2005":
+      return "Аудиог WAV руу боловсруулахад алдаа гарлаа.";
     default:
-      return "Яриаг текст болгож чадсангүй.";
+      return message || "Chimege speech-to-text боловсруулах үед алдаа гарлаа.";
   }
 }
 
-async function callMicrosoftSpeechTranscription(options: {
-  keys: string[];
-  recognitionEndpoint: string;
+async function callOpenAiTranscription(options: {
+  apiKey: string;
+  endpoint: string;
+  model: string;
   file: File;
-  locale: string;
+  language: SupportedLanguage;
 }) {
-  const url = new URL(options.recognitionEndpoint);
-  url.searchParams.set("language", options.locale);
-  url.searchParams.set("format", "detailed");
-  url.searchParams.set("profanity", "raw");
-
-  let lastResponse: Response | null = null;
-  let lastPayload: MicrosoftSpeechResponse | null = null;
-
-  for (const key of options.keys) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        Accept: "application/json;text/xml",
-        "Content-Type": options.file.type || "audio/wav; codecs=audio/pcm; samplerate=16000",
-      },
-      body: options.file,
-    });
-
-    const payload = (await response.json().catch(() => null)) as MicrosoftSpeechResponse | null;
-
-    lastResponse = response;
-    lastPayload = payload;
-
-    if (response.status !== 401 && response.status !== 403) {
-      break;
-    }
+  const formData = new FormData();
+  formData.append("file", options.file, options.file.name || "speech.wav");
+  formData.append("model", options.model);
+  formData.append("prompt", getOpenAiTranscriptionPrompt(options.language));
+  if (options.language === "en") {
+    formData.append("language", "en");
   }
 
-  if (!lastResponse) {
-    throw new Error("Microsoft Speech хүсэлтийг илгээж чадсангүй.");
-  }
+  const response = await fetch(options.endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${options.apiKey}`,
+    },
+    body: formData,
+  });
 
+  const payload = (await response.json().catch(() => null)) as OpenAiTranscriptionResponse | null;
+  return { response, payload };
+}
+
+async function callChimegeTranscription(file: File) {
+  const config = getChimegeTranscriptionConfig();
+
+  const response = await fetch(config.endpoint, {
+    method: "POST",
+    headers: {
+      token: config.token,
+      punctuate: "false",
+      "Content-Type": "application/octet-stream",
+      Accept: "text/plain",
+    },
+    body: file,
+  });
+
+  const text = await response.text().catch(() => "");
   return {
-    response: lastResponse,
-    payload: lastPayload,
+    response,
+    text,
+    errorCode: response.headers.get("Error-Code"),
   };
 }
 
@@ -327,7 +329,7 @@ export async function POST(request: Request) {
 
   if (file.size > MAX_AUDIO_BYTES) {
     return Response.json(
-      { error: "Аудио файл 25MB-аас ихгүй байх ёстой." },
+      { error: "Аудио файл хэт том байна." },
       { status: 400 },
     );
   }
@@ -343,34 +345,139 @@ export async function POST(request: Request) {
   const cleanMode = parsedCleanMode.success ? parsedCleanMode.data : false;
   const durationMs = parsedDurationMs.success ? parsedDurationMs.data : 0;
   const durationSeconds = Number((durationMs / 1000).toFixed(2));
-  const locale = getMicrosoftLocale(language);
+
+  if (language === "mn" && file.size > CHIMEGE_MAX_AUDIO_BYTES) {
+    return Response.json(
+      { error: "Chimege short STT нь 3MB хүртэл WAV файл дэмжинэ." },
+      { status: 400 },
+    );
+  }
 
   try {
-    const microsoftConfig = getMicrosoftSpeechConfig();
+    const cleanupModelName = process.env.OPENAI_TEXT_CLEANUP_MODEL?.trim() || "gpt-4o-mini";
+
+    if (language === "mn") {
+      console.info("[speech-to-text] request", {
+        userId: user.id,
+        language,
+        provider: "chimege",
+        cleanMode,
+        durationSeconds,
+        audioBytes: file.size,
+        mimeType: file.type,
+        transcriptionModel: "chimege-transcribe",
+        cleanupModel: cleanupModelName,
+      });
+
+      const { response, text, errorCode } = await callChimegeTranscription(file);
+
+      if (!response.ok) {
+        return Response.json(
+          { error: normalizeChimegeError(response.status, errorCode, text.trim()) },
+          { status: response.status >= 500 ? 502 : response.status },
+        );
+      }
+
+      const rawTranscript = text.trim();
+
+      if (!rawTranscript) {
+        console.warn("[speech-to-text] chimege-empty", {
+          userId: user.id,
+          durationSeconds,
+          audioBytes: file.size,
+        });
+
+        return Response.json(
+          { error: "Ярианаас текст танигдсангүй. Илүү тод, ойроос яриад дахин оролдоно уу." },
+          { status: 422 },
+        );
+      }
+
+      let cleanedTranscript = rawTranscript;
+      let changedByCleanup = false;
+      let cleanupModel = "disabled";
+
+      try {
+        const cleanup = await cleanupTranscript({
+          rawTranscript,
+          language,
+          cleanMode,
+        });
+
+        cleanupModel = cleanup.model;
+        cleanedTranscript = cleanup.result.cleaned_transcript.trim() || rawTranscript;
+        changedByCleanup = cleanup.result.changed ?? cleanedTranscript !== rawTranscript;
+      } catch (cleanupError) {
+        console.warn("[speech-to-text] cleanup-failed", {
+          userId: user.id,
+          language,
+          cleanMode,
+          error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        });
+      }
+
+      const quality = estimateTranscriptQuality({
+        language,
+        rawTranscript,
+        cleanedTranscript,
+        providerConfidence: null,
+        providerStatus: "Success",
+      });
+
+      console.info("[speech-to-text] result", {
+        userId: user.id,
+        language,
+        provider: "chimege",
+        cleanMode,
+        durationSeconds,
+        transcriptionModel: "chimege-transcribe",
+        cleanupModel,
+        quality,
+        rawLength: rawTranscript.length,
+        cleanedLength: cleanedTranscript.length,
+        changedByCleanup,
+      });
+
+      return Response.json({
+        rawTranscript,
+        cleanedTranscript,
+        appliedTranscript: cleanedTranscript,
+        cleanMode,
+        durationSeconds,
+        quality,
+        models: {
+          transcription: "chimege-transcribe",
+          cleanup: cleanupModel,
+        },
+      });
+    }
+
+    const openAiConfig = getOpenAiTranscriptionConfig();
 
     console.info("[speech-to-text] request", {
       userId: user.id,
       language,
-      locale,
+      provider: "openai",
       cleanMode,
       durationSeconds,
       audioBytes: file.size,
       mimeType: file.type,
-      transcriptionModel: "microsoft-speech-conversation-v1",
-      cleanupModel: process.env.OPENAI_TEXT_CLEANUP_MODEL?.trim() || "gpt-4o-mini",
+      transcriptionModel: openAiConfig.model,
+      cleanupModel: cleanupModelName,
     });
 
-    const { response, payload } = await callMicrosoftSpeechTranscription({
-      keys: microsoftConfig.keys,
-      recognitionEndpoint: microsoftConfig.recognitionEndpoint,
+    const { response, payload } = await callOpenAiTranscription({
+      apiKey: openAiConfig.apiKey,
+      endpoint: openAiConfig.endpoint,
+      model: openAiConfig.model,
       file,
-      locale,
+      language,
     });
 
     if (!response.ok) {
       return Response.json(
         {
-          error: normalizeProviderError(
+          error: normalizeOpenAiError(
             response.status,
             payload?.error?.message ?? "Яриаг текст болгож чадсангүй.",
           ),
@@ -379,32 +486,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const providerStatus = payload?.RecognitionStatus ?? "Unknown";
-    const statusError = normalizeRecognitionStatus(providerStatus);
-
-    if (statusError) {
-      const shortRecordingMessage =
-        providerStatus === "NoMatch" && durationSeconds < 5
-          ? "Бичлэг хэт богино байна. 5-15 секунд тасралтгүй, ойр яриад дахин оролдоно уу."
-          : statusError;
-
-      console.warn("[speech-to-text] recognition-nomatch", {
-        userId: user.id,
-        language,
-        locale,
-        durationSeconds,
-        providerStatus,
-        providerConfidence: payload?.NBest?.[0]?.Confidence ?? null,
-        payload,
-      });
-      return Response.json(
-        { error: shortRecordingMessage },
-        { status: 422 },
-      );
-    }
-
-    const providerConfidence = payload?.NBest?.[0]?.Confidence ?? null;
-    const rawTranscript = payload?.DisplayText?.trim() || payload?.NBest?.[0]?.Display?.trim();
+    const rawTranscript = payload?.text?.trim();
 
     if (!rawTranscript) {
       return Response.json(
@@ -440,33 +522,23 @@ export async function POST(request: Request) {
       language,
       rawTranscript,
       cleanedTranscript,
-      providerConfidence,
-      providerStatus,
+      providerConfidence: null,
+      providerStatus: "Success",
     });
 
     console.info("[speech-to-text] result", {
       userId: user.id,
       language,
-      locale,
+      provider: "openai",
       cleanMode,
       durationSeconds,
-      transcriptionModel: "microsoft-speech-conversation-v1",
+      transcriptionModel: openAiConfig.model,
       cleanupModel,
       quality,
       rawLength: rawTranscript.length,
       cleanedLength: cleanedTranscript.length,
       changedByCleanup,
     });
-
-    if (quality.rating === "low") {
-      console.warn("[speech-to-text] low-quality-transcript", {
-        userId: user.id,
-        language,
-        locale,
-        durationSeconds,
-        quality,
-      });
-    }
 
     return Response.json({
       rawTranscript,
@@ -476,7 +548,7 @@ export async function POST(request: Request) {
       durationSeconds,
       quality,
       models: {
-        transcription: "microsoft-speech-conversation-v1",
+        transcription: openAiConfig.model,
         cleanup: cleanupModel,
       },
     });

@@ -184,6 +184,7 @@ export function SpeechToTextControl({
   const pcmChunksRef = useRef<Float32Array[]>([]);
   const inputSampleRateRef = useRef(TARGET_SAMPLE_RATE);
   const valueRef = useRef(value);
+  const stopRecordingRef = useRef<(message?: string) => Promise<void>>(async () => undefined);
   const recordingStartedAtRef = useRef<number | null>(null);
   const autoStoppedRef = useRef(false);
   const stopInProgressRef = useRef(false);
@@ -210,6 +211,10 @@ export function SpeechToTextControl({
   }, [value]);
 
   useEffect(() => {
+    stopRecordingRef.current = stopRecording;
+  });
+
+  useEffect(() => {
     if (!isRecording) {
       setRecordingSeconds(0);
       return;
@@ -227,7 +232,7 @@ export function SpeechToTextControl({
 
       if (elapsedSeconds >= MAX_RECORDING_SECONDS && !autoStoppedRef.current) {
         autoStoppedRef.current = true;
-        void stopRecording("20 секунд хүрсэн тул бичлэгийг автоматаар зогсоолоо.");
+        void stopRecordingRef.current("20 секунд хүрсэн тул бичлэгийг автоматаар зогсоолоо.");
       }
     }, 250);
 
@@ -497,7 +502,7 @@ export function SpeechToTextControl({
 
       {isTranscribing ? (
         <p className="mt-2 rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-          Microsoft Speech рүү илгээж transcript авч, дараа нь текстийг цэвэрлэж байна...
+          Chimege рүү илгээж transcript авч, дараа нь текстийг цэвэрлэж байна...
         </p>
       ) : null}
 
@@ -563,3 +568,4 @@ export function SpeechToTextControl({
     </div>
   );
 }
+
