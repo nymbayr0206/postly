@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
+import { SpeechToTextControl } from "@/components/dashboard/speech-to-text-control";
 import {
   creditsToMnt,
   formatMnt,
@@ -40,7 +41,7 @@ async function fileToDataUrl(file: File): Promise<string> {
 const ASPECT_RATIOS: Array<{ value: ImageAspectRatio; label: string; detail: string }> = [
   { value: "1:1", label: "1:1", detail: "Пост, квадрат зураг" },
   { value: "4:5", label: "4:5", detail: "Instagram босоо пост" },
-  { value: "16:9", label: "16:9", detail: "Cover болон баннер" },
+  { value: "16:9", label: "16:9", detail: "Cover болон banner" },
 ];
 
 const IMAGE_RESOLUTION_OPTIONS: Array<{
@@ -148,7 +149,7 @@ export function ImageGeneratorClient({
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (!prompt.trim()) {
-      setError("Prompt хоосон байна.");
+      setError("Тайлбар хоосон байна.");
       return;
     }
 
@@ -213,7 +214,7 @@ export function ImageGeneratorClient({
                   <div>
                     <h1 className="text-2xl font-semibold text-slate-950">Зураг үүсгэх</h1>
                     <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                      Мобайл дээр хурдан ашиглахад зориулагдсан энгийн урсгал. Prompt, харьцаа,
+                      Мобайл дээр хурдан ашиглахад зориулагдсан энгийн урсгал. Тайлбар, харьцаа,
                       лавлах зургаа сонгоод шууд үүсгэнэ.
                     </p>
                   </div>
@@ -229,7 +230,7 @@ export function ImageGeneratorClient({
             <GenerationPricingCard
               currentCost={currentCost}
               currentCostDetail={formatMnt(currentCostMnt)}
-              description="Nano Banana 2 нь resolution-оосоо хамаарч 1K, 2K, 4K сонголтоор өөр үнэ бодно."
+              description="Nano Banana 2 нь нягтралаасаа хамаарч 1K, 2K, 4K сонголтоор өөр үнэ бодно."
               metrics={[
                 {
                   label: "Сонгосон нягтрал",
@@ -252,7 +253,7 @@ export function ImageGeneratorClient({
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Prompt</h2>
+                  <h2 className="text-sm font-semibold text-slate-900">Тайлбар</h2>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     Яг ямар дүрслэл хүсэж байгаагаа тодорхой бичнэ үү.
                   </p>
@@ -268,6 +269,12 @@ export function ImageGeneratorClient({
                 placeholder="Жишээ: Минимал студид байрласан бүтээгдэхүүний зураг, зөөлөн cyan гэрэлтүүлэгтэй, cinematic product shot, clean background..."
                 rows={6}
                 className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+              />
+
+              <SpeechToTextControl
+                value={prompt}
+                onChange={setPrompt}
+                className="mt-4"
               />
 
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -384,7 +391,7 @@ export function ImageGeneratorClient({
               <div className="mt-5">
                 <h2 className="text-sm font-semibold text-slate-900">Нягтрал</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Nano Banana 2 pricing нь resolution-оосоо хамаарч өөр өөр байна.
+                  Nano Banana 2-ийн үнэ нягтралаасаа хамаарч өөр өөр байна.
                 </p>
                 <div className="mt-4 grid grid-cols-3 gap-3">
                   {IMAGE_RESOLUTION_OPTIONS.map((option) => (
@@ -459,10 +466,10 @@ export function ImageGeneratorClient({
                 <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
                   Шууд үр дүн
                 </span>
-                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Үйлдлийн өмнөх бэлтгэл, шууд preview</h2>
+                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Үүсгэхээс өмнө нэг дор бүхнийг харах</h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                  Бэлдэж буй зураг энд харагдана. Мобайл дээр preview том харагдахаар,
-                  нэг гараар ашиглахад хялбар байхаар байрлуулсан.
+                  Бэлдэж буй зураг энд харагдана. Мобайл дээр preview том харагдахаар, нэг гараар
+                  ашиглахад хялбар байхаар байрлуулсан.
                 </p>
               </div>
 
@@ -551,7 +558,7 @@ export function ImageGeneratorClient({
               </div>
               <h3 className="mt-5 text-xl font-semibold text-slate-950">Таны зураг энд гарна</h3>
               <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                Prompt-оо сайн тодорхой бичээд үүсгэхэд хангалттай. Мобайл дээр preview томоор
+                Тайлбараа сайн тодорхой бичээд үүсгэхэд хангалттай. Мобайл дээр preview томоор
                 харагдахаар байршлыг тохируулсан.
               </p>
             </div>

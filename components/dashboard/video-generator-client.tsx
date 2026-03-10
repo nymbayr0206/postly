@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
+import { SpeechToTextControl } from "@/components/dashboard/speech-to-text-control";
 import { creditsToMnt, formatMnt, getVideoCredits } from "@/lib/generation-pricing";
 import { calculateFinalCreditCost } from "@/lib/pricing";
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
@@ -119,7 +120,7 @@ export function VideoGeneratorClient({
     }
 
     if (!prompt.trim()) {
-      setError("Prompt хоосон байна.");
+      setError("Тайлбар хоосон байна.");
       return;
     }
 
@@ -206,8 +207,8 @@ export function VideoGeneratorClient({
                   <div>
                     <h1 className="text-2xl font-semibold text-slate-950">Зургаас видео</h1>
                     <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                      Эх зургийнхаа хөдөлгөөн, камерын чиглэл, орчны мэдрэмжийг тайлбарлаад
-                      богино видео үүсгэнэ.
+                      Эх зургийнхаа хөдөлгөөн, камерын чиглэл, орчны мэдрэмжийг тайлбарлаад богино
+                      видео үүсгэнэ.
                     </p>
                   </div>
                 </div>
@@ -222,7 +223,7 @@ export function VideoGeneratorClient({
             <GenerationPricingCard
               currentCost={currentCost}
               currentCostDetail={formatMnt(currentCostMnt)}
-              description="Runway pricing нь хугацаа болон чанараас хамаарна."
+              description="Runway-ийн үнэ нь хугацаа болон чанараасаа хамаарна."
               metrics={[
                 {
                   label: "Үргэлжлэх хугацаа",
@@ -237,8 +238,8 @@ export function VideoGeneratorClient({
                   value: quality,
                   detail:
                     quality === "720p" && duration === 5
-                      ? "5с 720p = 12 кредит"
-                      : "10с 720p эсвэл 5с 1080p = 30 кредит",
+                      ? "5 сек 720p = 12 кредит"
+                      : "10 сек 720p эсвэл 5 сек 1080p = 30 кредит",
                 },
                 {
                   label: "Гарах үнэ",
@@ -303,7 +304,7 @@ export function VideoGeneratorClient({
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Эх зургаа оруулах</p>
                       <p className="mt-1 text-sm leading-6 text-slate-500">
-                        Нэг зураг сонгож хөдөлгөөнийг нь prompt-оор тодорхойлно.
+                        Нэг зураг сонгож хөдөлгөөнийг нь тайлбараараа тодорхойлно.
                       </p>
                     </div>
                   </>
@@ -327,9 +328,9 @@ export function VideoGeneratorClient({
 
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Prompt</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Тайлбар</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Камерын хөдөлгөөн, subject animation, орчны динамикаа тайлбарлана уу.
+                  Камерын хөдөлгөөн, объектын animation, орчны динамикаа тайлбарлана уу.
                 </p>
               </div>
 
@@ -339,6 +340,12 @@ export function VideoGeneratorClient({
                 placeholder="Жишээ: Камер удаанаар zoom in хийж, үс салхинд зөөлөн хөдөлж, cinematic cyan light туссан байдал..."
                 rows={5}
                 className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+              />
+
+              <SpeechToTextControl
+                value={prompt}
+                onChange={setPrompt}
+                className="mt-4"
               />
             </section>
 
@@ -448,8 +455,8 @@ export function VideoGeneratorClient({
                 </span>
                 <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Эх зургаас амьд хөдөлгөөнт дүрс рүү</h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                  Өгсөн зураг, prompt, чанарын тохиргоонууд энд нэг мөрөөр харагдаж,
-                  mobile flow-ийг илүү ойлгомжтой болгоно.
+                  Өгсөн зураг, тайлбар, чанарын тохиргоонууд энд нэг мөрөөр харагдаж, mobile
+                  flow-ийг илүү ойлгомжтой болгоно.
                 </p>
               </div>
 
@@ -472,11 +479,11 @@ export function VideoGeneratorClient({
 
           <aside className="grid gap-4">
             <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Сайн prompt-ийн бүтэц</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Сайн тайлбарын бүтэц</p>
               <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <li>1. Subject ямар хөдөлгөөн хийхийг бич.</li>
-                <li>2. Камерын чиглэлийг тусад нь нэм.</li>
-                <li>3. Орчны light, speed, mood-оо нэм.</li>
+                <li>1. Объект ямар хөдөлгөөн хийхийг бич.</li>
+                <li>2. Камерын чиглэлээ тусад нь нэм.</li>
+                <li>3. Орчны гэрэл, хурд, mood-оо оруул.</li>
               </ul>
             </div>
             <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
@@ -545,7 +552,7 @@ export function VideoGeneratorClient({
                 </div>
                 <h4 className="mt-5 text-xl font-semibold text-slate-950">Таны видео энд гарна</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Эх зургаа оруулаад prompt-оо сайн тодорхойлбол илүү тогтвортой хөдөлгөөнтэй видео гарна.
+                  Эх зургаа оруулаад тайлбараа сайн тодорхойлбол илүү тогтвортой хөдөлгөөнтэй видео гарна.
                 </p>
               </div>
             )}
