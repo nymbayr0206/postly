@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 import { getOpenAiTranscriptionConfig } from "@/lib/openai";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -7,15 +7,24 @@ const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
 const languageSchema = z.enum(["mn", "en"]).default("mn");
 
-function getPromptForLanguage(language: "mn" | "en") {
+type SupportedLanguage = z.infer<typeof languageSchema>;
+
+type OpenAiTranscriptionResponse = {
+  text?: string;
+  error?: {
+    message?: string;
+  };
+};
+
+function getPromptForLanguage(language: SupportedLanguage) {
   if (language === "mn") {
-    return "The audio is likely in Mongolian. Preserve brand names and punctuation clearly.";
+    return "The audio may contain Mongolian words and names. Preserve punctuation and brand names clearly.";
   }
 
   return "The audio is likely in English. Preserve punctuation clearly.";
 }
 
-function getErrorMessage(status: number, fallback: string) {
+function normalizeOpenAiError(status: number, message: string, language: SupportedLanguage) {
   if (status === 401) {
     return "OpenAI API key буруу эсвэл хүчингүй байна.";
   }
@@ -24,11 +33,50 @@ function getErrorMessage(status: number, fallback: string) {
     return "Аудио файл хэт том байна. Богинохон бичлэг оруулна уу.";
   }
 
+  if (message.includes("Language") && message.includes("not supported")) {
+    if (language === "mn") {
+      return "Монгол хэлний кодыг шууд өгөхөд OpenAI татгалзаж байна. Auto-detect горимоор дахин оролдлоо.";
+    }
+
+    return "Сонгосон хэлний параметр дэмжигдэхгүй байна.";
+  }
+
   if (status >= 500) {
     return "OpenAI transcription үйлчилгээ түр ажиллахгүй байна. Дахин оролдоно уу.";
   }
 
-  return fallback;
+  return message || "Яриаг текст болгож чадсангүй.";
+}
+
+async function callOpenAiTranscription(options: {
+  apiKey: string;
+  endpoint: string;
+  model: string;
+  file: File;
+  language: SupportedLanguage;
+  includeLanguageParam: boolean;
+}) {
+  const openAiFormData = new FormData();
+  openAiFormData.append("file", options.file, options.file.name || "speech.webm");
+  openAiFormData.append("model", options.model);
+  openAiFormData.append("response_format", "json");
+  openAiFormData.append("prompt", getPromptForLanguage(options.language));
+
+  if (options.includeLanguageParam && options.language === "en") {
+    openAiFormData.append("language", "en");
+  }
+
+  const response = await fetch(options.endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${options.apiKey}`,
+    },
+    body: openAiFormData,
+  });
+
+  const payload = (await response.json().catch(() => null)) as OpenAiTranscriptionResponse | null;
+
+  return { response, payload };
 }
 
 export async function POST(request: Request) {
@@ -91,32 +139,40 @@ export async function POST(request: Request) {
 
   try {
     const { apiKey, endpoint, model } = getOpenAiTranscriptionConfig();
-    const openAiFormData = new FormData();
 
-    openAiFormData.append("file", file, file.name || "speech.webm");
-    openAiFormData.append("model", model);
-    openAiFormData.append("language", language);
-    openAiFormData.append("response_format", "json");
-    openAiFormData.append("prompt", getPromptForLanguage(language));
-
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: openAiFormData,
+    let { response, payload } = await callOpenAiTranscription({
+      apiKey,
+      endpoint,
+      model,
+      file,
+      language,
+      includeLanguageParam: language === "en",
     });
 
-    const payload = (await response.json().catch(() => null)) as
-      | { text?: string; error?: { message?: string } }
-      | null;
+    const firstMessage = payload?.error?.message ?? "";
+    const shouldRetryWithoutLanguage =
+      !response.ok &&
+      firstMessage.includes("Language") &&
+      firstMessage.includes("not supported");
+
+    if (shouldRetryWithoutLanguage) {
+      ({ response, payload } = await callOpenAiTranscription({
+        apiKey,
+        endpoint,
+        model,
+        file,
+        language,
+        includeLanguageParam: false,
+      }));
+    }
 
     if (!response.ok) {
       return Response.json(
         {
-          error: getErrorMessage(
+          error: normalizeOpenAiError(
             response.status,
             payload?.error?.message ?? "Яриаг текст болгож чадсангүй.",
+            language,
           ),
         },
         { status: response.status >= 500 ? 502 : response.status },
