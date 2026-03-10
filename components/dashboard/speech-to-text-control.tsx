@@ -148,9 +148,19 @@ export function SpeechToTextControl({
       setError(null);
       chunksRef.current = [];
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       const mimeType = getPreferredMimeType();
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorder = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 128_000,
+      });
 
       streamRef.current = stream;
       recorderRef.current = recorder;
@@ -212,7 +222,7 @@ export function SpeechToTextControl({
             Ярианаас текст
           </p>
           <p className="mt-1 text-sm text-slate-600">
-            Микрофоноор хэлсэн үг OpenAI Whisper-аар хөрвөж таны тайлбар дээр нэмэгдэнэ.
+            Микрофоноор хэлсэн үг OpenAI transcription-аар хөрвөж таны тайлбар дээр нэмэгдэнэ.
           </p>
         </div>
 
@@ -251,7 +261,7 @@ export function SpeechToTextControl({
 
       {isTranscribing ? (
         <p className="mt-2 rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-          Whisper руу илгээж, текст болгон хөрвүүлж байна...
+          OpenAI руу илгээж, текст болгон хөрвүүлж байна...
         </p>
       ) : null}
 

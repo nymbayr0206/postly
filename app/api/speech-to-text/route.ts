@@ -18,10 +18,10 @@ type OpenAiTranscriptionResponse = {
 
 function getPromptForLanguage(language: SupportedLanguage) {
   if (language === "mn") {
-    return "The audio may contain Mongolian words and names. Preserve punctuation and brand names clearly.";
+    return "Энэ бол Монгол хэлтэй байж болох яриа. Хэлсэн үгийг яг сонсогдсоноор нь Монгол үсгээр бич. Нэр, брэнд, таслал, өгүүлбэрийн төгсгөлийг зөв хадгал.";
   }
 
-  return "The audio is likely in English. Preserve punctuation clearly.";
+  return "This is English speech. Transcribe exactly as spoken, preserve punctuation, and keep brand names in Latin characters.";
 }
 
 function normalizeOpenAiError(status: number, message: string, language: SupportedLanguage) {
@@ -59,7 +59,6 @@ async function callOpenAiTranscription(options: {
   const openAiFormData = new FormData();
   openAiFormData.append("file", options.file, options.file.name || "speech.webm");
   openAiFormData.append("model", options.model);
-  openAiFormData.append("response_format", "json");
   openAiFormData.append("prompt", getPromptForLanguage(options.language));
 
   if (options.includeLanguageParam && options.language === "en") {
