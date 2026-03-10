@@ -7,7 +7,6 @@ import type { GenerationRow } from "@/lib/types";
 import {
   ensureUserRecords,
   getAgentRequestByUserId,
-  getPlatformSettings,
   getReferralSummary,
   getUserProfile,
   getWallet,
@@ -80,12 +79,11 @@ export default async function DashboardPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, agentRequest, referralSummary, platformSettings, generationsResponse] = await Promise.all([
+  const [profile, wallet, agentRequest, referralSummary, generationsResponse] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getAgentRequestByUserId(supabase, user.id),
     getReferralSummary(supabase, user.id),
-    getPlatformSettings(supabase),
     supabase
       .from("generations")
       .select("id,user_id,model_name,prompt,aspect_ratio,cost,image_url,created_at")
@@ -154,11 +152,7 @@ export default async function DashboardPage() {
       </section>
 
       {profile.referral_code ? (
-        <ReferralPanel
-          referralCode={profile.referral_code}
-          summary={referralSummary}
-          creditPriceMnt={platformSettings.credit_price_mnt}
-        />
+        <ReferralPanel referralCode={profile.referral_code} summary={referralSummary} />
       ) : null}
 
       {profile.role === "agent" ? (

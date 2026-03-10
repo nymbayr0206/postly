@@ -27,11 +27,9 @@ const EMPTY_ACTION_STATE: ReferralActionState = {};
 export function ReferralPanel({
   referralCode,
   summary,
-  creditPriceMnt,
 }: {
   referralCode: string;
   summary: ReferralSummaryRow;
-  creditPriceMnt: number;
 }) {
   const [copied, setCopied] = useState(false);
   const [convertAmountMnt, setConvertAmountMnt] = useState(String(summary.available_amount_mnt || ""));
@@ -53,12 +51,12 @@ export function ReferralPanel({
   const estimatedCredits = useMemo(() => {
     const amount = Number(convertAmountMnt);
 
-    if (!Number.isFinite(amount) || amount <= 0 || creditPriceMnt <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       return 0;
     }
 
-    return Math.floor(amount / creditPriceMnt);
-  }, [convertAmountMnt, creditPriceMnt]);
+    return Math.floor(amount);
+  }, [convertAmountMnt]);
 
   async function handleCopy() {
     const inviteLink =
@@ -121,7 +119,7 @@ export function ReferralPanel({
             <form action={convertAction} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
               <div className="text-sm font-semibold text-slate-900">Урамшууллаа кредит болгох</div>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                1 кредит = {formatMnt(creditPriceMnt)}. Мөнгөний урамшууллаа хүссэн үедээ кредит болгож болно.
+                Урамшууллын мөнгөө 1:1-ээр кредит болгож болно. Жишээ нь 10,000₮ хөрвүүлбэл 10,000 кредит нэмэгдэнэ.
               </p>
 
               <div className="mt-4">
@@ -131,7 +129,7 @@ export function ReferralPanel({
                 <input
                   type="number"
                   name="amount_mnt"
-                  min={creditPriceMnt}
+                  min="1"
                   step="1"
                   inputMode="numeric"
                   value={convertAmountMnt}
@@ -142,7 +140,7 @@ export function ReferralPanel({
               </div>
 
               <div className="mt-3 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
-                Ойролцоогоор {formatNumber(estimatedCredits)} кредит нэмэгдэнэ.
+                Шууд {formatNumber(estimatedCredits)} кредит нэмэгдэнэ.
               </div>
 
               {convertState.error ? (
