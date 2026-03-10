@@ -8,45 +8,7 @@ type SpeechToTextControlProps = {
   className?: string;
 };
 
-type SpeechLanguage = "mn-MN" | "en-US";
-
-type SpeechRecognitionAlternative = {
-  transcript: string;
-};
-
-type SpeechRecognitionResultLike = {
-  isFinal: boolean;
-  0: SpeechRecognitionAlternative;
-};
-
-type SpeechRecognitionEventLike = Event & {
-  resultIndex: number;
-  results: ArrayLike<SpeechRecognitionResultLike>;
-};
-
-type SpeechRecognitionErrorEventLike = Event & {
-  error: string;
-};
-
-type SpeechRecognitionLike = EventTarget & {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onend: ((event: Event) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
-
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor;
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  }
-}
+type SpeechLanguage = "mn" | "en";
 
 function appendTranscript(base: string, addition: string) {
   const trimmed = addition.trim();
@@ -62,26 +24,39 @@ function appendTranscript(base: string, addition: string) {
   return `${base.trimEnd()} ${trimmed}`;
 }
 
-function getSpeechErrorMessage(errorCode: string, language: SpeechLanguage) {
-  switch (errorCode) {
-    case "not-allowed":
-    case "service-not-allowed":
-      return "Микрофоны зөвшөөрлөө нээгээд дахин оролдоно уу.";
-    case "no-speech":
-      return "Яриа танигдсангүй. Микрофондоо ойрхон ярьж дахин оролдоно уу.";
-    case "audio-capture":
-      return "Микрофон олдсонгүй. Төхөөрөмжөө шалгаад дахин оролдоно уу.";
-    case "network":
-      return language === "mn-MN"
-        ? "Монгол хэлний яриа таних үйлчилгээтэй холбогдож чадсангүй. Chrome эсвэл Edge-ийн сүүлийн хувилбар дээр дахин шалгаарай."
-        : "Яриа таних үйлчилгээтэй холбогдож чадсангүй. Интернэт болон browser-оо шалгаад дахин оролдоно уу.";
-    case "language-not-supported":
-      return language === "mn-MN"
-        ? "Энэ browser дээр Монгол хэлний speech-to-text дэмжигдээгүй байна. Chrome эсвэл Edge дээр шалгаарай."
-        : "Сонгосон хэлний speech-to-text дэмжигдээгүй байна.";
-    default:
-      return "Яриаг текст болгох үед алдаа гарлаа.";
+function getPreferredMimeType() {
+  if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
+    return "audio/webm";
   }
+
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+  ];
+
+  return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? "audio/webm";
+}
+
+function getExtensionFromMimeType(mimeType: string) {
+  if (mimeType.includes("mp4")) {
+    return "mp4";
+  }
+
+  if (mimeType.includes("ogg")) {
+    return "ogg";
+  }
+
+  if (mimeType.includes("mpeg") || mimeType.includes("mp3")) {
+    return "mp3";
+  }
+
+  if (mimeType.includes("wav")) {
+    return "wav";
+  }
+
+  return "webm";
 }
 
 export function SpeechToTextControl({
@@ -89,16 +64,21 @@ export function SpeechToTextControl({
   onChange,
   className,
 }: SpeechToTextControlProps) {
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const valueRef = useRef(value);
-  const ignoreNextAbortRef = useRef(false);
-  const [language, setLanguage] = useState<SpeechLanguage>("mn-MN");
-  const [isListening, setIsListening] = useState(false);
-  const [interimText, setInterimText] = useState("");
+  const [language, setLanguage] = useState<SpeechLanguage>("mn");
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const isSupported = useSyncExternalStore(
     () => () => {},
-    () => typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition),
+    () =>
+      typeof window !== "undefined" &&
+      typeof MediaRecorder !== "undefined" &&
+      Boolean(navigator.mediaDevices?.getUserMedia),
     () => false,
   );
 
@@ -107,96 +87,121 @@ export function SpeechToTextControl({
   }, [value]);
 
   useEffect(() => {
+    if (!isRecording) {
+      setRecordingSeconds(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setRecordingSeconds((previous) => previous + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isRecording]);
+
+  useEffect(() => {
     return () => {
-      ignoreNextAbortRef.current = true;
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
+      recorderRef.current?.stop();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      recorderRef.current = null;
+      streamRef.current = null;
     };
   }, []);
 
-  function stopListening() {
-    ignoreNextAbortRef.current = true;
-    recognitionRef.current?.stop();
-    setIsListening(false);
-    setInterimText("");
+  async function transcribeBlob(blob: Blob, mimeType: string) {
+    const extension = getExtensionFromMimeType(mimeType);
+    const file = new File([blob], `speech.${extension}`, { type: mimeType || "audio/webm" });
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("language", language);
+
+    const response = await fetch("/api/speech-to-text", {
+      method: "POST",
+      body: formData,
+    });
+
+    const payload = (await response.json().catch(() => null)) as { text?: string; error?: string } | null;
+
+    if (!response.ok) {
+      throw new Error(payload?.error ?? "Яриаг текст болгож чадсангүй.");
+    }
+
+    if (!payload?.text?.trim()) {
+      throw new Error("Ярианаас текст танигдсангүй.");
+    }
+
+    onChange(appendTranscript(valueRef.current, payload.text));
   }
 
-  function startListening() {
-    if (!isSupported || typeof window === "undefined") {
-      setError("Таны browser ярианаас текст болгох боломжийг дэмжихгүй байна.");
+  async function startRecording() {
+    if (!isSupported) {
+      setError("Энэ browser дээр микрофон бичлэг дэмжигдэхгүй байна.");
       return;
     }
 
-    if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
-      setError("Speech-to-text нь HTTPS эсвэл localhost орчинд ажиллана.");
+    if (typeof window !== "undefined" && window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
+      setError("Микрофон бичлэг нь HTTPS эсвэл localhost орчинд ажиллана.");
       return;
     }
 
-    setError(null);
+    try {
+      setError(null);
+      chunksRef.current = [];
 
-    const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = getPreferredMimeType();
+      const recorder = new MediaRecorder(stream, { mimeType });
 
-    if (!Recognition) {
-      setError("Таны browser ярианаас текст болгох боломжийг дэмжихгүй байна.");
-      return;
-    }
+      streamRef.current = stream;
+      recorderRef.current = recorder;
 
-    ignoreNextAbortRef.current = true;
-    recognitionRef.current?.stop();
-
-    const recognition = new Recognition();
-    recognition.lang = language;
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event) => {
-      let finalTranscript = "";
-      let nextInterim = "";
-
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        const transcript = result[0]?.transcript ?? "";
-
-        if (result.isFinal) {
-          finalTranscript += transcript;
-        } else {
-          nextInterim += transcript;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
         }
-      }
+      };
 
-      if (finalTranscript.trim()) {
-        onChange(appendTranscript(valueRef.current, finalTranscript));
-      }
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType });
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        recorderRef.current = null;
+        setIsRecording(false);
 
-      setInterimText(nextInterim.trim());
-    };
+        if (audioBlob.size === 0) {
+          setError("Бичлэг хоосон байна. Дахин оролдоно уу.");
+          return;
+        }
 
-    recognition.onerror = (event) => {
-      setIsListening(false);
-      setInterimText("");
+        try {
+          setIsTranscribing(true);
+          await transcribeBlob(audioBlob, recorder.mimeType || mimeType);
+        } catch (transcriptionError) {
+          setError(
+            transcriptionError instanceof Error
+              ? transcriptionError.message
+              : "Яриаг текст болгож чадсангүй.",
+          );
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
 
-      if (event.error === "aborted" && ignoreNextAbortRef.current) {
-        ignoreNextAbortRef.current = false;
+      recorder.start(250);
+      setRecordingSeconds(0);
+      setIsRecording(true);
+    } catch (recordingError) {
+      if (recordingError instanceof DOMException && recordingError.name === "NotAllowedError") {
+        setError("Микрофоны зөвшөөрлөө нээгээд дахин оролдоно уу.");
         return;
       }
 
-      setError(getSpeechErrorMessage(event.error, language));
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      setInterimText("");
-      ignoreNextAbortRef.current = false;
-    };
-
-    recognitionRef.current = recognition;
-
-    try {
-      recognition.start();
-      setIsListening(true);
-    } catch {
       setError("Микрофон эхлүүлэх үед алдаа гарлаа. Browser-оо дахин ачаалаад оролдоно уу.");
     }
+  }
+
+  function stopRecording() {
+    recorderRef.current?.stop();
   }
 
   return (
@@ -207,7 +212,7 @@ export function SpeechToTextControl({
             Ярианаас текст
           </p>
           <p className="mt-1 text-sm text-slate-600">
-            Микрофоноор хэлсэн үг таны тайлбар дээр автоматаар нэмэгдэнэ.
+            Микрофоноор хэлсэн үг OpenAI Whisper-аар хөрвөж таны тайлбар дээр нэмэгдэнэ.
           </p>
         </div>
 
@@ -215,32 +220,38 @@ export function SpeechToTextControl({
           <select
             value={language}
             onChange={(event) => setLanguage(event.target.value as SpeechLanguage)}
-            disabled={isListening}
+            disabled={isRecording || isTranscribing}
             className="rounded-full border border-cyan-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 disabled:opacity-60"
           >
-            <option value="mn-MN">Монгол</option>
-            <option value="en-US">Англи</option>
+            <option value="mn">Монгол</option>
+            <option value="en">Англи</option>
           </select>
 
           <button
             type="button"
-            onClick={isListening ? stopListening : startListening}
-            disabled={!isSupported}
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={!isSupported || isTranscribing}
             className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-              isListening
+              isRecording
                 ? "bg-slate-950 text-white hover:bg-slate-800"
                 : "bg-[linear-gradient(135deg,#31c4e8,#129fd5)] text-white hover:brightness-105"
             } disabled:cursor-not-allowed disabled:opacity-60`}
           >
             <span className="inline-flex h-2.5 w-2.5 rounded-full bg-current" />
-            {isListening ? "Зогсоох" : "Микрофон асаах"}
+            {isRecording ? "Бичлэг зогсоох" : "Микрофон асаах"}
           </button>
         </div>
       </div>
 
-      {interimText ? (
+      {isRecording ? (
+        <p className="mt-2 rounded-[0.9rem] border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
+          Бичиж байна... {recordingSeconds} сек
+        </p>
+      ) : null}
+
+      {isTranscribing ? (
         <p className="mt-2 rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-          Танигдаж байна: {interimText}
+          Whisper руу илгээж, текст болгон хөрвүүлж байна...
         </p>
       ) : null}
 
@@ -252,7 +263,7 @@ export function SpeechToTextControl({
 
       {!isSupported ? (
         <p className="mt-2 rounded-[0.9rem] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-          Энэ browser дээр speech-to-text дэмжигдэхгүй байна. Chrome эсвэл Edge дээр шалгаарай.
+          Энэ browser дээр микрофон бичлэг дэмжигдэхгүй байна. Chrome эсвэл Edge дээр шалгаарай.
         </p>
       ) : null}
     </div>
