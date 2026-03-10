@@ -1,4 +1,4 @@
-export const ELEVENLABS_VOICES = [
+﻿export const ELEVENLABS_VOICES = [
   "RILOU7YmBhvwJGDGjNmP",
   "Z3R5wn05IrDiVCyEkUrK",
   "st7NwhTPEzqo2riw7qWC",
@@ -10,16 +10,47 @@ export const ELEVENLABS_VOICES = [
 export type ElevenLabsVoice = (typeof ELEVENLABS_VOICES)[number];
 
 export const ELEVENLABS_VOICE_OPTIONS = [
-  { id: "RILOU7YmBhvwJGDGjNmP", label: "Жинжиймаа", group: "Эмэгтэй" },
-  { id: "Z3R5wn05IrDiVCyEkUrK", label: "Уянгалаг Уянга", group: "Эмэгтэй" },
-  { id: "st7NwhTPEzqo2riw7qWC", label: "Цоглог Цогзолмаа", group: "Эмэгтэй" },
-  { id: "YOq2y2Up4RgXP2HyXjE5", label: "Батаа", group: "Эрэгтэй" },
-  { id: "NOpBlnGInO9m6vDvFkFC", label: "Улмаа", group: "Эрэгтэй" },
-  { id: "x70vRnQBMBu4FAYhjJbO", label: "Наабаа", group: "Эрэгтэй" },
+  {
+    id: "RILOU7YmBhvwJGDGjNmP",
+    label: "Жинжиймаа",
+    group: "Эмэгтэй",
+    demoUrl: "/jane_jinjiimaa.mp3",
+  },
+  {
+    id: "Z3R5wn05IrDiVCyEkUrK",
+    label: "Уянгалаг Уянга",
+    group: "Эмэгтэй",
+    demoUrl: "/arabella_uyanga.mp3",
+  },
+  {
+    id: "st7NwhTPEzqo2riw7qWC",
+    label: "Цоглог Цогзолмаа",
+    group: "Эмэгтэй",
+    demoUrl: "/blondie_tsogzolmaa.mp3",
+  },
+  {
+    id: "YOq2y2Up4RgXP2HyXjE5",
+    label: "Батаа",
+    group: "Эрэгтэй",
+    demoUrl: "/xavier_bargilBataa.mp3",
+  },
+  {
+    id: "NOpBlnGInO9m6vDvFkFC",
+    label: "Улмаа",
+    group: "Эрэгтэй",
+    demoUrl: "/spudsoxley_uhaalagUlmaa.mp3",
+  },
+  {
+    id: "x70vRnQBMBu4FAYhjJbO",
+    label: "Наабаа",
+    group: "Эрэгтэй",
+    demoUrl: "/nathan_NambalagNaabaa.mp3",
+  },
 ] as const satisfies ReadonlyArray<{
   id: ElevenLabsVoice;
   label: string;
   group: "Эмэгтэй" | "Эрэгтэй";
+  demoUrl: string;
 }>;
 
 export const DEFAULT_DIALOGUE_VOICES = {
@@ -29,6 +60,10 @@ export const DEFAULT_DIALOGUE_VOICES = {
 
 export function getElevenLabsVoiceLabel(voiceId: string) {
   return ELEVENLABS_VOICE_OPTIONS.find((voice) => voice.id === voiceId)?.label ?? voiceId;
+}
+
+export function getElevenLabsVoiceDemoUrl(voiceId: string) {
+  return ELEVENLABS_VOICE_OPTIONS.find((voice) => voice.id === voiceId)?.demoUrl ?? null;
 }
 
 export type DialogueLine = {

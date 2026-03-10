@@ -1,10 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
   DEFAULT_DIALOGUE_VOICES,
+  getElevenLabsVoiceDemoUrl,
+  getElevenLabsVoiceLabel,
   ELEVENLABS_VOICE_OPTIONS,
 } from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
@@ -82,9 +84,7 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
       const payload = (await response.json()) as Record<string, unknown>;
 
       if (!response.ok) {
-        setError(
-          typeof payload.error === "string" ? payload.error : "Аудио үүсгэхэд алдаа гарлаа.",
-        );
+        setError(typeof payload.error === "string" ? payload.error : "Аудио үүсгэхэд алдаа гарлаа.");
         return;
       }
 
@@ -106,7 +106,7 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Аудио үүсгэх</h2>
-          <p className="mt-0.5 text-xs text-slate-500">ElevenLabs Text-to-Dialogue v3</p>
+          <p className="mt-0.5 text-xs text-slate-500">Олон хоолойтой яриаг нэг дор бэлтгэнэ</p>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
           Кредит: {currentCredits}
@@ -116,42 +116,61 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-3">
           <p className="text-sm font-medium text-slate-700">Ярианы мөрүүд</p>
-          {lines.map((line, index) => (
-            <div key={index} className="flex items-start gap-2">
-              <select
-                value={line.voice}
-                onChange={(event) => updateLine(index, "voice", event.target.value)}
-                className="w-32 shrink-0 rounded-xl border border-slate-300 px-2 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
-              >
-                {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
-                  <optgroup key={group} label={group}>
-                    {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
-                      <option key={voice.id} value={voice.id}>
-                        {voice.label}
-                      </option>
+          {lines.map((line, index) => {
+            const voiceDemoUrl = getElevenLabsVoiceDemoUrl(line.voice);
+            const voiceLabel = getElevenLabsVoiceLabel(line.voice);
+
+            return (
+              <div key={`${line.voice}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                <div className="flex items-start gap-2">
+                  <select
+                    value={line.voice}
+                    onChange={(event) => updateLine(index, "voice", event.target.value)}
+                    className="w-40 shrink-0 rounded-xl border border-slate-300 px-2 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
+                  >
+                    {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
+                      <optgroup key={group} label={group}>
+                        {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
+                          <option key={voice.id} value={voice.id}>
+                            {voice.label}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
-                  </optgroup>
-                ))}
-              </select>
-              <textarea
-                value={line.text}
-                onChange={(event) => updateLine(index, "text", event.target.value)}
-                placeholder={`${index + 1}-р мөр`}
-                rows={2}
-                className="flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
-              />
-              {lines.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeLine(index)}
-                  className="mt-1 text-lg leading-none text-slate-400 hover:text-rose-500"
-                  aria-label="Мөр устгах"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
+                  </select>
+                  <textarea
+                    value={line.text}
+                    onChange={(event) => updateLine(index, "text", event.target.value)}
+                    placeholder={`${index + 1}-р мөр`}
+                    rows={2}
+                    className="flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500"
+                  />
+                  {lines.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeLine(index)}
+                      className="mt-1 text-lg leading-none text-slate-400 hover:text-rose-500"
+                      aria-label="Мөр устгах"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
+                {voiceDemoUrl ? (
+                  <div className="mt-3 rounded-xl border border-cyan-100 bg-white p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Demo хоолой</p>
+                      <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-medium text-cyan-700">
+                        {voiceLabel}
+                      </span>
+                    </div>
+                    <audio controls preload="none" src={voiceDemoUrl} className="w-full" />
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
 
           {lines.length < 20 && (
             <button
@@ -176,7 +195,7 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
             className="mt-1 w-full accent-slate-700"
           />
           <span className="mt-0.5 flex justify-between text-xs text-slate-400">
-            <span>Илүү хувирамтгай</span>
+            <span>Илүү чөлөөтэй</span>
             <span>Илүү тогтвортой</span>
           </span>
         </label>

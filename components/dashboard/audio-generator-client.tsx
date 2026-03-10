@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import {
   DEFAULT_DIALOGUE_VOICES,
+  getElevenLabsVoiceDemoUrl,
+  getElevenLabsVoiceLabel,
   ELEVENLABS_VOICE_OPTIONS,
 } from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
@@ -93,12 +95,12 @@ export function AudioGeneratorClient({
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (filledLines.length === 0) {
-      setError("Хамгийн багадаа нэг мөр текст оруулна уу.");
+      setError("Ð¥Ð°Ð¼Ð³Ð¸Ð¹Ð½ Ð±Ð°Ð³Ð°Ð´Ð°Ð° Ð½ÑÐ³ Ð¼Ó©Ñ€ Ñ‚ÐµÐºÑÑ‚ Ð¾Ñ€ÑƒÑƒÐ»Ð½Ð° ÑƒÑƒ.");
       return;
     }
 
     if (availableCredits < currentCost) {
-      setError(`Кредит хүрэлцэхгүй байна. ${currentCost} кредит шаардлагатай.`);
+      setError(`ÐšÑ€ÐµÐ´Ð¸Ñ‚ Ñ…Ò¯Ñ€ÑÐ»Ñ†ÑÑ…Ð³Ò¯Ð¹ Ð±Ð°Ð¹Ð½Ð°. ${currentCost} ÐºÑ€ÐµÐ´Ð¸Ñ‚ ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹.`);
       return;
     }
 
@@ -113,7 +115,7 @@ export function AudioGeneratorClient({
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "Алдаа гарлаа.");
+        setError(payload.error ?? "ÐÐ»Ð´Ð°Ð° Ð³Ð°Ñ€Ð»Ð°Ð°.");
         return;
       }
 
@@ -121,7 +123,7 @@ export function AudioGeneratorClient({
       setLines(createInitialLines());
       router.refresh();
     } catch {
-      setError("Алдаа гарлаа. Дахин оролдоно уу.");
+      setError("ÐÐ»Ð´Ð°Ð° Ð³Ð°Ñ€Ð»Ð°Ð°. Ð”Ð°Ñ…Ð¸Ð½ Ð¾Ñ€Ð¾Ð»Ð´Ð¾Ð½Ð¾ ÑƒÑƒ.");
     } finally {
       setIsPending(false);
     }
@@ -150,16 +152,16 @@ export function AudioGeneratorClient({
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                   <div>
-                    <h1 className="text-2xl font-semibold text-slate-950">Аудио үүсгэх</h1>
+                    <h1 className="text-2xl font-semibold text-slate-950">ÐÑƒÐ´Ð¸Ð¾ Ò¯Ò¯ÑÐ³ÑÑ…</h1>
                     <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                      Харилцан ярианы мөрүүдээ оруулаад, дуу хоолойгоо сонгон нэг дор MP3
-                      болгож гаргана.
+                      Ð¥Ð°Ñ€Ð¸Ð»Ñ†Ð°Ð½ ÑÑ€Ð¸Ð°Ð½Ñ‹ Ð¼Ó©Ñ€Ò¯Ò¯Ð´ÑÑ Ð¾Ñ€ÑƒÑƒÐ»Ð°Ð°Ð´, Ð´ÑƒÑƒ Ñ…Ð¾Ð¾Ð»Ð¾Ð¹Ð³Ð¾Ð¾ ÑÐ¾Ð½Ð³Ð¾Ð½ Ð½ÑÐ³ Ð´Ð¾Ñ€ MP3
+                      Ð±Ð¾Ð»Ð³Ð¾Ð¶ Ð³Ð°Ñ€Ð³Ð°Ð½Ð°.
                     </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Ò®Ð»Ð´ÑÐ³Ð´ÑÐ» ÐºÑ€ÐµÐ´Ð¸Ñ‚</p>
                   <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
                 </div>
               </div>
@@ -168,22 +170,22 @@ export function AudioGeneratorClient({
             <GenerationPricingCard
               currentCost={currentCost}
               currentCostDetail={formatMnt(currentCostMnt)}
-              description="ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд 14 кредитээр бодогдоно."
+              description="ElevenLabs Text-to-Speech V3 Ð½ÑŒ 1,000 Ñ‚ÑÐ¼Ð´ÑÐ³Ñ‚ Ñ‚ÑƒÑ‚Ð°Ð¼Ð´ 14 ÐºÑ€ÐµÐ´Ð¸Ñ‚ÑÑÑ€ Ð±Ð¾Ð´Ð¾Ð³Ð´Ð¾Ð½Ð¾."
               metrics={[
                 {
-                  label: "Нийт тэмдэгт",
+                  label: "ÐÐ¸Ð¹Ñ‚ Ñ‚ÑÐ¼Ð´ÑÐ³Ñ‚",
                   value: `${formatCredits(characterCount)}`,
-                  detail: "Оруулсан бүх мөрийн нийлбэр",
+                  detail: "ÐžÑ€ÑƒÑƒÐ»ÑÐ°Ð½ Ð±Ò¯Ñ… Ð¼Ó©Ñ€Ð¸Ð¹Ð½ Ð½Ð¸Ð¹Ð»Ð±ÑÑ€",
                 },
                 {
-                  label: "Тариф",
-                  value: "14 кредит",
-                  detail: `1,000 тэмдэгт тутамд · ${formatMnt(creditsToMnt(14, creditPriceMnt))}`,
+                  label: "Ð¢Ð°Ñ€Ð¸Ñ„",
+                  value: "14 ÐºÑ€ÐµÐ´Ð¸Ñ‚",
+                  detail: `1,000 Ñ‚ÑÐ¼Ð´ÑÐ³Ñ‚ Ñ‚ÑƒÑ‚Ð°Ð¼Ð´ Â· ${formatMnt(creditsToMnt(14, creditPriceMnt))}`,
                 },
                 {
-                  label: "Идэвхтэй мөр",
+                  label: "Ð˜Ð´ÑÐ²Ñ…Ñ‚ÑÐ¹ Ð¼Ó©Ñ€",
                   value: `${filledCount}`,
-                  detail: "Хоосон бус мөр",
+                  detail: "Ð¥Ð¾Ð¾ÑÐ¾Ð½ Ð±ÑƒÑ Ð¼Ó©Ñ€",
                 },
               ]}
             />
@@ -191,65 +193,84 @@ export function AudioGeneratorClient({
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Харилцан яриа</h2>
+                  <h2 className="text-sm font-semibold text-slate-900">Ð¥Ð°Ñ€Ð¸Ð»Ñ†Ð°Ð½ ÑÑ€Ð¸Ð°</h2>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Хоолой бүрт тусдаа мөр үүсгээд текстээ бөглөнө үү.
+                    Ð¥Ð¾Ð¾Ð»Ð¾Ð¹ Ð±Ò¯Ñ€Ñ‚ Ñ‚ÑƒÑÐ´Ð°Ð° Ð¼Ó©Ñ€ Ò¯Ò¯ÑÐ³ÑÑÐ´ Ñ‚ÐµÐºÑÑ‚ÑÑ Ð±Ó©Ð³Ð»Ó©Ð½Ó© Ò¯Ò¯.
                   </p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  {filledCount}/{lines.length} идэвхтэй
+                  {filledCount}/{lines.length} Ð¸Ð´ÑÐ²Ñ…Ñ‚ÑÐ¹
                 </span>
               </div>
 
               <div className="mt-4 space-y-3">
-                {lines.map((line, index) => (
-                  <div
-                    key={`${line.voice}-${index}`}
-                    className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
-                        {index + 1}
-                      </div>
-                      <select
-                        value={line.voice}
-                        onChange={(event) => updateLine(index, "voice", event.target.value)}
-                        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
-                      >
-                        {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
-                          <optgroup key={group} label={group}>
-                            {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
-                              <option key={voice.id} value={voice.id}>
-                                {voice.label}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                      {lines.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeLine(index)}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100"
-                          aria-label="Мөр устгах"
-                        >
-                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 6 6 18" />
-                            <path d="m6 6 12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
+                {lines.map((line, index) => {
+                  const voiceDemoUrl = getElevenLabsVoiceDemoUrl(line.voice);
+                  const voiceLabel = getElevenLabsVoiceLabel(line.voice);
 
-                    <textarea
-                      value={line.text}
-                      onChange={(event) => updateLine(index, "text", event.target.value)}
-                      placeholder={`${index + 1}-р мөрийн текст`}
-                      rows={3}
-                      className="mt-3 w-full resize-none rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
-                    />
-                  </div>
-                ))}
+                  return (
+                    <div
+                      key={`${line.voice}-${index}`}
+                      className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
+                          {index + 1}
+                        </div>
+                        <select
+                          value={line.voice}
+                          onChange={(event) => updateLine(index, "voice", event.target.value)}
+                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                        >
+                          {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
+                            <optgroup key={group} label={group}>
+                              {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
+                                <option key={voice.id} value={voice.id}>
+                                  {voice.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                        {lines.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeLine(index)}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100"
+                            aria-label="Мөр устгах"
+                          >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 6 6 18" />
+                              <path d="m6 6 12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {voiceDemoUrl ? (
+                        <div className="mt-3 rounded-[1rem] border border-cyan-100 bg-white/80 p-3">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                              Demo хоолой
+                            </p>
+                            <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-medium text-cyan-700">
+                              {voiceLabel}
+                            </span>
+                          </div>
+                          <audio controls preload="none" src={voiceDemoUrl} className="w-full" />
+                        </div>
+                      ) : null}
+
+                      <textarea
+                        value={line.text}
+                        onChange={(event) => updateLine(index, "text", event.target.value)}
+                        placeholder={`${index + 1}-р мөрийн текст`}
+                        rows={3}
+                        className="mt-3 w-full resize-none rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                      />
+                    </div>
+                  );
+                })}
               </div>
 
               {lines.length < 20 && (
@@ -262,7 +283,7 @@ export function AudioGeneratorClient({
                     <line x1="12" x2="12" y1="5" y2="19" />
                     <line x1="5" x2="19" y1="12" y2="12" />
                   </svg>
-                  Мөр нэмэх
+                  ÐœÓ©Ñ€ Ð½ÑÐ¼ÑÑ…
                 </button>
               )}
             </section>
@@ -270,8 +291,8 @@ export function AudioGeneratorClient({
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Тогтвортой байдал</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">Дуу хоолойн тогтвортой байдлыг тохируулна.</p>
+                  <h2 className="text-sm font-semibold text-slate-900">Ð¢Ð¾Ð³Ñ‚Ð²Ð¾Ñ€Ñ‚Ð¾Ð¹ Ð±Ð°Ð¹Ð´Ð°Ð»</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">Ð”ÑƒÑƒ Ñ…Ð¾Ð¾Ð»Ð¾Ð¹Ð½ Ñ‚Ð¾Ð³Ñ‚Ð²Ð¾Ñ€Ñ‚Ð¾Ð¹ Ð±Ð°Ð¹Ð´Ð»Ñ‹Ð³ Ñ‚Ð¾Ñ…Ð¸Ñ€ÑƒÑƒÐ»Ð½Ð°.</p>
                 </div>
                 <span className="rounded-full bg-cyan-50 px-3 py-1 text-sm font-semibold text-cyan-700">
                   {stability.toFixed(1)}
@@ -289,8 +310,8 @@ export function AudioGeneratorClient({
               />
 
               <div className="mt-3 flex justify-between text-xs text-slate-500">
-                <span>Илүү чөлөөтэй</span>
-                <span>Илүү тогтвортой</span>
+                <span>Ð˜Ð»Ò¯Ò¯ Ñ‡Ó©Ð»Ó©Ó©Ñ‚ÑÐ¹</span>
+                <span>Ð˜Ð»Ò¯Ò¯ Ñ‚Ð¾Ð³Ñ‚Ð²Ð¾Ñ€Ñ‚Ð¾Ð¹</span>
               </div>
             </section>
           </div>
@@ -315,10 +336,10 @@ export function AudioGeneratorClient({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Аудио боловсруулж байна...
+                    ÐÑƒÐ´Ð¸Ð¾ Ð±Ð¾Ð»Ð¾Ð²ÑÑ€ÑƒÑƒÐ»Ð¶ Ð±Ð°Ð¹Ð½Ð°...
                   </>
                 ) : (
-                  `Аудио үүсгэх · ${currentCost} кр · ${formatMnt(currentCostMnt)}`
+                  `ÐÑƒÐ´Ð¸Ð¾ Ò¯Ò¯ÑÐ³ÑÑ… Â· ${currentCost} ÐºÑ€ Â· ${formatMnt(currentCostMnt)}`
                 )}
               </button>
 
@@ -328,12 +349,12 @@ export function AudioGeneratorClient({
                 disabled={isPending}
                 className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
-                Цэвэрлэх
+                Ð¦ÑÐ²ÑÑ€Ð»ÑÑ…
               </button>
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит буюу {formatMnt(currentCostMnt)} шаардлагатай.
+                ÐšÑ€ÐµÐ´Ð¸Ñ‚ Ñ…Ò¯Ñ€ÑÐ»Ñ†ÑÑ…Ð³Ò¯Ð¹ Ð±Ð°Ð¹Ð½Ð°. Ð”Ð¾Ð¾Ð´ Ñ‚Ð°Ð» Ð½ÑŒ {currentCost} ÐºÑ€ÐµÐ´Ð¸Ñ‚ Ð±ÑƒÑŽÑƒ {formatMnt(currentCostMnt)} ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹.
               </p>
             ) : null}
           </div>
@@ -346,26 +367,26 @@ export function AudioGeneratorClient({
             <div className="relative z-10 flex h-full flex-col justify-between gap-6">
               <div>
                 <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
-                  Шууд сонсох
+                  Ð¨ÑƒÑƒÐ´ ÑÐ¾Ð½ÑÐ¾Ñ…
                 </span>
-                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Нэг дэлгэц дээр бичиж, үүсгэж, сонсох</h2>
+                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">ÐÑÐ³ Ð´ÑÐ»Ð³ÑÑ† Ð´ÑÑÑ€ Ð±Ð¸Ñ‡Ð¸Ð¶, Ò¯Ò¯ÑÐ³ÑÐ¶, ÑÐ¾Ð½ÑÐ¾Ñ…</h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                  Мобайл хэрэглээнд текстээ зүүн талд бэлдээд, гарсан MP3-аа баруун талд
-                  шууд сонсох урсгалтай болгосон.
+                  ÐœÐ¾Ð±Ð°Ð¹Ð» Ñ…ÑÑ€ÑÐ³Ð»ÑÑÐ½Ð´ Ñ‚ÐµÐºÑÑ‚ÑÑ Ð·Ò¯Ò¯Ð½ Ñ‚Ð°Ð»Ð´ Ð±ÑÐ»Ð´ÑÑÐ´, Ð³Ð°Ñ€ÑÐ°Ð½ MP3-Ð°Ð° Ð±Ð°Ñ€ÑƒÑƒÐ½ Ñ‚Ð°Ð»Ð´
+                  ÑˆÑƒÑƒÐ´ ÑÐ¾Ð½ÑÐ¾Ñ… ÑƒÑ€ÑÐ³Ð°Ð»Ñ‚Ð°Ð¹ Ð±Ð¾Ð»Ð³Ð¾ÑÐ¾Ð½.
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Мөр</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">ÐœÓ©Ñ€</p>
                   <p className="mt-2 text-lg font-semibold">{lines.length}</p>
                 </div>
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Идэвхтэй</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Ð˜Ð´ÑÐ²Ñ…Ñ‚ÑÐ¹</p>
                   <p className="mt-2 text-lg font-semibold">{filledCount}</p>
                 </div>
                 <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Тогтвортой байдал</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Ð¢Ð¾Ð³Ñ‚Ð²Ð¾Ñ€Ñ‚Ð¾Ð¹ Ð±Ð°Ð¹Ð´Ð°Ð»</p>
                   <p className="mt-2 text-lg font-semibold">{stability.toFixed(1)}</p>
                 </div>
               </div>
@@ -374,16 +395,16 @@ export function AudioGeneratorClient({
 
           <aside className="grid gap-4">
             <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Хэрэглэх зөвлөмж</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Ð¥ÑÑ€ÑÐ³Ð»ÑÑ… Ð·Ó©Ð²Ð»Ó©Ð¼Ð¶</p>
               <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <li>1. Нэг мөрт нэг speaker байлга.</li>
-                <li>2. Урт өгүүлбэрийг жижиглэвэл илүү цэвэр гарна.</li>
-                <li>3. Дуу хоолойн хурд, амьсгалыг текст дээрээ тусга.</li>
+                <li>1. ÐÑÐ³ Ð¼Ó©Ñ€Ñ‚ Ð½ÑÐ³ speaker Ð±Ð°Ð¹Ð»Ð³Ð°.</li>
+                <li>2. Ð£Ñ€Ñ‚ Ó©Ð³Ò¯Ò¯Ð»Ð±ÑÑ€Ð¸Ð¹Ð³ Ð¶Ð¸Ð¶Ð¸Ð³Ð»ÑÐ²ÑÐ» Ð¸Ð»Ò¯Ò¯ Ñ†ÑÐ²ÑÑ€ Ð³Ð°Ñ€Ð½Ð°.</li>
+                <li>3. Ð”ÑƒÑƒ Ñ…Ð¾Ð¾Ð»Ð¾Ð¹Ð½ Ñ…ÑƒÑ€Ð´, Ð°Ð¼ÑŒÑÐ³Ð°Ð»Ñ‹Ð³ Ñ‚ÐµÐºÑÑ‚ Ð´ÑÑÑ€ÑÑ Ñ‚ÑƒÑÐ³Ð°.</li>
               </ul>
             </div>
             <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
+              <p className="text-sm font-semibold text-slate-900">ÐšÑ€ÐµÐ´Ð¸Ñ‚ Ð·Ó©Ð²Ñ…Ó©Ð½ Ð°Ð¼Ð¶Ð¸Ð»Ñ‚Ñ‚Ð°Ð¹ Ò¯Ò¯ÑÑÑÐ½ Ò¯ÐµÐ´ Ñ…Ð°ÑÐ°Ð³Ð´Ð°Ð½Ð°.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">ÐÐ»Ð´Ð°Ð° Ð³Ð°Ñ€Ð²Ð°Ð» Ò¯Ð»Ð´ÑÐ³Ð´ÑÐ»Ð´ Ó©Ó©Ñ€Ñ‡Ð»Ó©Ð»Ñ‚ Ð¾Ñ€Ð¾Ñ…Ð³Ò¯Ð¹.</p>
             </div>
           </aside>
         </div>
@@ -392,8 +413,8 @@ export function AudioGeneratorClient({
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-slate-950">Гаралт</h3>
-                <p className="mt-1 text-sm text-slate-500">Үүссэн аудио файл энд шууд тоглогдоно.</p>
+                <h3 className="text-lg font-semibold text-slate-950">Ð“Ð°Ñ€Ð°Ð»Ñ‚</h3>
+                <p className="mt-1 text-sm text-slate-500">Ò®Ò¯ÑÑÑÐ½ Ð°ÑƒÐ´Ð¸Ð¾ Ñ„Ð°Ð¹Ð» ÑÐ½Ð´ ÑˆÑƒÑƒÐ´ Ñ‚Ð¾Ð³Ð»Ð¾Ð³Ð´Ð¾Ð½Ð¾.</p>
               </div>
               <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">MP3</span>
             </div>
@@ -406,9 +427,9 @@ export function AudioGeneratorClient({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 </div>
-                <h4 className="mt-5 text-xl font-semibold text-slate-950">Аудио үүсгэж байна...</h4>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">ÐÑƒÐ´Ð¸Ð¾ Ò¯Ò¯ÑÐ³ÑÐ¶ Ð±Ð°Ð¹Ð½Ð°...</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Хүсэлтийг боловсруулж байна. Дуусмагц тоглуулах болон татах товч гарч ирнэ.
+                  Ð¥Ò¯ÑÑÐ»Ñ‚Ð¸Ð¹Ð³ Ð±Ð¾Ð»Ð¾Ð²ÑÑ€ÑƒÑƒÐ»Ð¶ Ð±Ð°Ð¹Ð½Ð°. Ð”ÑƒÑƒÑÐ¼Ð°Ð³Ñ† Ñ‚Ð¾Ð³Ð»ÑƒÑƒÐ»Ð°Ñ… Ð±Ð¾Ð»Ð¾Ð½ Ñ‚Ð°Ñ‚Ð°Ñ… Ñ‚Ð¾Ð²Ñ‡ Ð³Ð°Ñ€Ñ‡ Ð¸Ñ€Ð½Ñ.
                 </p>
               </div>
             ) : result ? (
@@ -425,7 +446,7 @@ export function AudioGeneratorClient({
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap gap-2 text-sm text-slate-600">
                       <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">MP3</span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">{result.cost} кредит</span>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">{result.cost} ÐºÑ€ÐµÐ´Ð¸Ñ‚</span>
                     </div>
                     <a
                       href={result.audio_url}
@@ -437,7 +458,7 @@ export function AudioGeneratorClient({
                         <polyline points="7 10 12 15 17 10" />
                         <line x1="12" x2="12" y1="15" y2="3" />
                       </svg>
-                      Аудио татах
+                      ÐÑƒÐ´Ð¸Ð¾ Ñ‚Ð°Ñ‚Ð°Ñ…
                     </a>
                   </div>
                 </div>
@@ -451,10 +472,10 @@ export function AudioGeneratorClient({
                     <circle cx="18" cy="16" r="3" />
                   </svg>
                 </div>
-                <h4 className="mt-5 text-xl font-semibold text-slate-950">Таны аудио энд гарна</h4>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">Ð¢Ð°Ð½Ñ‹ Ð°ÑƒÐ´Ð¸Ð¾ ÑÐ½Ð´ Ð³Ð°Ñ€Ð½Ð°</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Dialogue мөрүүдээ бөглөөд үүсгэхэд бэлэн. Preview хэсгийг mobile дээр том
-                  тоглуулагчтай байхаар шинэчилсэн.
+                  Dialogue Ð¼Ó©Ñ€Ò¯Ò¯Ð´ÑÑ Ð±Ó©Ð³Ð»Ó©Ó©Ð´ Ò¯Ò¯ÑÐ³ÑÑ…ÑÐ´ Ð±ÑÐ»ÑÐ½. Preview Ñ…ÑÑÐ³Ð¸Ð¹Ð³ mobile Ð´ÑÑÑ€ Ñ‚Ð¾Ð¼
+                  Ñ‚Ð¾Ð³Ð»ÑƒÑƒÐ»Ð°Ð³Ñ‡Ñ‚Ð°Ð¹ Ð±Ð°Ð¹Ñ…Ð°Ð°Ñ€ ÑˆÐ¸Ð½ÑÑ‡Ð¸Ð»ÑÑÐ½.
                 </p>
               </div>
             )}
@@ -464,11 +485,11 @@ export function AudioGeneratorClient({
             <div className="mt-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-950">Сүүлийн аудионууд</h3>
-                  <p className="mt-1 text-sm text-slate-500">Өмнөх үүсгэлтүүдээ эндээс дахин тоглуулж, татаж болно.</p>
+                  <h3 className="text-lg font-semibold text-slate-950">Ð¡Ò¯Ò¯Ð»Ð¸Ð¹Ð½ Ð°ÑƒÐ´Ð¸Ð¾Ð½ÑƒÑƒÐ´</h3>
+                  <p className="mt-1 text-sm text-slate-500">Ó¨Ð¼Ð½Ó©Ñ… Ò¯Ò¯ÑÐ³ÑÐ»Ñ‚Ò¯Ò¯Ð´ÑÑ ÑÐ½Ð´ÑÑÑ Ð´Ð°Ñ…Ð¸Ð½ Ñ‚Ð¾Ð³Ð»ÑƒÑƒÐ»Ð¶, Ñ‚Ð°Ñ‚Ð°Ð¶ Ð±Ð¾Ð»Ð½Ð¾.</p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  {history.length} бичлэг
+                  {history.length} Ð±Ð¸Ñ‡Ð»ÑÐ³
                 </span>
               </div>
 
@@ -483,7 +504,7 @@ export function AudioGeneratorClient({
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
                         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                           <span className="rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
-                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} ÐºÑ€ÐµÐ´Ð¸Ñ‚</span>
                         </div>
                       </div>
                       <a
@@ -496,7 +517,7 @@ export function AudioGeneratorClient({
                           <polyline points="7 10 12 15 17 10" />
                           <line x1="12" x2="12" y1="15" y2="3" />
                         </svg>
-                        Татах
+                        Ð¢Ð°Ñ‚Ð°Ñ…
                       </a>
                     </div>
                     <audio controls src={item.audio_url} className="mt-4 w-full" />
