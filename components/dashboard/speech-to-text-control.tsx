@@ -10,6 +10,7 @@ type SpeechToTextControlProps = {
 
 type SpeechLanguage = "mn" | "en";
 type TranscriptQualityRating = "high" | "medium" | "low";
+type MicrophonePermissionState = PermissionState | "unknown";
 
 type SpeechToTextResponse = {
   rawTranscript: string;
@@ -171,6 +172,19 @@ function getQualityLabel(rating: TranscriptQualityRating) {
   }
 }
 
+function getMicrophonePermissionText(state: MicrophonePermissionState) {
+  switch (state) {
+    case "granted":
+      return "Микрофоны эрх нээгдсэн.";
+    case "denied":
+      return "Микрофоны эрх хаалттай байна. Browser-ийн site settings дээр Allow болгоно уу.";
+    case "prompt":
+      return "Эхний удаа browser микрофоны зөвшөөрөл асууна. Allow дарж үргэлжлүүлнэ үү.";
+    default:
+      return "Микрофоныг ашиглахын тулд browser зөвшөөрөл асууж магадгүй.";
+  }
+}
+
 export function SpeechToTextControl({
   value,
   onChange,
@@ -186,6 +200,7 @@ export function SpeechToTextControl({
   const valueRef = useRef(value);
   const stopRecordingRef = useRef<(message?: string) => Promise<void>>(async () => undefined);
   const recordingStartedAtRef = useRef<number | null>(null);
+  const microphonePermissionStatusRef = useRef<PermissionStatus | null>(null);
   const autoStoppedRef = useRef(false);
   const stopInProgressRef = useRef(false);
   const isRecordingRef = useRef(false);
@@ -195,6 +210,7 @@ export function SpeechToTextControl({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [microphonePermission, setMicrophonePermission] = useState<MicrophonePermissionState>("unknown");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [transcriptResult, setTranscriptResult] = useState<SpeechToTextResponse | null>(null);
   const isSupported = useSyncExternalStore(
@@ -242,6 +258,42 @@ export function SpeechToTextControl({
   useEffect(() => {
     return () => {
       void teardownAudioCapture();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.permissions?.query) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void navigator.permissions
+      .query({ name: "microphone" as PermissionName })
+      .then((status) => {
+        if (cancelled) {
+          return;
+        }
+
+        const syncPermissionState = () => setMicrophonePermission(status.state);
+
+        microphonePermissionStatusRef.current = status;
+        syncPermissionState();
+        status.onchange = syncPermissionState;
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMicrophonePermission("unknown");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+
+      if (microphonePermissionStatusRef.current) {
+        microphonePermissionStatusRef.current.onchange = null;
+        microphonePermissionStatusRef.current = null;
+      }
     };
   }, []);
 
@@ -360,12 +412,14 @@ export function SpeechToTextControl({
       return;
     }
 
-    if (
-      typeof window !== "undefined" &&
-      window.location.protocol !== "https:" &&
-      window.location.hostname !== "localhost"
-    ) {
+    if (typeof window !== "undefined" && !window.isSecureContext) {
       setError("Микрофон бичлэг нь HTTPS эсвэл localhost орчинд ажиллана.");
+      return;
+    }
+
+    if (microphonePermission === "denied") {
+      setError("Микрофоны эрх хаалттай байна. Address bar-ийн site settings дээр Allow болгоод дахин оролдоно уу.");
+      setInfo(null);
       return;
     }
 
@@ -378,7 +432,11 @@ export function SpeechToTextControl({
 
     try {
       setError(null);
-      setInfo(null);
+      setInfo(
+        microphonePermission === "granted"
+          ? null
+          : "Browser микрофоны зөвшөөрөл асуувал Allow дарж бичлэгээ эхлүүлнэ үү.",
+      );
       pcmChunksRef.current = [];
       autoStoppedRef.current = false;
       stopInProgressRef.current = false;
@@ -422,6 +480,7 @@ export function SpeechToTextControl({
       gainNodeRef.current = gainNode;
       recordingStartedAtRef.current = performance.now();
       isRecordingRef.current = true;
+      setMicrophonePermission("granted");
 
       setRecordingSeconds(0);
       setIsRecording(true);
@@ -430,7 +489,18 @@ export function SpeechToTextControl({
       await teardownAudioCapture();
 
       if (recordingError instanceof DOMException && recordingError.name === "NotAllowedError") {
-        setError("Микрофоны зөвшөөрлөө нээгээд дахин оролдоно уу.");
+        setMicrophonePermission("denied");
+        setError("Микрофоны зөвшөөрөл олгогдоогүй байна. Browser-ийн site settings дээр Allow болгоод дахин оролдоно уу.");
+        return;
+      }
+
+      if (recordingError instanceof DOMException && recordingError.name === "NotFoundError") {
+        setError("Төхөөрөмж дээр идэвхтэй микрофон олдсонгүй.");
+        return;
+      }
+
+      if (recordingError instanceof DOMException && recordingError.name === "NotReadableError") {
+        setError("Микрофоныг өөр апп эсвэл tab ашиглаж байна. Чөлөөлөөд дахин оролдоно уу.");
         return;
       }
 
@@ -484,7 +554,11 @@ export function SpeechToTextControl({
             } disabled:cursor-not-allowed disabled:opacity-60`}
           >
             <span className="inline-flex h-2.5 w-2.5 rounded-full bg-current" />
-            {isRecording ? "Бичлэг зогсоох" : "Микрофон асаах"}
+            {isRecording
+              ? "Бичлэг зогсоох"
+              : microphonePermission === "granted"
+                ? "Микрофон асаах"
+                : "Микрофон зөвшөөрч эхлэх"}
           </button>
         </div>
       </div>
@@ -493,6 +567,8 @@ export function SpeechToTextControl({
         10-20 секундийн тод, ойрын яриа хамгийн сайн танигдана. Clean mode асаавал дүүргэлт үг,
         тээнэгэлзлийг аюулгүй үед цэвэрлэнэ.
       </p>
+
+      <p className="mt-2 text-xs leading-5 text-slate-500">{getMicrophonePermissionText(microphonePermission)}</p>
 
       {isRecording ? (
         <p className="mt-2 rounded-[0.9rem] border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
