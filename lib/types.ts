@@ -2,7 +2,7 @@ export type UserRole = "agent" | "user" | "admin";
 
 export type CreditRequestStatus = "pending" | "approved" | "rejected";
 
-export type ImageAspectRatio = "1:1" | "4:5" | "16:9";
+export type ImageAspectRatio = "1:1" | "4:5" | "16:9" | "9:19";
 
 export type TariffRow = {
   id: string;

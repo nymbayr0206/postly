@@ -42,6 +42,7 @@ const ASPECT_RATIOS: Array<{ value: ImageAspectRatio; label: string; detail: str
   { value: "1:1", label: "1:1", detail: "Пост, квадрат зураг" },
   { value: "4:5", label: "4:5", detail: "Instagram босоо пост" },
   { value: "16:9", label: "16:9", detail: "Cover болон banner" },
+  { value: "9:19", label: "9:19", detail: "Story, Reel босоо кадр" },
 ];
 
 const IMAGE_RESOLUTION_OPTIONS: Array<{
