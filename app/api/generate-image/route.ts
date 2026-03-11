@@ -17,6 +17,7 @@ import {
 } from "@/lib/user-data";
 
 const BUCKET = "reference-images";
+const LEGACY_VERTICAL_STORAGE_ASPECT_RATIO = "4:5";
 
 /**
  * Base64 data URL-ийг Supabase Storage-д upload хийж нийтийн https:// URL буцаана.
@@ -62,6 +63,13 @@ async function resolveReferenceImages(images: string[], userId: string): Promise
   );
 }
 
+function isAspectRatioConstraintError(error: { message?: string; details?: string } | null | undefined) {
+  return (
+    error?.message?.includes("generations_aspect_ratio_check") ||
+    error?.details?.includes("generations_aspect_ratio_check")
+  );
+}
+
 const requestSchema = z.object({
   prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой.").max(1000, "Промпт хэт урт байна."),
   aspect_ratio: z.enum(ASPECT_RATIOS),
@@ -89,6 +97,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const requestData = parsed.data;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -101,15 +110,16 @@ export async function POST(request: Request) {
 
   try {
     await ensureUserRecords(supabase, user);
+    const userId = user.id;
 
     const { nanoBananaModelName: modelName } = getActiveModelNames();
     const [profile, model, wallet] = await Promise.all([
-      getUserProfile(supabase, user.id),
+      getUserProfile(supabase, userId),
       getModelByName(supabase, modelName),
-      getWallet(supabase, user.id),
+      getWallet(supabase, userId),
     ]);
     const tariff = await getEffectiveTariffForProfile(supabase, profile);
-    const baseCost = getImageResolutionCost(parsed.data.resolution as ImageResolution);
+    const baseCost = getImageResolutionCost(requestData.resolution as ImageResolution);
     const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {
@@ -125,28 +135,45 @@ export async function POST(request: Request) {
 
     // base64 data URL-ийг Supabase Storage-ийн нийтийн https:// URL болгон хөрвүүлнэ
     // NanoBanana API зөвхөн https:// URL хүлээн авдаг
-    const resolvedImages = await resolveReferenceImages(parsed.data.reference_images, user.id);
+    const resolvedImages = await resolveReferenceImages(requestData.reference_images, userId);
     const generation = await provider.generateImage({
-      prompt: parsed.data.prompt,
-      aspectRatio: parsed.data.aspect_ratio,
-      resolution: parsed.data.resolution,
+      prompt: requestData.prompt,
+      aspectRatio: requestData.aspect_ratio,
+      resolution: requestData.resolution,
       referenceImages: resolvedImages,
     });
     const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
-      userId: user.id,
+      userId,
       modelName: model.name,
       kind: "image",
       chargedCost: cost,
     });
 
-    const { data: deducted, error: deductionError } = await supabase.rpc("create_generation_and_deduct", {
-      p_user_id: user.id,
-      p_model_name: model.name,
-      p_prompt: parsed.data.prompt,
-      p_aspect_ratio: parsed.data.aspect_ratio,
-      p_image_url: generation.imageUrl,
-      p_server_token: serverToken,
-    });
+    async function commitGeneration(persistedAspectRatio: string) {
+      return supabase.rpc("create_generation_and_deduct", {
+        p_user_id: userId,
+        p_model_name: model.name,
+        p_prompt: requestData.prompt,
+        p_aspect_ratio: persistedAspectRatio,
+        p_image_url: generation.imageUrl,
+        p_server_token: serverToken,
+      });
+    }
+
+    let { data: deducted, error: deductionError } = await commitGeneration(requestData.aspect_ratio);
+
+    if (
+      deductionError &&
+      requestData.aspect_ratio === "9:16" &&
+      isAspectRatioConstraintError(deductionError)
+    ) {
+      console.warn(
+        "[generate-image] falling back to legacy storage aspect ratio 4:5 for 9:16 until DB migration is applied",
+      );
+      ({ data: deducted, error: deductionError } = await commitGeneration(
+        LEGACY_VERTICAL_STORAGE_ASPECT_RATIO,
+      ));
+    }
 
     if (deductionError) {
       console.error("[generate-image] create_generation_and_deduct failed", deductionError);
@@ -159,10 +186,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (
-        deductionError.message.includes("generations_aspect_ratio_check") ||
-        deductionError.details?.includes("generations_aspect_ratio_check")
-      ) {
+      if (isAspectRatioConstraintError(deductionError)) {
         return Response.json(
           {
             error: "Supabase database дээрх aspect ratio constraint шинэчлэгдээгүй байна. 9:16 ratio-г идэвхжүүлэх migration-аа ажиллуулна уу.",
