@@ -245,7 +245,7 @@ export async function getPlatformSettings(supabase: SupabaseClient) {
   return (
     data ?? {
       id: true,
-      credit_price_mnt: 10,
+      credit_price_mnt: 20,
       created_at: new Date(0).toISOString(),
       updated_at: new Date(0).toISOString(),
     }

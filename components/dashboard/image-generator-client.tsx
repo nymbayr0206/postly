@@ -9,7 +9,6 @@ import {
   creditsToMnt,
   formatMnt,
   getImageResolutionCost,
-  getImageResolutionDetail,
   getImageResolutionLabel,
   type ImageResolution,
 } from "@/lib/generation-pricing";
@@ -58,11 +57,10 @@ function normalizeAspectRatio(value: string): ImageAspectRatio {
 const IMAGE_RESOLUTION_OPTIONS: Array<{
   value: ImageResolution;
   label: string;
-  detail: string;
 }> = [
-  { value: "1k", label: "1K", detail: "8 кредит" },
-  { value: "2k", label: "2K", detail: "12 кредит" },
-  { value: "4k", label: "4K", detail: "18 кредит" },
+  { value: "1k", label: "1K" },
+  { value: "2k", label: "2K" },
+  { value: "4k", label: "4K" },
 ];
 
 const PROMPT_HINTS = [
@@ -304,8 +302,18 @@ export function ImageGeneratorClient({
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
   const normalizedAspectRatio = normalizeAspectRatio(String(aspectRatio));
+  const resolutionOptions = IMAGE_RESOLUTION_OPTIONS.map((option) => {
+    const optionCost = calculateFinalCreditCost(getImageResolutionCost(option.value), tariffMultiplier);
+
+    return {
+      ...option,
+      detail: `${optionCost} кредит`,
+      cost: optionCost,
+      costMnt: creditsToMnt(optionCost, creditPriceMnt),
+    };
+  });
   const selectedAspectRatio = ASPECT_RATIOS.find((ratio) => ratio.value === normalizedAspectRatio);
-  const selectedResolution = IMAGE_RESOLUTION_OPTIONS.find((option) => option.value === resolution);
+  const selectedResolution = resolutionOptions.find((option) => option.value === resolution);
   const summaryItems = [
     { label: "Үнэ", value: `${currentCost} кр`, detail: formatMnt(currentCostMnt) },
     { label: "Үлдэгдэл", value: String(creditsRemaining), detail: "Кредит" },
@@ -381,8 +389,8 @@ export function ImageGeneratorClient({
         </div>
         <h3 className="mt-5 text-xl font-semibold text-slate-950">Таны зураг энд гарна</h3>
         <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-          Тайлбараа сайн тодорхой бичээд үүсгэхэд хангалттай. Preview үргэлж дээр харагдах тул
-          утаснаас ажиллахад илүү ойлгомжтой болсон.
+          Эхлээд prompt-оо дээр нь оруулаад, үүсгэсэн зураг энд доор гарна.
+          Том дэлгэц дээр preview тусдаа харагдах хэвээр үлдэнэ.
         </p>
       </div>
     );
@@ -390,14 +398,14 @@ export function ImageGeneratorClient({
 
   return (
     <div className="grid gap-4 2xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
-      <section className="order-1 rounded-[2rem] border border-cyan-100/60 bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 shadow-[0_18px_40px_rgba(9,38,66,0.08)] sm:p-6 2xl:order-2 2xl:sticky 2xl:top-6 2xl:self-start">
+      <section className="hidden rounded-[2rem] border border-cyan-100/60 bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 shadow-[0_18px_40px_rgba(9,38,66,0.08)] sm:p-6 2xl:sticky 2xl:top-6 2xl:block 2xl:self-start">
         <div className="rounded-[1.6rem] border border-white/80 bg-white/90 p-4 shadow-sm sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Preview</p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-950">Үр дүнгээ үргэлж дээд талд нь хар</h2>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950">Үр дүн энд гарна</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Split layout одоо зөвхөн том дэлгэц дээр асна. Бусад үед нэг урсгалтай, цэвэр бүтэцтэй.
+                Утсан дээр prompt эхэндээ байрлана. Том дэлгэц дээр preview тусдаа баганад үлдэнэ.
               </p>
             </div>
             <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
@@ -405,7 +413,7 @@ export function ImageGeneratorClient({
             </span>
           </div>
 
-          <div className="mt-4">{renderPreviewPanel("min-h-[18rem] sm:min-h-[22rem] xl:min-h-[26rem]")}</div>
+          <div className="mt-4">{renderPreviewPanel("min-h-[18rem] sm:min-h-[22rem] 2xl:min-h-[26rem]")}</div>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -439,15 +447,12 @@ export function ImageGeneratorClient({
         </div>
       </section>
 
-      <div className="order-2 overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/70 2xl:order-1">
+      <div className="order-1 overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/70 2xl:order-1">
         <form onSubmit={handleSubmit} className="flex h-full flex-col">
-          <div className="space-y-4 p-4 pb-28 sm:space-y-5 sm:p-6 sm:pb-32 xl:pb-6">
-            <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
+          <div className="flex flex-col gap-4 p-4 pb-28 sm:gap-5 sm:p-6 sm:pb-32 xl:pb-6">
+            <div className="order-3 rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)] 2xl:order-1">
               <div className="flex flex-col gap-4">
                 <div className="space-y-2">
-                  <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700">
-                    Nano Banana
-                  </span>
                   <div>
                     <h1 className="text-2xl font-semibold text-slate-950">Зураг үүсгэх</h1>
                     <p className="mt-1 max-w-lg text-sm leading-6 text-slate-600">
@@ -479,15 +484,15 @@ export function ImageGeneratorClient({
             </div>
 
             <GenerationPricingCard
-              className="hidden xl:block"
+              className="hidden 2xl:order-2 2xl:block"
               currentCost={currentCost}
               currentCostDetail={formatMnt(currentCostMnt)}
-              description="Nano Banana 2 нь нягтралаасаа хамаарч 1K, 2K, 4K сонголтоор өөр үнэ бодно."
+              description="Сонгосон нягтрал болон таны тарифын дагуу кредит бодогдоно."
               metrics={[
                 {
                   label: "Сонгосон нягтрал",
                   value: getImageResolutionLabel(resolution),
-                  detail: `${getImageResolutionDetail(resolution)} · ${formatMnt(creditsToMnt(baseCost, creditPriceMnt))}`,
+                  detail: `${selectedResolution?.detail ?? `${currentCost} кредит`} · ${formatMnt(selectedResolution?.costMnt ?? currentCostMnt)}`,
                 },
                 {
                   label: "Харьцаа",
@@ -502,7 +507,7 @@ export function ImageGeneratorClient({
               ]}
             />
 
-            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="order-1 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5 2xl:order-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Тайлбар</h2>
@@ -557,7 +562,34 @@ export function ImageGeneratorClient({
               </div>
             </section>
 
-            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="order-2 rounded-[1.5rem] border border-cyan-100/70 bg-[linear-gradient(180deg,rgba(245,252,255,0.95),rgba(255,255,255,0.96))] p-4 shadow-sm sm:p-5 2xl:hidden">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Preview</p>
+                  <h2 className="mt-1 text-base font-semibold text-slate-950">Үр дүн энд гарна</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Prompt оруулсны дараах үр дүн яг энэ хэсэгт шууд харагдана.
+                  </p>
+                </div>
+                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold text-cyan-800">
+                  {isPending ? "Үүсгэж байна" : result ? "Бэлэн" : "Хүлээж байна"}
+                </span>
+              </div>
+
+              <div className="mt-4">{renderPreviewPanel("min-h-[16rem] sm:min-h-[18rem]")}</div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {summaryItems.map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-3 shadow-sm">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-950">{item.value}</p>
+                    <p className="mt-1 text-xs text-slate-500">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="order-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5 2xl:order-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Лавлах зураг</h2>
@@ -611,7 +643,7 @@ export function ImageGeneratorClient({
               </button>
             </section>
 
-            <div className="xl:hidden">
+            <div className="order-5 2xl:hidden">
               <button
                 type="button"
                 onClick={() => setSettingsOpen((value) => !value)}
@@ -638,13 +670,13 @@ export function ImageGeneratorClient({
               </button>
             </div>
 
-            <section className={`${settingsOpen ? "block" : "hidden xl:block"} rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5`}>
+            <section className={`${settingsOpen ? "block" : "hidden 2xl:block"} order-6 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5`}>
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Харьцаа</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Хэрэглээний сувгаасаа хамаарч харьцаагаа сонгоно уу.</p>
               </div>
 
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-1 xl:hidden">
+              <div className="mt-4 flex gap-3 overflow-x-auto pb-1 2xl:hidden">
                 {ASPECT_RATIOS.map((ratio) => (
                   <button
                     key={ratio.value}
@@ -662,7 +694,7 @@ export function ImageGeneratorClient({
                 ))}
               </div>
 
-              <div className="mt-4 hidden grid-cols-2 gap-3 xl:grid">
+              <div className="mt-4 hidden grid-cols-2 gap-3 2xl:grid">
                 {ASPECT_RATIOS.map((ratio) => (
                   <button
                     key={ratio.value}
@@ -683,10 +715,10 @@ export function ImageGeneratorClient({
               <div className="mt-5">
                 <h2 className="text-sm font-semibold text-slate-900">Нягтрал</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Nano Banana 2-ийн үнэ нягтралаасаа хамаарч өөр өөр байна.
+                  Нягтралаас хамаарч таны тарифын үнээр кредит өөрчлөгдөнө.
                 </p>
-                <div className="mt-4 flex gap-3 overflow-x-auto pb-1 xl:hidden">
-                  {IMAGE_RESOLUTION_OPTIONS.map((option) => (
+                <div className="mt-4 flex gap-3 overflow-x-auto pb-1 2xl:hidden">
+                  {resolutionOptions.map((option) => (
                     <button
                       key={option.value}
                       type="button"
@@ -703,8 +735,8 @@ export function ImageGeneratorClient({
                   ))}
                 </div>
 
-                <div className="mt-4 hidden grid-cols-3 gap-3 xl:grid">
-                  {IMAGE_RESOLUTION_OPTIONS.map((option) => (
+                <div className="mt-4 hidden grid-cols-3 gap-3 2xl:grid">
+                  {resolutionOptions.map((option) => (
                     <button
                       key={option.value}
                       type="button"
@@ -724,14 +756,14 @@ export function ImageGeneratorClient({
             </section>
           </div>
 
-          <div className="sticky bottom-0 z-20 mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/95 p-4 backdrop-blur sm:p-6 xl:static xl:bg-white/90 xl:backdrop-blur-none">
+          <div className="sticky bottom-0 z-20 mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/95 p-4 backdrop-blur sm:p-6 2xl:static 2xl:bg-white/90 2xl:backdrop-blur-none">
             {error && (
               <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </p>
             )}
 
-            <div className="mb-3 flex items-center justify-between gap-3 xl:hidden">
+            <div className="mb-3 flex items-center justify-between gap-3 2xl:hidden">
               <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                 <span className="rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
                 <span className="rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>

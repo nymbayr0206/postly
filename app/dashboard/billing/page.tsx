@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { CreditRequestPanel } from "@/components/dashboard/credit-request-panel";
+import { formatCredits } from "@/lib/generation-pricing";
 import { PAYMENT_REVIEW_MINUTES, getAdminBankDetails } from "@/lib/payment-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow } from "@/lib/types";
-import { ensureUserRecords, getWallet } from "@/lib/user-data";
+import { ensureUserRecords, getPlatformSettings, getWallet } from "@/lib/user-data";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -25,8 +26,9 @@ export default async function BillingPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [wallet, creditRequestResponse] = await Promise.all([
+  const [wallet, platformSettings, creditRequestResponse] = await Promise.all([
     getWallet(supabase, user.id),
+    getPlatformSettings(supabase),
     supabase
       .from("credit_requests")
       .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,payment_screenshot_url,status,created_at")
@@ -56,7 +58,7 @@ export default async function BillingPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <div>
             <p className="text-sm text-slate-300">Одоогийн кредит</p>
-            <p className="mt-2 text-4xl font-semibold">{wallet.credits}</p>
+            <p className="mt-2 text-4xl font-semibold">{formatCredits(wallet.credits)}</p>
           </div>
           <div>
             <p className="text-sm text-slate-300">Хүлээгдэж буй хүсэлт</p>
@@ -64,7 +66,7 @@ export default async function BillingPage() {
           </div>
           <div>
             <p className="text-sm text-slate-300">Зөвшөөрөгдсөн кредит</p>
-            <p className="mt-2 text-4xl font-semibold">{approvedCredits}</p>
+            <p className="mt-2 text-4xl font-semibold">{formatCredits(approvedCredits)}</p>
           </div>
           <div>
             <p className="text-sm text-slate-300">Зөвшөөрөгдсөн дүн</p>
@@ -78,6 +80,7 @@ export default async function BillingPage() {
       <CreditRequestPanel
         requests={requests}
         bankDetails={getAdminBankDetails()}
+        creditPriceMnt={platformSettings.credit_price_mnt}
         reviewMinutes={PAYMENT_REVIEW_MINUTES}
       />
     </div>

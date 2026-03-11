@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ReferralPanel } from "@/components/dashboard/referral-panel";
+import { formatCredits } from "@/lib/generation-pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GenerationRow } from "@/lib/types";
 import {
@@ -135,7 +136,7 @@ export default async function DashboardPage() {
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
               <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Одоогийн кредит</div>
-              <div className="mt-2 text-3xl font-black text-white">{wallet.credits}</div>
+              <div className="mt-2 text-3xl font-black text-white">{formatCredits(wallet.credits)}</div>
             </div>
             <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
               <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Сүүлийн үүсгэлт</div>
@@ -269,7 +270,7 @@ export default async function DashboardPage() {
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-slate-950">{generation.prompt}</div>
                     <div className="mt-2 text-xs text-slate-500">
-                      {generation.cost} кредит · {formatDate(generation.created_at)}
+                      {formatCredits(generation.cost)} кредит · {formatDate(generation.created_at)}
                     </div>
                   </div>
                   <a

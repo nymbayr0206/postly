@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { getBonusCredits, getCreditPackageByKey, getTotalCredits } from "@/lib/credit-packages";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensureUserRecords } from "@/lib/user-data";
+import { ensureUserRecords, getPlatformSettings } from "@/lib/user-data";
 
 const requestSchema = z.object({
   package_key: z.string().min(1, "Кредитийн багц сонгоно уу."),
@@ -45,12 +45,15 @@ export async function POST(request: Request) {
 
   try {
     await ensureUserRecords(supabase, user);
+    const platformSettings = await getPlatformSettings(supabase);
+    const totalCredits = getTotalCredits(selectedPackage, platformSettings.credit_price_mnt);
+    const bonusCredits = getBonusCredits(selectedPackage, platformSettings.credit_price_mnt);
 
     const { error } = await supabase.from("credit_requests").insert({
       user_id: user.id,
-      amount: getTotalCredits(selectedPackage),
+      amount: totalCredits,
       amount_mnt: selectedPackage.priceMnt,
-      bonus_credits: getBonusCredits(selectedPackage),
+      bonus_credits: bonusCredits,
       package_key: selectedPackage.key,
       payment_screenshot_url: parsed.data.payment_screenshot_url,
       status: "pending",

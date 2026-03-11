@@ -66,10 +66,12 @@ function packageLabel(request: CreditRequestRow) {
 export function CreditRequestPanel({
   requests,
   bankDetails,
+  creditPriceMnt,
   reviewMinutes,
 }: {
   requests: CreditRequestListItem[];
   bankDetails: BankDetails;
+  creditPriceMnt: number;
   reviewMinutes: number;
 }) {
   const [selectedKey, setSelectedKey] = useState<CreditPackageKey>("growth");
@@ -87,6 +89,8 @@ export function CreditRequestPanel({
     () => CREDIT_PACKAGES.find((pkg) => pkg.key === selectedKey) ?? CREDIT_PACKAGES[1],
     [selectedKey],
   );
+  const selectedTotalCredits = getTotalCredits(selectedPackage, creditPriceMnt);
+  const selectedBonusCredits = getBonusCredits(selectedPackage, creditPriceMnt);
 
   function openPayment(packageKey: CreditPackageKey) {
     setSelectedKey(packageKey);
@@ -193,8 +197,8 @@ export function CreditRequestPanel({
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {CREDIT_PACKAGES.map((pkg) => {
                 const selected = paymentOpen && pkg.key === selectedKey;
-                const totalCredits = getTotalCredits(pkg);
-                const bonusCredits = getBonusCredits(pkg);
+                const totalCredits = getTotalCredits(pkg, creditPriceMnt);
+                const bonusCredits = getBonusCredits(pkg, creditPriceMnt);
 
                 return (
                   <button
@@ -246,7 +250,7 @@ export function CreditRequestPanel({
                     <h3 className="mt-1 text-xl font-semibold text-white">{selectedPackage.label} багц</h3>
                   </div>
                   <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">
-                    {formatCredits(getTotalCredits(selectedPackage))}
+                    {formatCredits(selectedTotalCredits)}
                   </span>
                 </div>
 
@@ -277,6 +281,7 @@ export function CreditRequestPanel({
                     Админ {reviewMinutes} минутын дотор таны кредитийг цэнэглэнэ.
                     Шилжүүлгийн screenshot тод, бүтэн харагдаж байх шаардлагатай.
                   </p>
+                  <p className="mt-2 text-sm text-amber-50">1 credit = {formatMnt(creditPriceMnt)}</p>
                 </div>
               </div>
 
@@ -298,9 +303,15 @@ export function CreditRequestPanel({
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-slate-400">Олгох кредит</span>
                     <span className="font-medium text-white">
-                      {formatCredits(getTotalCredits(selectedPackage))}
+                      {formatCredits(selectedTotalCredits)}
                     </span>
                   </div>
+                  {selectedBonusCredits > 0 ? (
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-slate-400">Bonus</span>
+                      <span className="font-medium text-white">{formatCredits(selectedBonusCredits)}</span>
+                    </div>
+                  ) : null}
                 </div>
 
                 <label className="mt-5 block text-sm font-medium text-slate-200">
