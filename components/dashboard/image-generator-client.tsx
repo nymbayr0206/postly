@@ -62,6 +62,12 @@ const PROMPT_HINTS = [
   "Лавлах зураг ашиглавал илүү тогтвортой гарна.",
 ];
 
+const QUICK_CHECKLIST = [
+  "Гол объект, орчноо эхэнд нь бич.",
+  "Өнгө, гэрэл, camera style-аа дараа нь нэм.",
+  "Хэрэгтэй бол 1-3 лавлах зураг хавсарга.",
+];
+
 export function ImageGeneratorClient({
   currentCredits,
   creditPriceMnt,
@@ -81,7 +87,7 @@ export function ImageGeneratorClient({
   const [error, setError] = useState<string | null>(null);
   const [promptOptimizationInfo, setPromptOptimizationInfo] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewsRef = useRef<string[]>([]);
   const router = useRouter();
@@ -280,32 +286,225 @@ export function ImageGeneratorClient({
   const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
+  const selectedAspectRatio = ASPECT_RATIOS.find((ratio) => ratio.value === aspectRatio);
+  const selectedResolution = IMAGE_RESOLUTION_OPTIONS.find((option) => option.value === resolution);
+
+  function renderPreviewPanel(minHeightClass: string) {
+    if (isPending) {
+      return (
+        <div className={`flex ${minHeightClass} flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center`}>
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+            <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <h3 className="mt-5 text-xl font-semibold text-slate-950">Зураг үүсгэж байна...</h3>
+          <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+            Хүсэлтийг боловсруулж байна. Дуусмагц энд preview болон татах товч гарч ирнэ.
+          </p>
+        </div>
+      );
+    }
+
+    if (result) {
+      return (
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-100 shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={result.image_url} alt="Үүсгэсэн зураг" className="w-full object-cover" />
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{aspectRatio}</span>
+              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">PNG</span>
+              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{result.cost} кредит</span>
+            </div>
+            <a
+              href={result.image_url}
+              download
+              className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" x2="12" y1="15" y2="3" />
+              </svg>
+              Зураг татах
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`flex ${minHeightClass} flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center`}>
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+          <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+          </svg>
+        </div>
+        <h3 className="mt-5 text-xl font-semibold text-slate-950">Таны зураг энд гарна</h3>
+        <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+          Тайлбараа сайн тодорхой бичээд үүсгэхэд хангалттай. Preview үргэлж дээр харагдах тул
+          утаснаас ажиллахад илүү ойлгомжтой болсон.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
-      <div className="border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
+    <div className="grid gap-0 lg:min-h-[calc(100vh-12rem)] lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
+      <div className="order-1 border-b border-[rgba(14,42,66,0.08)] bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:order-2 lg:border-b-0 lg:p-8">
+        <section className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_18px_40px_rgba(9,38,66,0.08)] lg:hidden">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Preview</p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-950">Үр дүнгээ дээд талд нь хар</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Тохиргоогоо өөрчлөх бүрт ямар зураг гаргах гэж байгаагаа нэг дороос харна.
+              </p>
+            </div>
+            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
+              {isPending ? "Үүсгэж байна" : result ? "Бэлэн" : "Хүлээж байна"}
+            </span>
+          </div>
+
+          <div className="mt-4">{renderPreviewPanel("min-h-[18rem]")}</div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үнэ</p>
+              <p className="mt-1 text-base font-semibold text-slate-950">{currentCost} кр</p>
+              <p className="mt-1 text-xs text-slate-500">{formatMnt(currentCostMnt)}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үлдэгдэл</p>
+              <p className="mt-1 text-base font-semibold text-slate-950">{creditsRemaining}</p>
+              <p className="mt-1 text-xs text-slate-500">Кредит</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Харьцаа</p>
+              <p className="mt-1 text-base font-semibold text-slate-950">{aspectRatio}</p>
+              <p className="mt-1 text-xs text-slate-500">{selectedAspectRatio?.detail}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Нягтрал</p>
+              <p className="mt-1 text-base font-semibold text-slate-950">{selectedResolution?.label}</p>
+              <p className="mt-1 text-xs text-slate-500">{selectedResolution?.detail}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[1.25rem] border border-cyan-100 bg-cyan-50/70 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Хурдан checklist</p>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+              {QUICK_CHECKLIST.map((item, index) => (
+                <li key={item}>
+                  {index + 1}. {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <div className="hidden gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_18rem]">
+          <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-7">
+            <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+              <div>
+                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
+                  Шууд үр дүн
+                </span>
+                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Үүсгэхээс өмнө нэг дор бүхнийг харах</h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
+                  Бэлдэж буй зураг энд харагдана. Том дэлгэц дээр preview болон checklist-ийг
+                  тусад нь харуулж, шийдвэр гаргалтыг хурдан болгов.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Харьцаа</p>
+                  <p className="mt-2 text-lg font-semibold">{aspectRatio}</p>
+                </div>
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Лавлах зураг</p>
+                  <p className="mt-2 text-lg font-semibold">{files.length}</p>
+                </div>
+                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Нягтрал</p>
+                  <p className="mt-2 text-lg font-semibold">{getImageResolutionLabel(resolution)}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside className="grid gap-4">
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Хурдан checklist</p>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+                {QUICK_CHECKLIST.map((item, index) => (
+                  <li key={item}>
+                    {index + 1}. {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал таны үлдэгдэл кредитэд өөрчлөлт орохгүй.</p>
+            </div>
+          </aside>
+        </div>
+
+        <section className="mt-0 hidden rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6 lg:block">
+          {renderPreviewPanel("min-h-[24rem]")}
+        </section>
+      </div>
+
+      <div className="order-2 bg-white/70 lg:order-1 lg:border-r lg:border-[rgba(14,42,66,0.08)]">
         <form onSubmit={handleSubmit} className="flex h-full flex-col">
-          <div className="space-y-5 p-4 sm:p-6">
+          <div className="space-y-4 p-4 pb-28 sm:space-y-5 sm:p-6 sm:pb-32 lg:pb-6">
             <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4">
                 <div className="space-y-2">
+                  <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700">
+                    Nano Banana
+                  </span>
                   <div>
                     <h1 className="text-2xl font-semibold text-slate-950">Зураг үүсгэх</h1>
-                    <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                      Мобайл дээр хурдан ашиглахад зориулагдсан энгийн урсгал. Тайлбар, харьцаа,
-                      лавлах зургаа сонгоод шууд үүсгэнэ.
+                    <p className="mt-1 max-w-lg text-sm leading-6 text-slate-600">
+                      Одоо mobile-first урсгалтай. Эхлээд тайлбараа оруулаад, хэрэгтэй бол лавлах
+                      зургаа нэмээд, доод sticky action-аар шууд үүсгэнэ.
                     </p>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үлдэгдэл</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950">{creditsRemaining}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үнэ</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950">{currentCost} кр</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Харьцаа</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950">{aspectRatio}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Лавлах</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950">{files.length}/3</p>
+                  </div>
                 </div>
               </div>
             </div>
 
             <GenerationPricingCard
+              className="hidden lg:block"
               currentCost={currentCost}
               currentCostDetail={formatMnt(currentCostMnt)}
               description="Nano Banana 2 нь нягтралаасаа хамаарч 1K, 2K, 4K сонголтоор өөр үнэ бодно."
@@ -328,24 +527,61 @@ export function ImageGeneratorClient({
               ]}
             />
 
+            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm lg:hidden">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Одоогийн сонголт</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Хэт олон card-ийг нэг дор харуулахын оронд гол үзүүлэлтүүдийг энд нэгтгэлээ.
+                  </p>
+                </div>
+                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
+                  {formatMnt(currentCostMnt)}
+                </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Харьцаа</p>
+                  <p className="mt-1 text-base font-semibold text-slate-950">{aspectRatio}</p>
+                  <p className="mt-1 text-xs text-slate-500">{selectedAspectRatio?.detail}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Нягтрал</p>
+                  <p className="mt-1 text-base font-semibold text-slate-950">{selectedResolution?.label}</p>
+                  <p className="mt-1 text-xs text-slate-500">{selectedResolution?.detail}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Лавлах зураг</p>
+                  <p className="mt-1 text-base font-semibold text-slate-950">{files.length}/3</p>
+                  <p className="mt-1 text-xs text-slate-500">Хүсвэл хавсаргана</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Кредит</p>
+                  <p className="mt-1 text-base font-semibold text-slate-950">{creditsRemaining}</p>
+                  <p className="mt-1 text-xs text-slate-500">Үлдэгдэл</p>
+                </div>
+              </div>
+            </section>
+
             <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Тайлбар</h2>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     Яг ямар дүрслэл хүсэж байгаагаа тодорхой бичнэ үү.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 sm:items-end">
                   <button
                     type="button"
                     onClick={() => void optimizePrompt({ applyToInput: true })}
                     disabled={!prompt.trim() || isPending || isOptimizingPrompt}
-                    className="rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex w-full items-center justify-center rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {isOptimizingPrompt ? "AI сайжруулж байна..." : "AI Prompt сайжруулах"}
                   </button>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-medium text-slate-600">
                     {prompt.trim().length} тэмдэгт
                   </span>
                 </div>
@@ -371,11 +607,11 @@ export function ImageGeneratorClient({
                 </div>
               ) : null}
 
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
                 {PROMPT_HINTS.map((hint) => (
                   <div
                     key={hint}
-                    className="rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600"
+                    className="min-w-[12rem] shrink-0 rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600 sm:min-w-0"
                   >
                     {hint}
                   </div>
@@ -441,9 +677,15 @@ export function ImageGeneratorClient({
               <button
                 type="button"
                 onClick={() => setSettingsOpen((value) => !value)}
-                className="flex w-full items-center justify-between rounded-[1.25rem] border border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm"
+                className="flex w-full items-center justify-between rounded-[1.25rem] border border-slate-200 bg-white/80 px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-sm"
               >
-                Нэмэлт тохиргоо
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Нэмэлт тохиргоо</p>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1">{aspectRatio}</span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
+                  </div>
+                </div>
                 <svg
                   className={`h-4 w-4 transition-transform ${settingsOpen ? "rotate-180" : ""}`}
                   viewBox="0 0 24 24"
@@ -464,7 +706,25 @@ export function ImageGeneratorClient({
                 <p className="mt-1 text-xs leading-5 text-slate-500">Хэрэглээний сувгаасаа хамаарч харьцаагаа сонгоно уу.</p>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="mt-4 flex gap-3 overflow-x-auto pb-1 lg:hidden">
+                {ASPECT_RATIOS.map((ratio) => (
+                  <button
+                    key={ratio.value}
+                    type="button"
+                    onClick={() => setAspectRatio(ratio.value)}
+                    className={`min-w-[9.5rem] shrink-0 rounded-[1.25rem] border px-4 py-4 text-left transition ${
+                      aspectRatio === ratio.value
+                        ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                    }`}
+                  >
+                    <p className="text-base font-semibold">{ratio.label}</p>
+                    <p className="mt-1 text-xs text-slate-500">{ratio.detail}</p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 hidden grid-cols-2 gap-3 lg:grid">
                 {ASPECT_RATIOS.map((ratio) => (
                   <button
                     key={ratio.value}
@@ -487,7 +747,25 @@ export function ImageGeneratorClient({
                 <p className="mt-1 text-xs leading-5 text-slate-500">
                   Nano Banana 2-ийн үнэ нягтралаасаа хамаарч өөр өөр байна.
                 </p>
-                <div className="mt-4 grid grid-cols-3 gap-3">
+                <div className="mt-4 flex gap-3 overflow-x-auto pb-1 lg:hidden">
+                  {IMAGE_RESOLUTION_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setResolution(option.value)}
+                      className={`min-w-[8.5rem] shrink-0 rounded-[1.25rem] border px-4 py-4 text-left transition ${
+                        resolution === option.value
+                          ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                      }`}
+                    >
+                      <p className="text-base font-semibold">{option.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">{option.detail}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 hidden grid-cols-3 gap-3 lg:grid">
                   {IMAGE_RESOLUTION_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -508,12 +786,24 @@ export function ImageGeneratorClient({
             </section>
           </div>
 
-          <div className="mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/90 p-4 sm:p-6">
+          <div className="sticky bottom-0 z-20 mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/95 p-4 backdrop-blur sm:p-6 lg:static lg:bg-white/90 lg:backdrop-blur-none">
             {error && (
               <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </p>
             )}
+
+            <div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
+              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                <span className="rounded-full bg-slate-100 px-2.5 py-1">{aspectRatio}</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
+                {files.length > 0 ? <span className="rounded-full bg-slate-100 px-2.5 py-1">{files.length} зураг</span> : null}
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-semibold text-slate-950">{currentCost} кредит</p>
+                <p className="text-xs text-slate-500">{formatMnt(currentCostMnt)}</p>
+              </div>
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <button
