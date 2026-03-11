@@ -141,9 +141,8 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: error.status });
     }
 
-    const message = error instanceof Error ? error.message : String(error);
     return Response.json(
-      { error: "Одоогоор аудио үүсгэх боломжгүй байна. Дахин оролдоно уу.", debug: message },
+      { error: "Одоогоор аудио үүсгэх боломжгүй байна. Дахин оролдоно уу." },
       { status: 500 },
     );
   }

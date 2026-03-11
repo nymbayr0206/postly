@@ -218,11 +218,9 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: error.status });
     }
 
-    const message = error instanceof Error ? error.message : String(error);
     return Response.json(
       {
         error: "Одоогоор зураг үүсгэх боломжгүй байна. Дахин оролдоно уу.",
-        debug: message,
       },
       { status: 500 },
     );

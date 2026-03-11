@@ -8,6 +8,7 @@ import {
   type ReferralActionState,
   convertReferralRewardToCreditsAction,
 } from "@/app/dashboard/actions";
+import { DEFAULT_CREDIT_PRICE_MNT } from "@/lib/credit-packages";
 import type { ReferralSummaryRow } from "@/lib/types";
 
 function formatNumber(value: number) {
@@ -86,9 +87,11 @@ const EMPTY_ACTION_STATE: ReferralActionState = {};
 export function ReferralPanel({
   referralCode,
   summary,
+  creditPriceMnt,
 }: {
   referralCode: string;
   summary: ReferralSummaryRow;
+  creditPriceMnt: number;
 }) {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
@@ -109,6 +112,13 @@ export function ReferralPanel({
 
   const invitePath = useMemo(() => buildInvitePath(referralCode), [referralCode]);
   const inviteLink = useMemo(() => buildInviteLink(invitePath), [invitePath]);
+  const effectiveCreditPriceMnt = useMemo(
+    () =>
+      Number.isFinite(creditPriceMnt) && creditPriceMnt > 0
+        ? Math.floor(creditPriceMnt)
+        : DEFAULT_CREDIT_PRICE_MNT,
+    [creditPriceMnt],
+  );
   const estimatedCredits = useMemo(() => {
     const amount = Number(convertAmountMnt);
 
@@ -116,8 +126,8 @@ export function ReferralPanel({
       return 0;
     }
 
-    return Math.floor(amount);
-  }, [convertAmountMnt]);
+    return Math.floor(amount / effectiveCreditPriceMnt);
+  }, [convertAmountMnt, effectiveCreditPriceMnt]);
 
   async function handleCopy() {
     try {
@@ -173,7 +183,7 @@ export function ReferralPanel({
                 {copied ? "Линк хуулагдлаа" : "Линк хуулах"}
               </button>
               <Link
-                href={invitePath}
+                href={inviteLink}
                 target="_blank"
                 className="rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700"
               >
@@ -186,7 +196,9 @@ export function ReferralPanel({
             <form action={convertAction} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
               <div className="text-sm font-semibold text-slate-900">Урамшууллаа кредит болгох</div>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Урамшууллын мөнгөө 1:1-ээр кредит болгож болно. Жишээ нь 10,000₮ хөрвүүлбэл 10,000 кредит нэмэгдэнэ.
+                Урамшууллын мөнгөө тухайн платформын credit үнээр кредит болгож болно. Одоо 1 credit ={" "}
+                {formatMnt(effectiveCreditPriceMnt)} бөгөөд 10,000₮ хөрвүүлбэл{" "}
+                {formatNumber(Math.floor(10000 / effectiveCreditPriceMnt))} кредит нэмэгдэнэ.
               </p>
 
               <div className="mt-4">
