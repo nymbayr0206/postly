@@ -22,6 +22,65 @@ function buildInvitePath(referralCode: string) {
   return `/auth?ref=${encodeURIComponent(referralCode)}`;
 }
 
+function normalizeSiteUrl(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  try {
+    return new URL(candidate).origin;
+  } catch {
+    return null;
+  }
+}
+
+function buildInviteLink(invitePath: string) {
+  const configuredSiteUrl = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+
+  if (configuredSiteUrl) {
+    return new URL(invitePath, configuredSiteUrl).toString();
+  }
+
+  if (typeof window !== "undefined") {
+    return new URL(invitePath, window.location.origin).toString();
+  }
+
+  return invitePath;
+}
+
+function fallbackCopyText(text: string) {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  textarea.style.left = "0";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 const EMPTY_ACTION_STATE: ReferralActionState = {};
 
 export function ReferralPanel({
@@ -32,6 +91,7 @@ export function ReferralPanel({
   summary: ReferralSummaryRow;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [convertAmountMnt, setConvertAmountMnt] = useState(String(summary.available_amount_mnt || ""));
   const [payoutAmountMnt, setPayoutAmountMnt] = useState(String(summary.available_amount_mnt || ""));
   const [bankName, setBankName] = useState("");
@@ -48,6 +108,7 @@ export function ReferralPanel({
   );
 
   const invitePath = useMemo(() => buildInvitePath(referralCode), [referralCode]);
+  const inviteLink = useMemo(() => buildInviteLink(invitePath), [invitePath]);
   const estimatedCredits = useMemo(() => {
     const amount = Number(convertAmountMnt);
 
@@ -59,15 +120,19 @@ export function ReferralPanel({
   }, [convertAmountMnt]);
 
   async function handleCopy() {
-    const inviteLink =
-      typeof window === "undefined" ? invitePath : `${window.location.origin}${invitePath}`;
-
     try {
-      await navigator.clipboard.writeText(inviteLink);
+      if (typeof navigator !== "undefined" && window.isSecureContext && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteLink);
+      } else if (!fallbackCopyText(inviteLink)) {
+        throw new Error("copy_failed");
+      }
+
       setCopied(true);
+      setCopyError(null);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
+      setCopyError("Линк автоматаар хуулагдсангүй. HTTPS асаах эсвэл доорх линкийг гараар хуулна уу.");
     }
   }
 
@@ -94,8 +159,10 @@ export function ReferralPanel({
             </div>
 
             <div className="mt-4 rounded-[1.15rem] border border-slate-200 bg-white p-3 text-sm text-slate-700">
-              <div className="truncate">{invitePath}</div>
+              <div className="truncate">{inviteLink}</div>
             </div>
+
+            {copyError ? <div className="mt-3 text-sm text-rose-600">{copyError}</div> : null}
 
             <div className="mt-4 flex flex-wrap gap-3">
               <button
