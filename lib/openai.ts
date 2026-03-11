@@ -24,7 +24,7 @@ function resolveCleanupModel() {
 }
 
 function resolvePromptOptimizerModel() {
-  return process.env.OPENAI_PROMPT_OPTIMIZER_MODEL?.trim() || "gpt-4o-mini";
+  return process.env.OPENAI_PROMPT_OPTIMIZER_MODEL?.trim() || "gpt-5-mini";
 }
 
 export function getOpenAiTranscriptionConfig() {

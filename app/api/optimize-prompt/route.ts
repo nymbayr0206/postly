@@ -2,10 +2,10 @@ import { z } from "zod";
 
 import { getOpenAiPromptOptimizerConfig } from "@/lib/openai";
 import {
-  PROMPT_OPTIMIZER_LANGUAGES,
   PROMPT_OPTIMIZER_TARGETS,
   type OptimizedPromptResponse,
   type PromptOptimizerTarget,
+  normalizePromptLanguage,
 } from "@/lib/prompt-optimizer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -30,8 +30,9 @@ const requestSchema = z.object({
 
 const optimizedPromptSchema = z.object({
   optimized_prompt: z.string().trim().min(3).max(2000),
-  detected_language: z.enum(PROMPT_OPTIMIZER_LANGUAGES).default("mixed"),
+  detected_language: z.string().trim().min(1).max(50).optional(),
   notes_mn: z.string().trim().min(1).max(300).nullable().optional(),
+  must_keep_terms_en: z.array(z.string().trim().min(1).max(120)).max(8).optional(),
 });
 
 function getSystemPrompt(target: PromptOptimizerTarget) {
@@ -39,43 +40,93 @@ function getSystemPrompt(target: PromptOptimizerTarget) {
     target === "video"
       ? [
           "Optimize prompts for image-to-video generation.",
-          "Keep the prompt in fluent English.",
+          "Output one clean English prompt for a video model.",
           "Preserve all concrete details from the user.",
           "Clarify camera movement, subject motion, scene motion, pacing, and atmosphere only when helpful.",
           "Do not invent new objects, people, brands, or events.",
-          "Do not add shot lists or bullet points.",
+          "Do not add shot lists, markdown, labels, or bullet points.",
         ]
       : [
-          "Optimize prompts for AI image generation.",
-          "Keep the prompt in fluent English.",
+          "Optimize prompts specifically for Nano Banana AI image generation.",
+          "Output one clean English prompt for a text-to-image model.",
           "Preserve all concrete details from the user.",
-          "Clarify composition, framing, lighting, mood, and materials only when helpful.",
+          "Never replace a specific subject with generic words like product, item, object, or scene.",
+          "If the user explicitly names an object, material, color, lighting direction, brand, or environment, keep it in the optimized prompt.",
+          "Clarify subject, composition, framing, camera angle, lighting, environment, mood, materials, and color palette only when helpful.",
+          "When the user asks for a product, social creative, ad visual, or poster-like image, frame it as strong commercial photography or polished campaign visual suitable for Nano Banana.",
+          "Do not invent text inside the image unless the user explicitly asked for it.",
           "Do not invent new objects, people, brands, or claims.",
-          "Do not add bullet points or explanations.",
+          "Do not add markdown, labels, bullet points, or explanations.",
         ];
 
   return [
     "You are a prompt optimizer for creative generation models.",
     "The user may write in Mongolian, English, or mixed language.",
-    "If the input is Mongolian or mixed, convert it into clean natural English optimized for the target model.",
+    "If the input is Mongolian or mixed, translate it into clean natural English optimized for the target model.",
     "Preserve exact numbers, brand names, product names, required text, colors, and constraints.",
+    "Never omit or generalize the user's explicit subject.",
     "If the prompt is already strong, only tighten wording and structure.",
-    "Return JSON only with keys optimized_prompt, detected_language, and notes_mn.",
+    "Keep the optimized prompt concise but vivid, usually one to three sentences.",
+    "Return JSON only with keys optimized_prompt, detected_language, notes_mn, and must_keep_terms_en.",
+    "detected_language must be exactly one of: mn, en, mixed.",
     "notes_mn must be a short Mongolian sentence explaining what improved.",
+    "must_keep_terms_en must be a short English array of the most important concrete terms that cannot be dropped from the final prompt.",
     ...targetSpecificRules,
   ].join(" ");
 }
 
 function buildUserContext(data: z.infer<typeof requestSchema>) {
-  return JSON.stringify({
-    target: data.target,
-    prompt: data.prompt,
-    context: {
-      aspect_ratio: data.aspectRatio ?? null,
-      duration_seconds: data.duration ?? null,
-      quality: data.quality ?? null,
-    },
-  });
+  const lines = [
+    `Target: ${data.target}`,
+    data.target === "image" ? "Model: Nano Banana" : "Model: Runway image-to-video",
+    `Original prompt: ${data.prompt}`,
+  ];
+
+  if (data.aspectRatio) {
+    lines.push(`Aspect ratio: ${data.aspectRatio}`);
+  }
+
+  if (data.duration) {
+    lines.push(`Duration: ${data.duration} seconds`);
+  }
+
+  if (data.quality) {
+    lines.push(`Quality: ${data.quality}`);
+  }
+
+  return lines.join("\n");
+}
+
+function parseOptimizerContent(content: string) {
+  const trimmed = content.trim();
+  const withoutFence = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+
+  try {
+    return JSON.parse(withoutFence) as Record<string, unknown>;
+  } catch {
+    return {
+      optimized_prompt: withoutFence,
+      detected_language: null,
+      notes_mn: null,
+    };
+  }
+}
+
+function enforceMustKeepTerms(prompt: string, terms: string[] | undefined) {
+  const cleanedTerms = (terms ?? []).map((term) => term.trim()).filter(Boolean);
+
+  if (cleanedTerms.length === 0) {
+    return prompt;
+  }
+
+  const normalizedPrompt = prompt.toLowerCase();
+  const missingTerms = cleanedTerms.filter((term) => !normalizedPrompt.includes(term.toLowerCase()));
+
+  if (missingTerms.length === 0) {
+    return prompt;
+  }
+
+  return `${missingTerms.join(", ")}. ${prompt}`;
 }
 
 export async function POST(request: Request) {
@@ -108,27 +159,32 @@ export async function POST(request: Request) {
 
   try {
     const config = getOpenAiPromptOptimizerConfig();
+    const requestBody: Record<string, unknown> = {
+      model: config.model,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: getSystemPrompt(parsed.data.target),
+        },
+        {
+          role: "user",
+          content: buildUserContext(parsed.data),
+        },
+      ],
+    };
+
+    if (!config.model.startsWith("gpt-5")) {
+      requestBody.temperature = 0.2;
+    }
+
     const response = await fetch(config.endpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: config.model,
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: getSystemPrompt(parsed.data.target),
-          },
-          {
-            role: "user",
-            content: buildUserContext(parsed.data),
-          },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const payload = (await response.json().catch(() => null)) as OpenAiChatCompletionsResponse | null;
@@ -146,27 +202,37 @@ export async function POST(request: Request) {
       throw new Error("OpenAI prompt optimizer хоосон хариу өглөө.");
     }
 
-    const optimized = optimizedPromptSchema.safeParse(JSON.parse(content));
+    const optimized = optimizedPromptSchema.safeParse(parseOptimizerContent(content));
 
     if (!optimized.success) {
       throw new Error("OpenAI prompt optimizer-ийн бүтэц буруу байна.");
     }
 
+    const optimizedPrompt = enforceMustKeepTerms(
+      optimized.data.optimized_prompt,
+      optimized.data.must_keep_terms_en,
+    );
+
     const result: OptimizedPromptResponse = {
-      optimizedPrompt: optimized.data.optimized_prompt,
-      detectedLanguage: optimized.data.detected_language,
+      optimizedPrompt,
+      detectedLanguage: normalizePromptLanguage(optimized.data.detected_language, parsed.data.prompt),
       notesMn: optimized.data.notes_mn ?? null,
-      changed: optimized.data.optimized_prompt.trim() !== parsed.data.prompt.trim(),
+      changed: optimizedPrompt.trim() !== parsed.data.prompt.trim(),
     };
+
+    if (!result.notesMn) {
+      result.notesMn =
+        result.detectedLanguage === "en"
+          ? "Prompt-ийн бүтцийг цэгцэлж, илүү ойлгомжтой болголоо."
+          : "Монгол prompt-ийг English болгож, Nano Banana-д илүү тохирсон бүтэцтэй болголоо.";
+    }
 
     return Response.json(result);
   } catch (error) {
     return Response.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "Prompt optimizer ажиллуулах үед алдаа гарлаа.",
+          error instanceof Error ? error.message : "Prompt optimizer ажиллуулах үед алдаа гарлаа.",
       },
       { status: 500 },
     );
