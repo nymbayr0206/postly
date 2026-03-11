@@ -13,6 +13,7 @@ import {
   getImageResolutionLabel,
   type ImageResolution,
 } from "@/lib/generation-pricing";
+import { containsCyrillicText, type OptimizedPromptResponse } from "@/lib/prompt-optimizer";
 import { calculateFinalCreditCost } from "@/lib/pricing";
 import type { ImageAspectRatio } from "@/lib/types";
 
@@ -76,7 +77,9 @@ export function ImageGeneratorClient({
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isPending, setIsPending] = useState(false);
+  const [isOptimizingPrompt, setIsOptimizingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [promptOptimizationInfo, setPromptOptimizationInfo] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,6 +145,66 @@ export function ImageGeneratorClient({
     setPreviews((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   }
 
+  function handlePromptChange(nextValue: string) {
+    setPrompt(nextValue);
+    setPromptOptimizationInfo(null);
+  }
+
+  async function optimizePrompt(options?: { applyToInput?: boolean; silent?: boolean }) {
+    const trimmedPrompt = prompt.trim();
+
+    if (!trimmedPrompt) {
+      setError("Эхлээд prompt-оо оруулна уу.");
+      return null;
+    }
+
+    setIsOptimizingPrompt(true);
+
+    if (!options?.silent) {
+      setError(null);
+    }
+
+    try {
+      const response = await fetch("/api/optimize-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: trimmedPrompt,
+          target: "image",
+          aspectRatio,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | (OptimizedPromptResponse & { error?: string })
+        | null;
+
+      if (!response.ok || !payload?.optimizedPrompt) {
+        if (!options?.silent) {
+          setError(payload?.error ?? "Prompt сайжруулах үед алдаа гарлаа.");
+        }
+        return null;
+      }
+
+      if (options?.applyToInput !== false) {
+        setPrompt(payload.optimizedPrompt);
+      }
+
+      setPromptOptimizationInfo(
+        payload.notesMn ??
+          "Монгол prompt-ийг image generation-д тохирсон English prompt болгон сайжрууллаа.",
+      );
+
+      return payload.optimizedPrompt;
+    } catch {
+      if (!options?.silent) {
+        setError("Prompt сайжруулах үед алдаа гарлаа. Дахин оролдоно уу.");
+      }
+      return null;
+    } finally {
+      setIsOptimizingPrompt(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -162,12 +225,24 @@ export function ImageGeneratorClient({
     setIsPending(true);
 
     try {
+      let promptForGeneration = prompt.trim();
+
+      if (containsCyrillicText(promptForGeneration)) {
+        const optimizedPrompt = await optimizePrompt({ applyToInput: true });
+
+        if (!optimizedPrompt) {
+          return;
+        }
+
+        promptForGeneration = optimizedPrompt;
+      }
+
       const referenceImages = await Promise.all(files.map((file) => fileToDataUrl(file)));
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt,
+          prompt: promptForGeneration,
           aspect_ratio: aspectRatio,
           resolution,
           reference_images: referenceImages,
@@ -182,6 +257,7 @@ export function ImageGeneratorClient({
 
       setResult(payload as GenerateResult);
       setPrompt("");
+      setPromptOptimizationInfo(null);
       resetReferences();
       router.refresh();
     } catch {
@@ -196,6 +272,7 @@ export function ImageGeneratorClient({
     resetReferences();
     setResult(null);
     setError(null);
+    setPromptOptimizationInfo(null);
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
@@ -259,14 +336,24 @@ export function ImageGeneratorClient({
                     Яг ямар дүрслэл хүсэж байгаагаа тодорхой бичнэ үү.
                   </p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  {prompt.trim().length} тэмдэгт
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void optimizePrompt({ applyToInput: true })}
+                    disabled={!prompt.trim() || isPending || isOptimizingPrompt}
+                    className="rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isOptimizingPrompt ? "AI сайжруулж байна..." : "AI Prompt сайжруулах"}
+                  </button>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    {prompt.trim().length} тэмдэгт
+                  </span>
+                </div>
               </div>
 
               <textarea
                 value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
+                onChange={(event) => handlePromptChange(event.target.value)}
                 placeholder="Жишээ: Минимал студид байрласан бүтээгдэхүүний зураг, зөөлөн cyan гэрэлтүүлэгтэй, cinematic product shot, clean background..."
                 rows={6}
                 className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
@@ -274,9 +361,15 @@ export function ImageGeneratorClient({
 
               <SpeechToTextControl
                 value={prompt}
-                onChange={setPrompt}
+                onChange={handlePromptChange}
                 className="mt-4"
               />
+
+              {promptOptimizationInfo ? (
+                <div className="mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+                  {promptOptimizationInfo}
+                </div>
+              ) : null}
 
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 {PROMPT_HINTS.map((hint) => (

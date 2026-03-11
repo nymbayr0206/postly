@@ -23,6 +23,10 @@ function resolveCleanupModel() {
   return process.env.OPENAI_TEXT_CLEANUP_MODEL?.trim() || "gpt-4o-mini";
 }
 
+function resolvePromptOptimizerModel() {
+  return process.env.OPENAI_PROMPT_OPTIMIZER_MODEL?.trim() || "gpt-4o-mini";
+}
+
 export function getOpenAiTranscriptionConfig() {
   return {
     apiKey: readOpenAiEnv("OPENAI_API_KEY"),
@@ -35,6 +39,14 @@ export function getOpenAiTextCleanupConfig() {
   return {
     apiKey: readOpenAiEnv("OPENAI_API_KEY"),
     model: resolveCleanupModel(),
+    endpoint: "https://api.openai.com/v1/chat/completions",
+  };
+}
+
+export function getOpenAiPromptOptimizerConfig() {
+  return {
+    apiKey: readOpenAiEnv("OPENAI_API_KEY"),
+    model: resolvePromptOptimizerModel(),
     endpoint: "https://api.openai.com/v1/chat/completions",
   };
 }

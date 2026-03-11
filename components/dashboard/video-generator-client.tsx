@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import { SpeechToTextControl } from "@/components/dashboard/speech-to-text-control";
 import { creditsToMnt, formatMnt, getVideoCredits } from "@/lib/generation-pricing";
+import { containsCyrillicText, type OptimizedPromptResponse } from "@/lib/prompt-optimizer";
 import { calculateFinalCreditCost } from "@/lib/pricing";
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
 import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
@@ -45,7 +46,9 @@ export function VideoGeneratorClient({
   const [duration, setDuration] = useState<VideoDuration>(5);
   const [quality, setQuality] = useState<VideoQuality>("720p");
   const [isPending, setIsPending] = useState(false);
+  const [isOptimizingPrompt, setIsOptimizingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [promptOptimizationInfo, setPromptOptimizationInfo] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateVideoResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,6 +73,67 @@ export function VideoGeneratorClient({
 
     if (!nextFile && fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  }
+
+  function handlePromptChange(nextValue: string) {
+    setPrompt(nextValue);
+    setPromptOptimizationInfo(null);
+  }
+
+  async function optimizePrompt(options?: { applyToInput?: boolean; silent?: boolean }) {
+    const trimmedPrompt = prompt.trim();
+
+    if (!trimmedPrompt) {
+      setError("Эхлээд prompt-оо оруулна уу.");
+      return null;
+    }
+
+    setIsOptimizingPrompt(true);
+
+    if (!options?.silent) {
+      setError(null);
+    }
+
+    try {
+      const response = await fetch("/api/optimize-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: trimmedPrompt,
+          target: "video",
+          duration,
+          quality,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | (OptimizedPromptResponse & { error?: string })
+        | null;
+
+      if (!response.ok || !payload?.optimizedPrompt) {
+        if (!options?.silent) {
+          setError(payload?.error ?? "Prompt сайжруулах үед алдаа гарлаа.");
+        }
+        return null;
+      }
+
+      if (options?.applyToInput !== false) {
+        setPrompt(payload.optimizedPrompt);
+      }
+
+      setPromptOptimizationInfo(
+        payload.notesMn ??
+          "Монгол prompt-ийг video generation-д тохирсон English prompt болгон сайжрууллаа.",
+      );
+
+      return payload.optimizedPrompt;
+    } catch {
+      if (!options?.silent) {
+        setError("Prompt сайжруулах үед алдаа гарлаа. Дахин оролдоно уу.");
+      }
+      return null;
+    } finally {
+      setIsOptimizingPrompt(false);
     }
   }
 
@@ -137,6 +201,18 @@ export function VideoGeneratorClient({
     setIsPending(true);
 
     try {
+      let promptForGeneration = prompt.trim();
+
+      if (containsCyrillicText(promptForGeneration)) {
+        const optimizedPrompt = await optimizePrompt({ applyToInput: true });
+
+        if (!optimizedPrompt) {
+          return;
+        }
+
+        promptForGeneration = optimizedPrompt;
+      }
+
       const formData = new FormData();
       formData.append("file", file);
 
@@ -156,7 +232,7 @@ export function VideoGeneratorClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt,
+          prompt: promptForGeneration,
           image_url: imageUrl,
           duration,
           quality,
@@ -171,6 +247,7 @@ export function VideoGeneratorClient({
 
       setResult(generatePayload as GenerateVideoResult);
       setPrompt("");
+      setPromptOptimizationInfo(null);
       replaceFile(null);
       router.refresh();
     } catch {
@@ -185,6 +262,7 @@ export function VideoGeneratorClient({
     replaceFile(null);
     setResult(null);
     setError(null);
+    setPromptOptimizationInfo(null);
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
@@ -334,9 +412,21 @@ export function VideoGeneratorClient({
                 </p>
               </div>
 
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-slate-500">Монгол prompt байвал English video prompt болгон сайжруулна.</p>
+                <button
+                  type="button"
+                  onClick={() => void optimizePrompt({ applyToInput: true })}
+                  disabled={!prompt.trim() || isPending || isOptimizingPrompt}
+                  className="rounded-full border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isOptimizingPrompt ? "AI сайжруулж байна..." : "AI Prompt сайжруулах"}
+                </button>
+              </div>
+
               <textarea
                 value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
+                onChange={(event) => handlePromptChange(event.target.value)}
                 placeholder="Жишээ: Камер удаанаар zoom in хийж, үс салхинд зөөлөн хөдөлж, cinematic cyan light туссан байдал..."
                 rows={5}
                 className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
@@ -344,9 +434,15 @@ export function VideoGeneratorClient({
 
               <SpeechToTextControl
                 value={prompt}
-                onChange={setPrompt}
+                onChange={handlePromptChange}
                 className="mt-4"
               />
+
+              {promptOptimizationInfo ? (
+                <div className="mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+                  {promptOptimizationInfo}
+                </div>
+              ) : null}
             </section>
 
             <section className="grid gap-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
