@@ -4,6 +4,7 @@ import type {
   AgentRequestRow,
   ModelRow,
   PlatformSettingsRow,
+  ReferralActivityRow,
   ReferralPayoutRequestRow,
   ReferralSummaryRow,
   TariffRow,
@@ -215,6 +216,36 @@ export async function getReferralSummary(supabase: SupabaseClient, userId: strin
     paid_out_amount_mnt: Number(row?.paid_out_amount_mnt ?? 0),
     converted_amount_mnt: Number(row?.converted_amount_mnt ?? 0),
   } satisfies ReferralSummaryRow;
+}
+
+export async function getReferralActivity(supabase: SupabaseClient, userId: string) {
+  const { data, error } = await supabase.rpc("get_referral_activity", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    throw new Error(`Урилгын дэлгэрэнгүй мэдээлэл ачаалж чадсангүй: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as Array<{
+    referred_user_id: string;
+    referred_user_email: string | null;
+    referred_user_role: string | null;
+    joined_at: string;
+    reward_events: number | null;
+    earned_amount_mnt: number | null;
+    last_reward_at: string | null;
+  }>;
+
+  return rows.map((row) => ({
+    referred_user_id: String(row.referred_user_id),
+    referred_user_email: String(row.referred_user_email ?? ""),
+    referred_user_role: row.referred_user_role === "agent" ? "agent" : row.referred_user_role === "admin" ? "admin" : "user",
+    joined_at: String(row.joined_at),
+    reward_events: Number(row.reward_events ?? 0),
+    earned_amount_mnt: Number(row.earned_amount_mnt ?? 0),
+    last_reward_at: row.last_reward_at ? String(row.last_reward_at) : null,
+  })) satisfies ReferralActivityRow[];
 }
 
 export async function getReferralPayoutRequestsByUserId(supabase: SupabaseClient, userId: string) {

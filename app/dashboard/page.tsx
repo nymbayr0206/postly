@@ -9,6 +9,7 @@ import {
   ensureUserRecords,
   getAgentRequestByUserId,
   getPlatformSettings,
+  getReferralActivity,
   getReferralSummary,
   getUserProfile,
   getWallet,
@@ -81,11 +82,12 @@ export default async function DashboardPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, agentRequest, referralSummary, platformSettings, generationsResponse] = await Promise.all([
+  const [profile, wallet, agentRequest, referralSummary, referralActivity, platformSettings, generationsResponse] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getAgentRequestByUserId(supabase, user.id),
     getReferralSummary(supabase, user.id),
+    getReferralActivity(supabase, user.id),
     getPlatformSettings(supabase),
     supabase
       .from("generations")
@@ -158,6 +160,7 @@ export default async function DashboardPage() {
         <ReferralPanel
           referralCode={profile.referral_code}
           summary={referralSummary}
+          activity={referralActivity}
           creditPriceMnt={platformSettings.credit_price_mnt}
         />
       ) : null}

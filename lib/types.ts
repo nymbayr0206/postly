@@ -93,6 +93,16 @@ export type ReferralSummaryRow = {
   converted_amount_mnt: number;
 };
 
+export type ReferralActivityRow = {
+  referred_user_id: string;
+  referred_user_email: string;
+  referred_user_role: UserRole;
+  joined_at: string;
+  reward_events: number;
+  earned_amount_mnt: number;
+  last_reward_at: string | null;
+};
+
 export type ReferralPayoutRequestRow = {
   id: string;
   user_id: string;

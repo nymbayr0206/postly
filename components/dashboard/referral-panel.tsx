@@ -9,7 +9,7 @@ import {
   convertReferralRewardToCreditsAction,
 } from "@/app/dashboard/actions";
 import { DEFAULT_CREDIT_PRICE_MNT } from "@/lib/credit-packages";
-import type { ReferralSummaryRow } from "@/lib/types";
+import type { ReferralActivityRow, ReferralSummaryRow } from "@/lib/types";
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("mn-MN").format(value);
@@ -17,6 +17,29 @@ function formatNumber(value: number) {
 
 function formatMnt(value: number) {
   return `${formatNumber(value)}₮`;
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "Одоогоор reward ороогүй";
+  }
+
+  return new Intl.DateTimeFormat("mn-MN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function roleLabel(role: ReferralActivityRow["referred_user_role"]) {
+  if (role === "agent") {
+    return "Агент";
+  }
+
+  if (role === "admin") {
+    return "Админ";
+  }
+
+  return "Хэрэглэгч";
 }
 
 function buildInvitePath(referralCode: string) {
@@ -87,10 +110,12 @@ const EMPTY_ACTION_STATE: ReferralActionState = {};
 export function ReferralPanel({
   referralCode,
   summary,
+  activity,
   creditPriceMnt,
 }: {
   referralCode: string;
   summary: ReferralSummaryRow;
+  activity: ReferralActivityRow[];
   creditPriceMnt: number;
 }) {
   const [copied, setCopied] = useState(false);
@@ -154,19 +179,15 @@ export function ReferralPanel({
             <div className="text-sm font-semibold text-cyan-700">Урилгын систем</div>
             <h2 className="mt-1 text-2xl font-black text-slate-950">Өөрийн урилгын линкээ хуваалцаарай</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Энэ линкээр бүртгүүлсэн энгийн хэрэглэгчийн баталгаажсан кредит цэнэглэлт бүрээс 10%-ийн
-              мөнгөн урамшуулал авна. Хэрэв агентын урилгын линкээр шинэ агент бүртгүүлж 150,000₮-ийн
-              төлбөр нь баталгаажвал урьсан агентын урамшуулалд шууд 30,000₮ нэмэгдэнэ.
+              Энэ линкээр бүртгүүлсэн энгийн хэрэглэгчийн баталгаажсан кредит цэнэглэлт бүрээс 10%-ийн мөнгөн
+              урамшуулал авна. Хэрэв агентын урилгын линкээр шинэ агент бүртгүүлж 150,000₮-ийн төлбөр нь
+              баталгаажвал урьсан агентын урамшуулалд шууд 30,000₮ нэмэгдэнэ.
             </p>
           </div>
 
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Таны урилгын код
-            </div>
-            <div className="mt-2 text-2xl font-black tracking-[0.16em] text-slate-950">
-              {referralCode}
-            </div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Таны урилгын код</div>
+            <div className="mt-2 text-2xl font-black tracking-[0.16em] text-slate-950">{referralCode}</div>
 
             <div className="mt-4 rounded-[1.15rem] border border-slate-200 bg-white p-3 text-sm text-slate-700">
               <div className="truncate">{inviteLink}</div>
@@ -196,7 +217,8 @@ export function ReferralPanel({
             <form action={convertAction} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
               <div className="text-sm font-semibold text-slate-900">Урамшууллаа кредит болгох</div>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Урамшууллын мөнгөө тухайн платформын credit үнээр кредит болгож болно. Одоо 1 credit ={" "}
+                Урамшууллын мөнгөө тухайн платформын credit үнээр кредит болгож болно. Одоо 1 credit =
+                {" "}
                 {formatMnt(effectiveCreditPriceMnt)} бөгөөд 10,000₮ хөрвүүлбэл{" "}
                 {formatNumber(Math.floor(10000 / effectiveCreditPriceMnt))} кредит нэмэгдэнэ.
               </p>
@@ -314,23 +336,17 @@ export function ReferralPanel({
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
           <article className="rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-4 shadow-sm">
             <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Бүртгүүлсэн хүн</div>
-            <div className="mt-2 text-3xl font-black text-slate-950">
-              {formatNumber(summary.invited_users)}
-            </div>
+            <div className="mt-2 text-3xl font-black text-slate-950">{formatNumber(summary.invited_users)}</div>
           </article>
 
           <article className="rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-4 shadow-sm">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Урамшуулал олгосон тохиолдол</div>
-            <div className="mt-2 text-3xl font-black text-slate-950">
-              {formatNumber(summary.reward_events)}
-            </div>
+            <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Reward event</div>
+            <div className="mt-2 text-3xl font-black text-slate-950">{formatNumber(summary.reward_events)}</div>
           </article>
 
           <article className="rounded-[1.5rem] border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
             <div className="text-xs uppercase tracking-[0.18em] text-cyan-700">Боломжит урамшууллын мөнгө</div>
-            <div className="mt-2 text-3xl font-black text-slate-950">
-              {formatMnt(summary.available_amount_mnt)}
-            </div>
+            <div className="mt-2 text-3xl font-black text-slate-950">{formatMnt(summary.available_amount_mnt)}</div>
           </article>
 
           <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
@@ -352,6 +368,107 @@ export function ReferralPanel({
             </article>
           </div>
         </div>
+      </div>
+
+      <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Урьсан хэрэглэгчдийн жагсаалт</div>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Энд яг хэнийг урьсан, тухайн хэрэглэгчээс хэдэн төгрөгийн reward орсон, хэдэн удаа event үүссэнийг харуулна.
+            </p>
+          </div>
+          <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            Нийт {formatNumber(activity.length)} хүн
+          </div>
+        </div>
+
+        {activity.length === 0 ? (
+          <div className="mt-4 rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+            Одоогоор урилгын линкээр бүртгүүлсэн хэрэглэгч алга байна.
+          </div>
+        ) : (
+          <>
+            <div className="mt-4 grid gap-3 lg:hidden">
+              {activity.map((item) => (
+                <article
+                  key={item.referred_user_id}
+                  className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold text-slate-950">
+                        {item.referred_user_email || item.referred_user_id}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {roleLabel(item.referred_user_role)} · {formatDate(item.joined_at)}
+                      </div>
+                    </div>
+                    <div
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        item.earned_amount_mnt > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {item.earned_amount_mnt > 0 ? "Reward орсон" : "Хүлээгдэж байна"}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-[1rem] border border-slate-200 bg-white p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Нийт орлого
+                      </div>
+                      <div className="mt-2 text-base font-bold text-slate-950">
+                        {formatMnt(item.earned_amount_mnt)}
+                      </div>
+                    </div>
+                    <div className="rounded-[1rem] border border-slate-200 bg-white p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Reward event
+                      </div>
+                      <div className="mt-2 text-base font-bold text-slate-950">
+                        {formatNumber(item.reward_events)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-xs text-slate-500">
+                    Сүүлийн reward: {formatDate(item.last_reward_at)}
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-4 hidden overflow-x-auto lg:block">
+              <table className="w-full min-w-[820px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500">
+                    <th className="px-3 py-3 font-medium">Хэрэглэгч</th>
+                    <th className="px-3 py-3 font-medium">Төрөл</th>
+                    <th className="px-3 py-3 font-medium">Бүртгүүлсэн</th>
+                    <th className="px-3 py-3 font-medium">Reward event</th>
+                    <th className="px-3 py-3 font-medium">Орж ирсэн мөнгө</th>
+                    <th className="px-3 py-3 font-medium">Сүүлийн reward</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activity.map((item) => (
+                    <tr key={item.referred_user_id} className="border-b border-slate-100 align-top">
+                      <td className="px-3 py-4 font-medium text-slate-900">
+                        <div className="max-w-[260px] truncate">{item.referred_user_email || item.referred_user_id}</div>
+                      </td>
+                      <td className="px-3 py-4 text-slate-600">{roleLabel(item.referred_user_role)}</td>
+                      <td className="px-3 py-4 text-slate-600">{formatDate(item.joined_at)}</td>
+                      <td className="px-3 py-4 text-slate-900">{formatNumber(item.reward_events)}</td>
+                      <td className="px-3 py-4 font-semibold text-slate-950">{formatMnt(item.earned_amount_mnt)}</td>
+                      <td className="px-3 py-4 text-slate-600">{formatDate(item.last_reward_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
