@@ -27,11 +27,20 @@ function formatDate(value: string | null) {
     return "Одоогоор reward ороогүй";
   }
 
-  return new Intl.DateTimeFormat("mn-MN", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
     timeZone: "Asia/Ulaanbaatar",
-  }).format(new Date(value));
+  }).formatToParts(new Date(value));
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return `${get("year")}.${get("month")}.${get("day")} ${get("hour")}:${get("minute")}`;
 }
 
 function roleLabel(role: ReferralActivityRow["referred_user_role"]) {
