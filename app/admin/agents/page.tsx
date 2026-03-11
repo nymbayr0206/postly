@@ -1,7 +1,8 @@
-﻿import {
+import {
   approveAgentRequestAction,
   rejectAgentRequestAction,
 } from "@/app/admin/actions";
+import { AGENT_APPROVAL_CREDITS } from "@/lib/agent-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AgentRequestRow, UserRow, WalletRow } from "@/lib/types";
 
@@ -38,6 +39,10 @@ function formatRole(role: UserRow["role"] | undefined) {
 
 function formatAmount(value: number) {
   return `${new Intl.NumberFormat("mn-MN").format(value)}₮`;
+}
+
+function formatCredits(value: number) {
+  return new Intl.NumberFormat("mn-MN").format(value);
 }
 
 function statusClasses(status: AgentRequestRow["status"]) {
@@ -100,7 +105,8 @@ export default async function AdminAgentsPage() {
         <div className="border-b border-slate-200 px-6 py-4">
           <h1 className="text-xl font-semibold text-slate-900">Агент хүсэлтүүд</h1>
           <p className="mt-1 text-sm text-slate-500">
-            150,000₮-ийн шилжүүлгийн баримтыг шалгаж, зөвшөөрвөл хэрэглэгч агент болж 50,000 кредит авна.
+            150,000₮-ийн шилжүүлгийн баримтыг шалгаж, зөвшөөрвөл хэрэглэгч агент болж{" "}
+            {formatCredits(AGENT_APPROVAL_CREDITS)} кредит авна.
           </p>
         </div>
 

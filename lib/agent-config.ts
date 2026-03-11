@@ -1,5 +1,5 @@
 export const AGENT_SIGNUP_PRICE_MNT = 150000;
-export const AGENT_APPROVAL_CREDITS = 50000;
+export const AGENT_APPROVAL_CREDITS = 2500;
 
 export function getAgentBankDetails() {
   return {
