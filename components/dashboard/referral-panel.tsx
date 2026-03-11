@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 
 import {
   createReferralPayoutRequestAction,
@@ -30,6 +30,7 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "Asia/Ulaanbaatar",
   }).format(new Date(value));
 }
 
@@ -69,15 +70,11 @@ function normalizeSiteUrl(value: string | undefined) {
   }
 }
 
-function buildInviteLink(invitePath: string) {
-  const configuredSiteUrl = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+function buildInviteLink(invitePath: string, clientOrigin: string | null) {
+  const configuredSiteUrl = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL) ?? clientOrigin;
 
   if (configuredSiteUrl) {
     return new URL(invitePath, configuredSiteUrl).toString();
-  }
-
-  if (typeof window !== "undefined") {
-    return new URL(invitePath, window.location.origin).toString();
   }
 
   return invitePath;
@@ -152,6 +149,7 @@ export function ReferralPanel({
   const [copyError, setCopyError] = useState<string | null>(null);
   const [actionMode, setActionMode] = useState<ActionMode>("convert");
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+  const [clientOrigin, setClientOrigin] = useState<string | null>(null);
   const [convertAmountMnt, setConvertAmountMnt] = useState(String(summary.available_amount_mnt || ""));
   const [payoutAmountMnt, setPayoutAmountMnt] = useState(String(summary.available_amount_mnt || ""));
   const [bankName, setBankName] = useState("");
@@ -167,8 +165,14 @@ export function ReferralPanel({
     EMPTY_ACTION_STATE,
   );
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setClientOrigin(window.location.origin);
+    }
+  }, []);
+
   const invitePath = useMemo(() => buildInvitePath(referralCode), [referralCode]);
-  const inviteLink = useMemo(() => buildInviteLink(invitePath), [invitePath]);
+  const inviteLink = useMemo(() => buildInviteLink(invitePath, clientOrigin), [clientOrigin, invitePath]);
   const effectiveCreditPriceMnt = useMemo(
     () =>
       Number.isFinite(creditPriceMnt) && creditPriceMnt > 0
