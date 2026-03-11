@@ -1,4 +1,4 @@
-export const ASPECT_RATIOS = ["1:1", "4:5", "16:9", "9:19"] as const;
+export const ASPECT_RATIOS = ["1:1", "4:5", "16:9", "9:16"] as const;
 export const IMAGE_RESOLUTIONS = ["1k", "2k", "4k"] as const;
 
 export type AspectRatio = (typeof ASPECT_RATIOS)[number];

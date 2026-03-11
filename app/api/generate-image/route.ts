@@ -149,10 +149,23 @@ export async function POST(request: Request) {
     });
 
     if (deductionError) {
+      console.error("[generate-image] create_generation_and_deduct failed", deductionError);
       if (deductionError.message.includes("INSUFFICIENT_CREDITS")) {
         return Response.json(
           {
             error: "Үүсгэлтийн явцад кредит өөрчлөгдсөн байна. Кредитээ цэнэглээд дахин оролдоно уу.",
+          },
+          { status: 409 },
+        );
+      }
+
+      if (
+        deductionError.message.includes("generations_aspect_ratio_check") ||
+        deductionError.details?.includes("generations_aspect_ratio_check")
+      ) {
+        return Response.json(
+          {
+            error: "Supabase database дээрх aspect ratio constraint шинэчлэгдээгүй байна. 9:16 ratio-г идэвхжүүлэх migration-аа ажиллуулна уу.",
           },
           { status: 409 },
         );

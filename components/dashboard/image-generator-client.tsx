@@ -43,8 +43,17 @@ const ASPECT_RATIOS: Array<{ value: ImageAspectRatio; label: string; detail: str
   { value: "1:1", label: "1:1", detail: "Пост, квадрат зураг" },
   { value: "4:5", label: "4:5", detail: "Instagram босоо пост" },
   { value: "16:9", label: "16:9", detail: "Cover болон banner" },
-  { value: "9:19", label: "9:19", detail: "Story, Reel босоо кадр" },
+  { value: "9:16", label: "9:16", detail: "Story, Reel босоо кадр" },
 ];
+
+function normalizeAspectRatio(value: string): ImageAspectRatio {
+  if (value === "9:19") {
+    return "9:16";
+  }
+
+  const matched = ASPECT_RATIOS.find((ratio) => ratio.value === value);
+  return matched?.value ?? "1:1";
+}
 
 const IMAGE_RESOLUTION_OPTIONS: Array<{
   value: ImageResolution;
@@ -95,6 +104,14 @@ export function ImageGeneratorClient({
   useEffect(() => {
     previewsRef.current = previews;
   }, [previews]);
+
+  useEffect(() => {
+    const normalized = normalizeAspectRatio(String(aspectRatio));
+
+    if (aspectRatio !== normalized) {
+      setAspectRatio(normalized);
+    }
+  }, [aspectRatio]);
 
   useEffect(() => {
     return () => {
@@ -177,7 +194,7 @@ export function ImageGeneratorClient({
         body: JSON.stringify({
           prompt: trimmedPrompt,
           target: "image",
-          aspectRatio,
+          aspectRatio: normalizeAspectRatio(String(aspectRatio)),
         }),
       });
       const payload = (await response.json().catch(() => null)) as
@@ -249,7 +266,7 @@ export function ImageGeneratorClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: promptForGeneration,
-          aspect_ratio: aspectRatio,
+          aspect_ratio: normalizeAspectRatio(String(aspectRatio)),
           resolution,
           reference_images: referenceImages,
         }),
@@ -286,14 +303,15 @@ export function ImageGeneratorClient({
   const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
-  const selectedAspectRatio = ASPECT_RATIOS.find((ratio) => ratio.value === aspectRatio);
+  const normalizedAspectRatio = normalizeAspectRatio(String(aspectRatio));
+  const selectedAspectRatio = ASPECT_RATIOS.find((ratio) => ratio.value === normalizedAspectRatio);
   const selectedResolution = IMAGE_RESOLUTION_OPTIONS.find((option) => option.value === resolution);
   const summaryItems = [
     { label: "Үнэ", value: `${currentCost} кр`, detail: formatMnt(currentCostMnt) },
     { label: "Үлдэгдэл", value: String(creditsRemaining), detail: "Кредит" },
     {
       label: "Харьцаа",
-      value: aspectRatio,
+      value: normalizedAspectRatio,
       detail: selectedAspectRatio?.detail ?? "Зургийн хэлбэр",
     },
     {
@@ -331,7 +349,7 @@ export function ImageGeneratorClient({
 
           <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{aspectRatio}</span>
+              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{normalizedAspectRatio}</span>
               <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">PNG</span>
               <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{result.cost} кредит</span>
             </div>
@@ -450,7 +468,7 @@ export function ImageGeneratorClient({
                   </div>
                   <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Харьцаа</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-950">{aspectRatio}</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950">{normalizedAspectRatio}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Лавлах</p>
@@ -473,7 +491,7 @@ export function ImageGeneratorClient({
                 },
                 {
                   label: "Харьцаа",
-                  value: aspectRatio,
+                  value: normalizedAspectRatio,
                   detail: "Зургийн хэлбэр",
                 },
                 {
@@ -602,7 +620,7 @@ export function ImageGeneratorClient({
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Нэмэлт тохиргоо</p>
                   <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1">{aspectRatio}</span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
                   </div>
                 </div>
@@ -633,7 +651,7 @@ export function ImageGeneratorClient({
                     type="button"
                     onClick={() => setAspectRatio(ratio.value)}
                     className={`min-w-[9.5rem] shrink-0 rounded-[1.25rem] border px-4 py-4 text-left transition ${
-                      aspectRatio === ratio.value
+                      normalizedAspectRatio === ratio.value
                         ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
                         : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                     }`}
@@ -651,7 +669,7 @@ export function ImageGeneratorClient({
                     type="button"
                     onClick={() => setAspectRatio(ratio.value)}
                     className={`rounded-[1.25rem] border px-4 py-4 text-left transition ${
-                      aspectRatio === ratio.value
+                      normalizedAspectRatio === ratio.value
                         ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
                         : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                     }`}
@@ -715,7 +733,7 @@ export function ImageGeneratorClient({
 
             <div className="mb-3 flex items-center justify-between gap-3 xl:hidden">
               <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                <span className="rounded-full bg-slate-100 px-2.5 py-1">{aspectRatio}</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
                 <span className="rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
                 {files.length > 0 ? <span className="rounded-full bg-slate-100 px-2.5 py-1">{files.length} зураг</span> : null}
               </div>

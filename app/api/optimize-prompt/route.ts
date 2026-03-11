@@ -28,13 +28,6 @@ const requestSchema = z.object({
   quality: z.string().trim().max(20).optional(),
 });
 
-const optimizedPromptSchema = z.object({
-  optimized_prompt: z.string().trim().min(3).max(2000),
-  detected_language: z.string().trim().min(1).max(50).optional(),
-  notes_mn: z.string().trim().min(1).max(300).nullable().optional(),
-  must_keep_terms_en: z.array(z.string().trim().min(1).max(120)).max(8).optional(),
-});
-
 function getSystemPrompt(target: PromptOptimizerTarget) {
   const targetSpecificRules =
     target === "video"
@@ -110,6 +103,52 @@ function parseOptimizerContent(content: string) {
       notes_mn: null,
     };
   }
+}
+
+function normalizeTextValue(value: unknown, maxLength: number) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.slice(0, maxLength);
+}
+
+function normalizeStringArray(value: unknown, maxItems: number, maxLength: number) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, maxItems)
+    .map((item) => item.slice(0, maxLength));
+}
+
+function normalizeOptimizerPayload(content: string) {
+  const raw = parseOptimizerContent(content);
+
+  return {
+    optimizedPrompt:
+      normalizeTextValue(raw.optimized_prompt ?? raw.optimizedPrompt ?? raw.prompt, 2000) ?? null,
+    detectedLanguage: normalizeTextValue(
+      raw.detected_language ?? raw.detectedLanguage ?? raw.language,
+      50,
+    ),
+    notesMn: normalizeTextValue(raw.notes_mn ?? raw.notesMn ?? raw.notes, 300),
+    mustKeepTerms: normalizeStringArray(
+      raw.must_keep_terms_en ?? raw.mustKeepTermsEn ?? raw.must_keep_terms,
+      8,
+      120,
+    ),
+  };
 }
 
 function enforceMustKeepTerms(prompt: string, terms: string[] | undefined) {
@@ -202,21 +241,18 @@ export async function POST(request: Request) {
       throw new Error("OpenAI prompt optimizer хоосон хариу өглөө.");
     }
 
-    const optimized = optimizedPromptSchema.safeParse(parseOptimizerContent(content));
+    const optimized = normalizeOptimizerPayload(content);
 
-    if (!optimized.success) {
+    if (!optimized.optimizedPrompt) {
       throw new Error("OpenAI prompt optimizer-ийн бүтэц буруу байна.");
     }
 
-    const optimizedPrompt = enforceMustKeepTerms(
-      optimized.data.optimized_prompt,
-      optimized.data.must_keep_terms_en,
-    );
+    const optimizedPrompt = enforceMustKeepTerms(optimized.optimizedPrompt, optimized.mustKeepTerms);
 
     const result: OptimizedPromptResponse = {
       optimizedPrompt,
-      detectedLanguage: normalizePromptLanguage(optimized.data.detected_language, parsed.data.prompt),
-      notesMn: optimized.data.notes_mn ?? null,
+      detectedLanguage: normalizePromptLanguage(optimized.detectedLanguage, parsed.data.prompt),
+      notesMn: optimized.notesMn,
       changed: optimizedPrompt.trim() !== parsed.data.prompt.trim(),
     };
 

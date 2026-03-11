@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { ImageAspectRatio } from "@/lib/types";
 
-const aspectOptions: ImageAspectRatio[] = ["1:1", "4:5", "16:9", "9:19"];
+const aspectOptions: ImageAspectRatio[] = ["1:1", "4:5", "16:9", "9:16"];
 
 type GenerateResult = {
   image_url: string;
