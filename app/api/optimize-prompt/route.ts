@@ -21,7 +21,7 @@ type OpenAiChatCompletionsResponse = {
 };
 
 const requestSchema = z.object({
-  prompt: z.string().trim().min(3, "Prompt хамгийн багадаа 3 тэмдэгт байх ёстой.").max(2000),
+  prompt: z.string().trim().min(3, "Prompt хамгийн багадаа 3 тэмдэгт байх ёстой."),
   target: z.enum(PROMPT_OPTIMIZER_TARGETS).default("image"),
   aspectRatio: z.string().trim().max(20).optional(),
   duration: z.coerce.number().int().positive().optional(),

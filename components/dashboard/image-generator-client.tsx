@@ -578,15 +578,6 @@ export function ImageGeneratorClient({
 
               <div className="mt-4">{renderPreviewPanel("min-h-[16rem] sm:min-h-[18rem]")}</div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {summaryItems.map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-3 shadow-sm">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-950">{item.value}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
             </section>
 
             <section className="order-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5 2xl:order-4">

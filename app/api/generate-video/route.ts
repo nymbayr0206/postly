@@ -17,7 +17,7 @@ import {
 } from "@/lib/user-data";
 
 const requestSchema = z.object({
-  prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой.").max(1000),
+  prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой."),
   image_url: z.string().url("Хүчинтэй зургийн холбоос шаардлагатай."),
   duration: z.union([z.literal(5), z.literal(10)]).default(5),
   quality: z.enum(VIDEO_QUALITIES).default("720p"),
