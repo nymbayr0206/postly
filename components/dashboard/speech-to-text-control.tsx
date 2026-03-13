@@ -8,7 +8,6 @@ type SpeechToTextControlProps = {
   className?: string;
 };
 
-type SpeechLanguage = "mn" | "en";
 type TranscriptQualityRating = "high" | "medium" | "low";
 type MicrophonePermissionState = PermissionState | "unknown";
 
@@ -41,6 +40,8 @@ type AudioContextWindow = Window & typeof globalThis & {
 const TARGET_SAMPLE_RATE = 16_000;
 const MAX_RECORDING_SECONDS = 20;
 const MIN_RMS_LEVEL = 0.003;
+const DEFAULT_SPEECH_LANGUAGE = "mn";
+const DEFAULT_CLEAN_MODE = true;
 
 function appendTranscript(base: string, addition: string) {
   const trimmed = addition.trim();
@@ -204,8 +205,6 @@ export function SpeechToTextControl({
   const autoStoppedRef = useRef(false);
   const stopInProgressRef = useRef(false);
   const isRecordingRef = useRef(false);
-  const [language, setLanguage] = useState<SpeechLanguage>("mn");
-  const [cleanMode, setCleanMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -323,8 +322,8 @@ export function SpeechToTextControl({
     const file = new File([blob], "speech.wav", { type: "audio/wav" });
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("language", language);
-    formData.append("clean_mode", String(cleanMode));
+    formData.append("language", DEFAULT_SPEECH_LANGUAGE);
+    formData.append("clean_mode", String(DEFAULT_CLEAN_MODE));
     formData.append("duration_ms", String(Math.round(durationMs)));
 
     const response = await fetch("/api/speech-to-text", {
@@ -516,33 +515,11 @@ export function SpeechToTextControl({
             Ярианаас текст
           </p>
           <p className="mt-1 text-sm text-slate-600">
-            Microsoft Speech-аар анхны transcript авч, дараа нь backend дээр цэвэрлээд таны
-            тайлбар дээр нэмэгдүүлнэ.
+            Монгол ярианаас transcript авч, backend дээр цэгцлээд таны тайлбар дээр нэмнэ.
           </p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <select
-            value={language}
-            onChange={(event) => setLanguage(event.target.value as SpeechLanguage)}
-            disabled={isRecording || isTranscribing}
-            className="rounded-full border border-cyan-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 disabled:opacity-60"
-          >
-            <option value="mn">Монгол</option>
-            <option value="en">Англи</option>
-          </select>
-
-          <label className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
-            <input
-              type="checkbox"
-              checked={cleanMode}
-              onChange={(event) => setCleanMode(event.target.checked)}
-              disabled={isRecording || isTranscribing}
-              className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-            />
-            Цэвэрлэх горим
-          </label>
-
           <button
             type="button"
             onClick={() => void (isRecording ? stopRecording() : startRecording())}
@@ -564,8 +541,8 @@ export function SpeechToTextControl({
       </div>
 
       <p className="mt-2 text-xs leading-5 text-slate-500">
-        10-20 секундийн тод, ойрын яриа хамгийн сайн танигдана. Clean mode асаавал дүүргэлт үг,
-        тээнэгэлзлийг аюулгүй үед цэвэрлэнэ.
+        10-20 секундийн тод, ойрын Монгол яриа хамгийн сайн танигдана. Transcript-ийг автоматаар
+        цэгцлээд тайлбар дээр нэмнэ.
       </p>
 
       <p className="mt-2 text-xs leading-5 text-slate-500">{getMicrophonePermissionText(microphonePermission)}</p>
