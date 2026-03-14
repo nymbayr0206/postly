@@ -82,7 +82,17 @@ export type AgentRequestRow = {
   user_id: string;
   amount_mnt: number;
   payment_screenshot_url: string | null;
+  payment_provider: PaymentProvider;
   status: CreditRequestStatus;
+  qpay_invoice_id: string | null;
+  qpay_sender_invoice_no: string | null;
+  qpay_payment_id: string | null;
+  qpay_payment_status: string | null;
+  qpay_short_url: string | null;
+  qpay_qr_text: string | null;
+  qpay_qr_image: string | null;
+  qpay_deeplink: QPayDeeplink[] | null;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
 };

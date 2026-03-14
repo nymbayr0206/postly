@@ -1,7 +1,8 @@
+import { AGENT_REQUEST_SELECT } from "@/lib/agent-requests";
 import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { getQPayPayment } from "@/lib/qpay";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import type { CreditRequestRow } from "@/lib/types";
+import type { AgentRequestRow, CreditRequestRow } from "@/lib/types";
 
 function successResponse() {
   return new Response("SUCCESS", {
@@ -34,12 +35,34 @@ export async function GET(request: Request) {
       .eq("qpay_invoice_id", payment.object_id)
       .maybeSingle<CreditRequestRow>();
 
-    if (!requestRow) {
+    if (requestRow) {
+      const { error } = await admin.rpc("finalize_qpay_credit_request", {
+        p_request_id: requestRow.id,
+        p_qpay_payment_id: payment.payment_id,
+        p_qpay_payment_status: payment.payment_status,
+        p_payment_payload: payment,
+        p_paid_at: payment.payment_date ?? null,
+      });
+
+      if (error) {
+        console.error("QPay finalize callback error", error.message);
+      }
+
       return successResponse();
     }
 
-    const { error } = await admin.rpc("finalize_qpay_credit_request", {
-      p_request_id: requestRow.id,
+    const { data: agentRequestRow } = await admin
+      .from("agent_requests")
+      .select(AGENT_REQUEST_SELECT)
+      .eq("qpay_invoice_id", payment.object_id)
+      .maybeSingle<AgentRequestRow>();
+
+    if (!agentRequestRow) {
+      return successResponse();
+    }
+
+    const { error } = await admin.rpc("finalize_qpay_agent_request", {
+      p_request_id: agentRequestRow.id,
       p_qpay_payment_id: payment.payment_id,
       p_qpay_payment_status: payment.payment_status,
       p_payment_payload: payment,
@@ -47,7 +70,7 @@ export async function GET(request: Request) {
     });
 
     if (error) {
-      console.error("QPay finalize callback error", error.message);
+      console.error("QPay finalize agent callback error", error.message);
     }
   } catch (error) {
     console.error("QPay callback failed", error);

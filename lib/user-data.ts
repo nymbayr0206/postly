@@ -11,6 +11,7 @@ import type {
   UserRow,
   WalletRow,
 } from "@/lib/types";
+import { AGENT_REQUEST_SELECT } from "@/lib/agent-requests";
 import { getDefaultTariffNameForRole } from "@/lib/pricing";
 
 function isDuplicateViolation(code: string | undefined) {
@@ -185,7 +186,7 @@ export async function getModels(supabase: SupabaseClient) {
 export async function getAgentRequestByUserId(supabase: SupabaseClient, userId: string) {
   const { data, error } = await supabase
     .from("agent_requests")
-    .select("id,user_id,amount_mnt,payment_screenshot_url,status,created_at,updated_at")
+    .select(AGENT_REQUEST_SELECT)
     .eq("user_id", userId)
     .maybeSingle<AgentRequestRow>();
 
