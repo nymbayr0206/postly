@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { CreditRequestPanel } from "@/components/dashboard/credit-request-panel";
+import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { formatCredits } from "@/lib/generation-pricing";
-import { PAYMENT_REVIEW_MINUTES, getAdminBankDetails } from "@/lib/payment-config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow } from "@/lib/types";
 import { ensureUserRecords, getPlatformSettings, getWallet } from "@/lib/user-data";
@@ -31,18 +31,20 @@ export default async function BillingPage() {
     getPlatformSettings(supabase),
     supabase
       .from("credit_requests")
-      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,payment_screenshot_url,status,created_at")
+      .select(CREDIT_REQUEST_SELECT)
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .returns<CreditRequestRow[]>(),
   ]);
 
   if (creditRequestResponse.error) {
     throw new Error(creditRequestResponse.error.message);
   }
 
-  const requests = ((creditRequestResponse.data ?? []) as CreditRequestRow[]).map((request) => ({
+  const requests = (creditRequestResponse.data ?? []).map((request) => ({
     ...request,
     created_at_label: formatDate(request.created_at),
+    paid_at_label: request.paid_at ? formatDate(request.paid_at) : null,
   }));
   const pendingCount = requests.filter((request) => request.status === "pending").length;
   const approvedCredits = requests
@@ -79,9 +81,7 @@ export default async function BillingPage() {
 
       <CreditRequestPanel
         requests={requests}
-        bankDetails={getAdminBankDetails()}
         creditPriceMnt={platformSettings.credit_price_mnt}
-        reviewMinutes={PAYMENT_REVIEW_MINUTES}
       />
     </div>
   );

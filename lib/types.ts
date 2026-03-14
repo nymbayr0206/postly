@@ -2,6 +2,15 @@ export type UserRole = "agent" | "user" | "admin";
 
 export type CreditRequestStatus = "pending" | "approved" | "rejected";
 
+export type PaymentProvider = "manual" | "qpay";
+
+export type QPayDeeplink = {
+  name: string;
+  description: string;
+  logo: string;
+  link: string;
+};
+
 export type ImageAspectRatio = "1:1" | "4:5" | "16:9" | "9:16";
 
 export type TariffRow = {
@@ -54,7 +63,17 @@ export type CreditRequestRow = {
   bonus_credits: number;
   package_key: string | null;
   payment_screenshot_url: string | null;
+  payment_provider: PaymentProvider;
   status: CreditRequestStatus;
+  qpay_invoice_id: string | null;
+  qpay_sender_invoice_no: string | null;
+  qpay_payment_id: string | null;
+  qpay_payment_status: string | null;
+  qpay_short_url: string | null;
+  qpay_qr_text: string | null;
+  qpay_qr_image: string | null;
+  qpay_deeplink: QPayDeeplink[] | null;
+  paid_at: string | null;
   created_at: string;
 };
 

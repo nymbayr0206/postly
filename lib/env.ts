@@ -8,6 +8,20 @@ function readEnv(name: string): string {
   return value;
 }
 
+function normalizeOptionalUrl(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.replace(/\/+$/, "");
+}
+
 export function getPublicEnv() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -55,6 +69,19 @@ export function getRunwayEnv() {
   };
 }
 
+export function getQPayEnv() {
+  return {
+    qpayBaseUrl: normalizeOptionalUrl(process.env.QPAY_BASE_URL) ?? "https://merchant.qpay.mn",
+    qpayUsername: readEnv("QPAY_USERNAME"),
+    qpayPassword: readEnv("QPAY_PASSWORD"),
+    qpayInvoiceCode: readEnv("QPAY_INVOICE_CODE"),
+    qpayBranchCode: process.env.QPAY_BRANCH_CODE?.trim() || null,
+    qpayStaffCode: process.env.QPAY_STAFF_CODE?.trim() || null,
+    qpayCallbackUrl: normalizeOptionalUrl(process.env.QPAY_CALLBACK_URL),
+    publicSiteUrl: normalizeOptionalUrl(process.env.NEXT_PUBLIC_SITE_URL),
+  };
+}
+
 export function getActiveModelNames() {
   return {
     nanoBananaModelName: process.env.NANOBANANA_MODEL_NAME ?? DEFAULT_NANOBANANA_MODEL_NAME,
@@ -68,5 +95,6 @@ export function getServerEnv() {
     ...getNanoBananaEnv(),
     ...getElevenLabsEnv(),
     ...getRunwayEnv(),
+    ...getQPayEnv(),
   };
 }

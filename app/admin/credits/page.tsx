@@ -2,6 +2,7 @@ import {
   approveCreditRequestAction,
   rejectCreditRequestAction,
 } from "@/app/admin/actions";
+import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { getCreditPackageByKey } from "@/lib/credit-packages";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow, UserRow, WalletRow } from "@/lib/types";
@@ -42,11 +43,35 @@ function formatRole(role: UserRow["role"] | undefined) {
 }
 
 function formatMnt(value: number) {
-  return `${new Intl.NumberFormat("mn-MN").format(value)}₮`;
+  return `${new Intl.NumberFormat("mn-MN").format(value)} MNT`;
 }
 
 function formatCredits(value: number) {
   return new Intl.NumberFormat("mn-MN").format(value);
+}
+
+function formatProvider(provider: CreditRequestRow["payment_provider"]) {
+  return provider === "qpay" ? "QPay" : "Manual";
+}
+
+function formatQPayStatus(status: string | null) {
+  if (status === "PAID") {
+    return "Төлөгдсөн";
+  }
+
+  if (status === "FAILED") {
+    return "Амжилтгүй";
+  }
+
+  if (status === "PARTIAL") {
+    return "Дутуу";
+  }
+
+  if (status === "REFUNDED") {
+    return "Буцаагдсан";
+  }
+
+  return status ? status : "-";
 }
 
 function statusClasses(status: CreditRequestRow["status"]) {
@@ -74,8 +99,9 @@ export default async function AdminCreditsPage() {
   const [creditRequestsResponse, usersResponse, walletsResponse] = await Promise.all([
     supabase
       .from("credit_requests")
-      .select("id,user_id,amount,amount_mnt,bonus_credits,package_key,payment_screenshot_url,status,created_at")
-      .order("created_at", { ascending: false }),
+      .select(CREDIT_REQUEST_SELECT)
+      .order("created_at", { ascending: false })
+      .returns<CreditRequestRow[]>(),
     supabase.from("users").select("id,email,role,tariff_id,referral_code,referred_by_user_id,created_at"),
     supabase.from("wallets").select("id,user_id,credits,created_at"),
   ]);
@@ -84,7 +110,7 @@ export default async function AdminCreditsPage() {
     throw new Error("Кредит хүсэлтүүдийг ачаалж чадсангүй.");
   }
 
-  const requests = (creditRequestsResponse.data ?? []) as CreditRequestRow[];
+  const requests = creditRequestsResponse.data ?? [];
   const users = (usersResponse.data ?? []) as UserRow[];
   const wallets = (walletsResponse.data ?? []) as WalletRow[];
 
@@ -123,7 +149,8 @@ export default async function AdminCreditsPage() {
         <div className="border-b border-slate-200 px-6 py-4">
           <h1 className="text-xl font-semibold text-slate-900">Кредит худалдан авалтын хүсэлтүүд</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Хэрэглэгчийн сонгосон багц, шилжүүлгийн баримт, бонус кредитийг шалгаад шийдвэрлэнэ.
+            Manual хүсэлтүүдийг админ шийдвэрлэнэ. QPay хүсэлтүүд callback болон хэрэглэгчийн
+            check-ээр автоматаар баталгаажна.
           </p>
         </div>
 
@@ -133,7 +160,7 @@ export default async function AdminCreditsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1220px] text-left text-sm">
+            <table className="w-full min-w-[1360px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="px-6 py-3 font-medium">Хэрэглэгч</th>
@@ -142,7 +169,9 @@ export default async function AdminCreditsPage() {
                   <th className="px-6 py-3 font-medium">Төлбөр</th>
                   <th className="px-6 py-3 font-medium">Олгох кредит</th>
                   <th className="px-6 py-3 font-medium">Бонус</th>
-                  <th className="px-6 py-3 font-medium">Баримт</th>
+                  <th className="px-6 py-3 font-medium">Provider</th>
+                  <th className="px-6 py-3 font-medium">QPay</th>
+                  <th className="px-6 py-3 font-medium">Баримт / ID</th>
                   <th className="px-6 py-3 font-medium">Үлдэгдэл</th>
                   <th className="px-6 py-3 font-medium">Төлөв</th>
                   <th className="px-6 py-3 font-medium">Илгээсэн</th>
@@ -169,6 +198,12 @@ export default async function AdminCreditsPage() {
                       <td className="px-6 py-4 text-slate-700">
                         {request.bonus_credits > 0 ? formatCredits(request.bonus_credits) : "Байхгүй"}
                       </td>
+                      <td className="px-6 py-4 text-slate-700">{formatProvider(request.payment_provider)}</td>
+                      <td className="px-6 py-4 text-slate-700">
+                        {request.payment_provider === "qpay"
+                          ? formatQPayStatus(request.qpay_payment_status)
+                          : "-"}
+                      </td>
                       <td className="px-6 py-4">
                         {request.payment_screenshot_url ? (
                           <div className="flex items-start gap-3">
@@ -190,7 +225,9 @@ export default async function AdminCreditsPage() {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">Баримтгүй</span>
+                          <span className="text-xs text-slate-500">
+                            {request.qpay_payment_id ?? request.qpay_invoice_id ?? "-"}
+                          </span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-slate-700">{wallet?.credits ?? 0}</td>
@@ -203,7 +240,7 @@ export default async function AdminCreditsPage() {
                       </td>
                       <td className="px-6 py-4 text-slate-600">{formatDate(request.created_at)}</td>
                       <td className="px-6 py-4">
-                        {request.status === "pending" ? (
+                        {request.status === "pending" && request.payment_provider !== "qpay" ? (
                           <div className="flex gap-2">
                             <form action={approveCreditRequestAction}>
                               <input type="hidden" name="request_id" value={request.id} />
@@ -224,6 +261,8 @@ export default async function AdminCreditsPage() {
                               </button>
                             </form>
                           </div>
+                        ) : request.status === "pending" ? (
+                          <span className="text-xs text-slate-500">QPay callback / check</span>
                         ) : (
                           <span className="text-xs text-slate-500">Шийдвэрлэсэн</span>
                         )}
