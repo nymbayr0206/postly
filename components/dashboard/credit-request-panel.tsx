@@ -140,6 +140,7 @@ export function CreditRequestPanel({
     ? visibleRequest.bonus_credits
     : getBonusCredits(selectedPackage, creditPriceMnt);
   const activeAmount = visibleRequest?.amount_mnt ?? selectedPackage.priceMnt;
+  const visibleDeeplinks = visibleRequest?.qpay_deeplink ?? [];
   const qrImageSrc =
     visibleRequest?.qpay_qr_image ? `data:image/png;base64,${visibleRequest.qpay_qr_image}` : null;
   const selectedIsCreating = isCreatingFor === selectedKey;
@@ -376,7 +377,7 @@ export function CreditRequestPanel({
           </div>
 
           <div ref={paymentRef} className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
+            <div className="order-2 rounded-2xl border border-white/10 bg-white/[0.05] p-5 lg:order-1">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-slate-300">
@@ -471,7 +472,7 @@ export function CreditRequestPanel({
               {message ? <p className="mt-4 text-sm text-emerald-300">{message}</p> : null}
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
+            <div className="order-1 rounded-2xl border border-white/10 bg-white/[0.05] p-5 lg:order-2">
               <p className="text-sm font-medium text-slate-300">
                 {visibleRequest
                   ? "Төлбөрийн хэрэгслүүд"
@@ -481,47 +482,69 @@ export function CreditRequestPanel({
               </p>
               <p className="mt-2 text-sm text-slate-400">
                 {visibleRequest
-                  ? "QR кодоо уншуулж эсвэл доорх банкны апп-аар нээж төлнө үү."
+                  ? "Утсан дээрээ доорх банкны апп-аар шууд нээж эсвэл QR кодоо уншуулж төлнө үү."
                   : selectedIsCreating
                     ? "QPay-с QR болон deeplink-үүдийг авч байна."
                     : "Багц сонгоход QPay QR болон банкны deeplink энд автоматаар харагдана."}
               </p>
 
-              {qrImageSrc ? (
-                <div className="mt-5 overflow-hidden rounded-[2rem] bg-white p-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrImageSrc} alt="QPay QR" className="w-full rounded-[1.5rem]" />
+              {visibleDeeplinks.length ? (
+                <div className="mt-5">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Банкны апп
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 min-[420px]:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+                    {visibleDeeplinks.map((item) => (
+                      <a
+                        key={`${item.name}-${item.link}`}
+                        href={item.link}
+                        className="flex flex-col items-center rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-center transition hover:border-white/20 hover:bg-black/30"
+                      >
+                        <div className="flex aspect-square w-full max-w-[76px] items-center justify-center rounded-2xl bg-white/95 p-2 shadow-[0_10px_30px_rgba(15,23,42,0.2)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.logo}
+                            alt={item.description}
+                            className="h-full w-full rounded-xl object-contain"
+                          />
+                        </div>
+                        <div className="mt-2 line-clamp-2 text-[11px] font-medium leading-4 text-white sm:text-xs">
+                          {item.description}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <div className="mt-5 rounded-[2rem] border border-dashed border-white/15 px-4 py-10 text-center text-sm text-slate-400">
-                  {selectedIsCreating
-                    ? "QPay invoice бэлдэж байна..."
-                    : "Сонгосон багцын QR болон bank deeplink энд гарч ирнэ."}
-                </div>
-              )}
+              ) : null}
 
-              {visibleRequest?.qpay_deeplink?.length ? (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  {visibleRequest.qpay_deeplink.map((item) => (
+              <div className="mt-6">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  QR код
+                </div>
+                {qrImageSrc ? (
+                  <div className="overflow-hidden rounded-[2rem] bg-white p-4">
                     <a
-                      key={`${item.name}-${item.link}`}
-                      href={item.link}
-                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 transition hover:border-white/20 hover:bg-black/30"
+                      href={visibleRequest?.qpay_short_url ?? undefined}
+                      className="block"
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={item.logo}
-                        alt={item.description}
-                        className="h-10 w-10 rounded-xl object-cover"
+                        src={qrImageSrc}
+                        alt="QPay QR"
+                        className="w-full rounded-[1.5rem]"
                       />
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-white">{item.description}</div>
-                        <div className="truncate text-xs text-slate-400">{item.name}</div>
-                      </div>
                     </a>
-                  ))}
-                </div>
-              ) : null}
+                  </div>
+                ) : (
+                  <div className="rounded-[2rem] border border-dashed border-white/15 px-4 py-10 text-center text-sm text-slate-400">
+                    {selectedIsCreating
+                      ? "QPay invoice бэлдэж байна..."
+                      : "Сонгосон багцын QR болон bank deeplink энд гарч ирнэ."}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

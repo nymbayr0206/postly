@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CreditRequestPanel } from "@/components/dashboard/credit-request-panel";
 import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { formatCredits } from "@/lib/generation-pricing";
+import { resolveQPayDeeplinks } from "@/lib/qpay";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow } from "@/lib/types";
 import { ensureUserRecords, getPlatformSettings, getWallet } from "@/lib/user-data";
@@ -41,11 +42,17 @@ export default async function BillingPage() {
     throw new Error(creditRequestResponse.error.message);
   }
 
-  const requests = (creditRequestResponse.data ?? []).map((request) => ({
-    ...request,
-    created_at_label: formatDate(request.created_at),
-    paid_at_label: request.paid_at ? formatDate(request.paid_at) : null,
-  }));
+  const requests = await Promise.all(
+    (creditRequestResponse.data ?? []).map(async (request) => ({
+      ...request,
+      qpay_deeplink:
+        request.payment_provider === "qpay"
+          ? await resolveQPayDeeplinks(request.qpay_deeplink, request.qpay_short_url)
+          : request.qpay_deeplink,
+      created_at_label: formatDate(request.created_at),
+      paid_at_label: request.paid_at ? formatDate(request.paid_at) : null,
+    })),
+  );
   const approvedRequests = requests.filter((request) => request.status === "approved");
   const approvedCount = approvedRequests.length;
   const approvedCredits = approvedRequests.reduce((sum, request) => sum + request.amount, 0);

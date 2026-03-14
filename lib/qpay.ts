@@ -67,11 +67,29 @@ type QPayTokenCache = {
 };
 
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
+const shortUrlDeeplinkCache = new Map<string, QPayDeeplink[]>();
 
 let tokenCache: QPayTokenCache | null = null;
 
 function trimTrailingSlashes(value: string) {
   return value.replace(/\/+$/, "");
+}
+
+function decodeHtml(value: string) {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function toAbsoluteQPayAssetUrl(value: string, baseUrl: string) {
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return value;
+  }
 }
 
 function asNumber(value: string | number | null | undefined) {
@@ -252,6 +270,73 @@ export function normalizeQPayDeeplinks(value: unknown): QPayDeeplink[] {
     );
 }
 
+function parseQPayShortUrlHtml(html: string, resolvedUrl: string) {
+  const parsed = [...html.matchAll(/<a\s+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)]
+    .map((match) => {
+      const href = decodeHtml(match[1] ?? "").trim();
+      const innerHtml = match[2] ?? "";
+      const logoMatch = innerHtml.match(/background-image:url\(([^)]+)\)/i);
+      const labelMatches = [...innerHtml.matchAll(/<div[^>]*>([^<]+)<\/div>/gi)];
+      const label = decodeHtml(labelMatches.at(-1)?.[1] ?? "").trim();
+      const rawLogo = decodeHtml(logoMatch?.[1] ?? "").trim().replace(/^['"]|['"]$/g, "");
+
+      if (!href || !label || !rawLogo) {
+        return null;
+      }
+
+      return {
+        name: label,
+        description: label,
+        logo: toAbsoluteQPayAssetUrl(rawLogo, resolvedUrl),
+        link: href,
+      } satisfies QPayDeeplink;
+    })
+    .filter((item): item is QPayDeeplink => Boolean(item));
+
+  return parsed;
+}
+
+async function fetchQPayDeeplinksFromShortUrl(shortUrl: string) {
+  const normalizedShortUrl = shortUrl.trim();
+
+  if (!normalizedShortUrl) {
+    return [];
+  }
+
+  const cached = shortUrlDeeplinkCache.get(normalizedShortUrl);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const response = await fetch(normalizedShortUrl, {
+      cache: "force-cache",
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const html = await response.text();
+    const deeplinks = parseQPayShortUrlHtml(html, response.url);
+    shortUrlDeeplinkCache.set(normalizedShortUrl, deeplinks);
+    return deeplinks;
+  } catch {
+    return [];
+  }
+}
+
+export async function resolveQPayDeeplinks(value: unknown, shortUrl?: string | null) {
+  const normalized = normalizeQPayDeeplinks(value);
+
+  if (normalized.length > 0 || !shortUrl) {
+    return normalized;
+  }
+
+  return fetchQPayDeeplinksFromShortUrl(shortUrl);
+}
+
 export function getPaidQPayRow(
   rows: QPayPaymentCheckRow[] | undefined,
   expectedAmount: number,
@@ -298,7 +383,7 @@ export async function createQPayInvoice(input: {
     qrText: payload.qr_text,
     qrImage: payload.qr_image,
     shortUrl: payload.qPay_shortUrl ?? null,
-    deeplinks: normalizeQPayDeeplinks(payload.qPay_deeplink),
+    deeplinks: await resolveQPayDeeplinks(payload.qPay_deeplink, payload.qPay_shortUrl ?? null),
   };
 }
 
