@@ -11,6 +11,7 @@ import type { UserRole } from "@/lib/types";
 type NavKey =
   | "home"
   | "image"
+  | "gallery"
   | "video"
   | "audio"
   | "history"
@@ -68,6 +69,15 @@ function NavIcon({ navKey, active }: { navKey: NavKey; active?: boolean }) {
           <rect x="3" y="4" width="18" height="16" rx="2" />
           <circle cx="8.5" cy="9" r="1.5" />
           <path d="m21 15-4.5-4.5a2 2 0 0 0-2.8 0L5 19" />
+        </svg>
+      );
+    case "gallery":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
         </svg>
       );
     case "video":
@@ -364,6 +374,7 @@ export default function DashboardLayoutShell({
     const items: NavItem[] = [
       { href: "/dashboard", label: "Ерөнхий", key: "home", exact: true },
       { href: "/dashboard/image", label: "Зураг", key: "image" },
+      { href: "/dashboard/gallery", label: "Галерей", key: "gallery" },
       { href: "/dashboard/video", label: "Видео", key: "video" },
       { href: "/dashboard/audio", label: "Аудио", key: "audio" },
     ];

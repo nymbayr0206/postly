@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { CommunityGallerySection } from "@/components/dashboard/community-gallery";
 import { ReferralPanel } from "@/components/dashboard/referral-panel";
+import { listCommunityGenerations } from "@/lib/community-gallery";
 import { formatCredits } from "@/lib/generation-pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GenerationRow } from "@/lib/types";
@@ -82,7 +84,7 @@ export default async function DashboardPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, agentRequest, referralSummary, referralActivity, platformSettings, generationsResponse] = await Promise.all([
+  const [profile, wallet, agentRequest, referralSummary, referralActivity, platformSettings, generationsResponse, communityGenerations] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getAgentRequestByUserId(supabase, user.id),
@@ -95,6 +97,7 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    listCommunityGenerations(16),
   ]);
 
   if (generationsResponse.error) {
@@ -236,6 +239,12 @@ export default async function DashboardPage() {
           description="Өмнөх бүх зураг, видео, аудио үүсгэлтээ нэг дороос харна."
           accent="bg-[linear-gradient(135deg,#B0EEF7,#68D4ED)]"
         />
+        <QuickCard
+          href="/dashboard/gallery"
+          title="Community gallery"
+          description="Бусад хэрэглэгчдийн бүтээсэн зургуудаас санаа авна."
+          accent="bg-[linear-gradient(135deg,#8DEBE7,#49CDE8)]"
+        />
         {profile.role === "agent" ? (
           <QuickCard
             href="/dashboard/lessons"
@@ -252,6 +261,14 @@ export default async function DashboardPage() {
           />
         )}
       </section>
+
+      <CommunityGallerySection
+        items={communityGenerations}
+        title="Хэрэглэгчдийн нээлттэй зургийн урсгал"
+        description="Бүх хэрэглэгчийн сүүлийн бүтээлүүдийг Pinterest маягийн урсгалаар хараад, хүссэн зураг дээрээ дарж prompt болон creator detail рүү орно."
+        emptyMessage="Одоогоор community gallery хоосон байна."
+        viewAllHref="/dashboard/gallery"
+      />
 
       <section className="brand-surface rounded-[1.75rem] p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
