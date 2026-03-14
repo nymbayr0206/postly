@@ -1,12 +1,20 @@
 import { redirect } from "next/navigation";
 
 import { CreditRequestPanel } from "@/components/dashboard/credit-request-panel";
+import { ReferralPanel } from "@/components/dashboard/referral-panel";
 import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { formatCredits } from "@/lib/generation-pricing";
 import { resolveQPayDeeplinks } from "@/lib/qpay";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow } from "@/lib/types";
-import { ensureUserRecords, getPlatformSettings, getWallet } from "@/lib/user-data";
+import {
+  ensureUserRecords,
+  getPlatformSettings,
+  getReferralActivity,
+  getReferralSummary,
+  getUserProfile,
+  getWallet,
+} from "@/lib/user-data";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -27,9 +35,12 @@ export default async function BillingPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [wallet, platformSettings, creditRequestResponse] = await Promise.all([
+  const [profile, wallet, platformSettings, referralSummary, referralActivity, creditRequestResponse] = await Promise.all([
+    getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
+    getReferralSummary(supabase, user.id),
+    getReferralActivity(supabase, user.id),
     supabase
       .from("credit_requests")
       .select(CREDIT_REQUEST_SELECT)
@@ -59,7 +70,7 @@ export default async function BillingPage() {
   const approvedRevenue = approvedRequests.reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
       <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
         <div className="grid gap-4 md:grid-cols-4">
           <div>
@@ -87,6 +98,15 @@ export default async function BillingPage() {
         requests={requests}
         creditPriceMnt={platformSettings.credit_price_mnt}
       />
+
+      {profile.referral_code ? (
+        <ReferralPanel
+          referralCode={profile.referral_code}
+          summary={referralSummary}
+          activity={referralActivity}
+          creditPriceMnt={platformSettings.credit_price_mnt}
+        />
+      ) : null}
     </div>
   );
 }

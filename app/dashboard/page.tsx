@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CommunityGallerySection } from "@/components/dashboard/community-gallery";
-import { ReferralPanel } from "@/components/dashboard/referral-panel";
 import { listCommunityGenerations } from "@/lib/community-gallery";
 import { formatCredits } from "@/lib/generation-pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -10,9 +9,6 @@ import type { GenerationRow } from "@/lib/types";
 import {
   ensureUserRecords,
   getAgentRequestByUserId,
-  getPlatformSettings,
-  getReferralActivity,
-  getReferralSummary,
   getUserProfile,
   getWallet,
 } from "@/lib/user-data";
@@ -84,13 +80,10 @@ export default async function DashboardPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, agentRequest, referralSummary, referralActivity, platformSettings, generationsResponse, communityGenerations] = await Promise.all([
+  const [profile, wallet, agentRequest, generationsResponse, communityGenerations] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getAgentRequestByUserId(supabase, user.id),
-    getReferralSummary(supabase, user.id),
-    getReferralActivity(supabase, user.id),
-    getPlatformSettings(supabase),
     supabase
       .from("generations")
       .select("id,user_id,model_name,prompt,aspect_ratio,cost,image_url,created_at")
@@ -148,15 +141,6 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
-
-      {profile.referral_code ? (
-        <ReferralPanel
-          referralCode={profile.referral_code}
-          summary={referralSummary}
-          activity={referralActivity}
-          creditPriceMnt={platformSettings.credit_price_mnt}
-        />
-      ) : null}
 
       {profile.role === "agent" ? (
         <section className="brand-surface rounded-[1.75rem] p-5">
