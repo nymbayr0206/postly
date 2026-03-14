@@ -64,7 +64,7 @@ export default async function CommunityGalleryDetailPage({
           </h1>
           <p className="mt-3 text-sm leading-7 text-slate-600">
             Энэ зургийг community feed дээрээс үзэж байна. Доорх хэсэгт яг ямар prompt,
-            aspect ratio, model-аар үүссэнийг харууллаа.
+            aspect ratio, хэдэн кредит зарцуулсныг харууллаа.
           </p>
 
           <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50/85 p-4">

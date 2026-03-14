@@ -7,7 +7,7 @@ import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { formatCredits } from "@/lib/generation-pricing";
 import { resolveQPayDeeplinks } from "@/lib/qpay";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { CreditRequestRow } from "@/lib/types";
+import type { CreditRequestRow, ReferralActivityRow, ReferralSummaryRow } from "@/lib/types";
 import {
   ensureUserRecords,
   getPlatformSettings,
@@ -42,73 +42,116 @@ export default async function BillingPage({
   }
 
   await ensureUserRecords(supabase, user);
+  const requestedTab = resolvedSearchParams?.tab === "referral" ? "referral" : "credit";
 
-  const [profile, wallet, platformSettings, creditRequestResponse] = await Promise.all([
+  const [profile, wallet, platformSettings] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
-    supabase
+  ]);
+
+  const hasReferral = Boolean(profile.referral_code);
+  const activeTab: BillingTab = hasReferral ? requestedTab : "credit";
+  let requests: Array<
+    CreditRequestRow & {
+      created_at_label: string;
+      paid_at_label: string | null;
+    }
+  > = [];
+  let approvedCount = 0;
+  let approvedCredits = 0;
+  let approvedRevenue = 0;
+  let referralSummary: ReferralSummaryRow | null = null;
+  let referralActivity: ReferralActivityRow[] | null = null;
+
+  if (activeTab === "credit") {
+    const creditRequestResponse = await supabase
       .from("credit_requests")
       .select(CREDIT_REQUEST_SELECT)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .returns<CreditRequestRow[]>(),
-  ]);
+      .returns<CreditRequestRow[]>();
 
-  if (creditRequestResponse.error) {
-    throw new Error(creditRequestResponse.error.message);
+    if (creditRequestResponse.error) {
+      throw new Error(creditRequestResponse.error.message);
+    }
+
+    requests = await Promise.all(
+      (creditRequestResponse.data ?? []).map(async (request) => ({
+        ...request,
+        qpay_deeplink:
+          request.payment_provider === "qpay" && request.status === "pending"
+            ? await resolveQPayDeeplinks(request.qpay_deeplink, request.qpay_short_url)
+            : request.qpay_deeplink,
+        created_at_label: formatDate(request.created_at),
+        paid_at_label: request.paid_at ? formatDate(request.paid_at) : null,
+      })),
+    );
+
+    const approvedRequests = requests.filter((request) => request.status === "approved");
+    approvedCount = approvedRequests.length;
+    approvedCredits = approvedRequests.reduce((sum, request) => sum + request.amount, 0);
+    approvedRevenue = approvedRequests.reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
   }
 
-  const requests = await Promise.all(
-    (creditRequestResponse.data ?? []).map(async (request) => ({
-      ...request,
-      qpay_deeplink:
-        request.payment_provider === "qpay"
-          ? await resolveQPayDeeplinks(request.qpay_deeplink, request.qpay_short_url)
-          : request.qpay_deeplink,
-      created_at_label: formatDate(request.created_at),
-      paid_at_label: request.paid_at ? formatDate(request.paid_at) : null,
-    })),
-  );
-  const approvedRequests = requests.filter((request) => request.status === "approved");
-  const approvedCount = approvedRequests.length;
-  const approvedCredits = approvedRequests.reduce((sum, request) => sum + request.amount, 0);
-  const approvedRevenue = approvedRequests.reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
-  const hasReferral = Boolean(profile.referral_code);
-  const requestedTab = resolvedSearchParams?.tab === "referral" ? "referral" : "credit";
-  const activeTab: BillingTab = hasReferral ? requestedTab : "credit";
-  const [referralSummary, referralActivity] =
-    hasReferral && activeTab === "referral"
-      ? await Promise.all([
-          getReferralSummary(supabase, user.id),
-          getReferralActivity(supabase, user.id),
-        ])
-      : [null, null];
+  if (hasReferral && activeTab === "referral") {
+    [referralSummary, referralActivity] = await Promise.all([
+      getReferralSummary(supabase, user.id),
+      getReferralActivity(supabase, user.id),
+    ]);
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
-      <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
-        <div className="grid gap-4 md:grid-cols-4">
-          <div>
-            <p className="text-sm text-slate-300">Одоогийн кредит</p>
-            <p className="mt-2 text-4xl font-semibold">{formatCredits(wallet.credits)}</p>
+      {activeTab === "credit" ? (
+        <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-sm text-slate-300">Одоогийн кредит</p>
+              <p className="mt-2 text-4xl font-semibold">{formatCredits(wallet.credits)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300">Амжилттай худалдан авалт</p>
+              <p className="mt-2 text-4xl font-semibold">{approvedCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300">Худалдан авсан кредит</p>
+              <p className="mt-2 text-4xl font-semibold">{formatCredits(approvedCredits)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300">Нийт төлсөн дүн</p>
+              <p className="mt-2 text-4xl font-semibold">
+                {new Intl.NumberFormat("mn-MN").format(approvedRevenue)}₮
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-slate-300">Амжилттай худалдан авалт</p>
-            <p className="mt-2 text-4xl font-semibold">{approvedCount}</p>
+        </section>
+      ) : referralSummary ? (
+        <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-sm text-slate-300">Одоогийн кредит</p>
+              <p className="mt-2 text-4xl font-semibold">{formatCredits(wallet.credits)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300">Урьсан хүн</p>
+              <p className="mt-2 text-4xl font-semibold">{referralSummary.invited_users}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300">Нийт reward</p>
+              <p className="mt-2 text-4xl font-semibold">
+                {new Intl.NumberFormat("mn-MN").format(referralSummary.earned_amount_mnt)}₮
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300">Ашиглах боломжтой</p>
+              <p className="mt-2 text-4xl font-semibold">
+                {new Intl.NumberFormat("mn-MN").format(referralSummary.available_amount_mnt)}₮
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-slate-300">Худалдан авсан кредит</p>
-            <p className="mt-2 text-4xl font-semibold">{formatCredits(approvedCredits)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-slate-300">Нийт төлсөн дүн</p>
-            <p className="mt-2 text-4xl font-semibold">
-              {new Intl.NumberFormat("mn-MN").format(approvedRevenue)}₮
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {hasReferral ? (
         <section className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">

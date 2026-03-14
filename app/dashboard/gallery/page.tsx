@@ -16,7 +16,7 @@ export default async function CommunityGalleryPage() {
           </h1>
           <p className="mt-4 text-sm leading-7 text-slate-300 sm:text-base">
             Pinterest маягийн урсгалаар сүүлийн бүтээлүүдийг үзэж, дурын зураг дээр дарж
-            prompt, үүсгэсэн хэрэглэгч, ашигласан загварын мэдээлэл рүү орно.
+            prompt болон үүсгэсэн хэрэглэгчийн дэлгэрэнгүй мэдээлэл рүү орно.
           </p>
         </div>
       </section>

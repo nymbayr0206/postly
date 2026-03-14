@@ -22,18 +22,6 @@ function aspectFrameClass(aspectRatio: CommunityGeneration["aspect_ratio"]) {
   return "aspect-square";
 }
 
-function roleLabel(role: CommunityGeneration["creator_role"]) {
-  if (role === "admin") {
-    return "Админ";
-  }
-
-  if (role === "agent") {
-    return "Агент";
-  }
-
-  return "Хэрэглэгч";
-}
-
 function creatorLabel(item: CommunityGeneration) {
   return item.creator_email ?? "Нууцлагдсан хэрэглэгч";
 }
@@ -82,36 +70,17 @@ export function CommunityGallerySection({
               className="group mb-4 block break-inside-avoid"
             >
               <article className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_18px_45px_rgba(12,32,56,0.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(12,32,56,0.12)]">
-                <div className={cx("relative overflow-hidden bg-slate-100", aspectFrameClass(item.aspect_ratio))}>
+                <div className={cx("overflow-hidden bg-slate-100", aspectFrameClass(item.aspect_ratio))}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.image_url}
                     alt={item.prompt}
                     className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
                   />
-                  <div className="absolute inset-x-0 bottom-0 h-2/3 bg-[linear-gradient(180deg,rgba(2,8,23,0),rgba(2,8,23,0.84))]" />
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    <div className="inline-flex rounded-full border border-white/10 bg-white/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100 backdrop-blur">
-                      {item.aspect_ratio}
-                    </div>
-                    <p className="mt-3 line-clamp-3 text-sm font-semibold leading-6 text-white">
-                      {item.prompt_excerpt}
-                    </p>
-                  </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-3 p-4">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-950">{creatorLabel(item)}</div>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                      <span>{roleLabel(item.creator_role)}</span>
-                      <span className="text-slate-300">•</span>
-                      <span>{item.created_at_label}</span>
-                    </div>
-                  </div>
-                  <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
-                    Дэлгэрэнгүй
-                  </span>
+                <div className="p-4">
+                  <div className="truncate text-sm font-semibold text-slate-950">{creatorLabel(item)}</div>
                 </div>
               </article>
             </Link>
