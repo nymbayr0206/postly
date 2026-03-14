@@ -402,6 +402,21 @@ export default function DashboardLayoutShell({
     setMobileOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (pathname.startsWith("/dashboard/billing")) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      router.prefetch("/dashboard/billing");
+      router.prefetch("/dashboard/billing?tab=referral");
+    }, 800);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [pathname, router]);
+
   async function handleSignOut() {
     if (isSigningOut) {
       return;

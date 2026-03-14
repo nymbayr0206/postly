@@ -1,11 +1,9 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 
-import { CreditRequestPanel } from "@/components/dashboard/credit-request-panel";
-import { ReferralPanel } from "@/components/dashboard/referral-panel";
 import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { formatCredits } from "@/lib/generation-pricing";
-import { resolveQPayDeeplinks } from "@/lib/qpay";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreditRequestRow, ReferralActivityRow, ReferralSummaryRow } from "@/lib/types";
 import {
@@ -19,11 +17,41 @@ import {
 
 type BillingTab = "credit" | "referral";
 
+const CreditRequestPanel = dynamic(
+  () => import("@/components/dashboard/credit-request-panel").then((module) => module.CreditRequestPanel),
+  {
+    loading: () => <BillingPanelSkeleton />,
+  },
+);
+
+const ReferralPanel = dynamic(
+  () => import("@/components/dashboard/referral-panel").then((module) => module.ReferralPanel),
+  {
+    loading: () => <BillingPanelSkeleton />,
+  },
+);
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function BillingPanelSkeleton() {
+  return (
+    <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="space-y-4">
+        <div className="h-7 w-56 animate-pulse rounded-full bg-slate-200" />
+        <div className="h-4 w-80 max-w-full animate-pulse rounded-full bg-slate-100" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-48 animate-pulse rounded-3xl bg-slate-100" />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default async function BillingPage({
@@ -76,17 +104,11 @@ export default async function BillingPage({
       throw new Error(creditRequestResponse.error.message);
     }
 
-    requests = await Promise.all(
-      (creditRequestResponse.data ?? []).map(async (request) => ({
+    requests = (creditRequestResponse.data ?? []).map((request) => ({
         ...request,
-        qpay_deeplink:
-          request.payment_provider === "qpay" && request.status === "pending"
-            ? await resolveQPayDeeplinks(request.qpay_deeplink, request.qpay_short_url)
-            : request.qpay_deeplink,
         created_at_label: formatDate(request.created_at),
         paid_at_label: request.paid_at ? formatDate(request.paid_at) : null,
-      })),
-    );
+      }));
 
     const approvedRequests = requests.filter((request) => request.status === "approved");
     approvedCount = approvedRequests.length;

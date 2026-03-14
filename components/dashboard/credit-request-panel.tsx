@@ -11,7 +11,7 @@ import {
   type CreditPackageKey,
 } from "@/lib/credit-packages";
 import { normalizeQPayDeeplinks } from "@/lib/qpay";
-import type { CreditRequestRow } from "@/lib/types";
+import type { CreditRequestRow, QPayDeeplink } from "@/lib/types";
 
 type CreditRequestListItem = CreditRequestRow & {
   created_at_label: string;
@@ -119,6 +119,10 @@ export function CreditRequestPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isCreatingFor, setIsCreatingFor] = useState<CreditPackageKey | null>(null);
+  const [resolvedDeeplinksByRequest, setResolvedDeeplinksByRequest] = useState<
+    Record<string, QPayDeeplink[]>
+  >({});
+  const [isLoadingDeeplinksFor, setIsLoadingDeeplinksFor] = useState<string | null>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
   const createNonceRef = useRef(0);
   const router = useRouter();
@@ -140,7 +144,10 @@ export function CreditRequestPanel({
     ? visibleRequest.bonus_credits
     : getBonusCredits(selectedPackage, creditPriceMnt);
   const activeAmount = visibleRequest?.amount_mnt ?? selectedPackage.priceMnt;
-  const visibleDeeplinks = visibleRequest?.qpay_deeplink ?? [];
+  const requestDeeplinks = visibleRequest ? normalizeQPayDeeplinks(visibleRequest.qpay_deeplink) : [];
+  const cachedDeeplinks = visibleRequest ? resolvedDeeplinksByRequest[visibleRequest.id] ?? [] : [];
+  const visibleDeeplinks = requestDeeplinks.length > 0 ? requestDeeplinks : cachedDeeplinks;
+  const isLoadingDeeplinks = Boolean(visibleRequest && isLoadingDeeplinksFor === visibleRequest.id);
   const qrImageSrc =
     visibleRequest?.qpay_qr_image ? `data:image/png;base64,${visibleRequest.qpay_qr_image}` : null;
   const selectedIsCreating = isCreatingFor === selectedKey;
@@ -163,6 +170,68 @@ export function CreditRequestPanel({
     setActiveRequestId(null);
     setDraftRequest(null);
   }, [activeRequestId, activeRequestFromProps, draftRequest]);
+
+  useEffect(() => {
+    if (
+      !visibleRequest ||
+      visibleRequest.payment_provider !== "qpay" ||
+      visibleRequest.status !== "pending" ||
+      !visibleRequest.qpay_short_url ||
+      requestDeeplinks.length > 0 ||
+      Object.prototype.hasOwnProperty.call(resolvedDeeplinksByRequest, visibleRequest.id)
+    ) {
+      return;
+    }
+
+    const requestId = visibleRequest.id;
+    let cancelled = false;
+
+    setIsLoadingDeeplinksFor(requestId);
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/qpay/deeplinks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            short_url: visibleRequest.qpay_short_url,
+          }),
+        });
+        const payload = (await response.json()) as {
+          deeplinks?: QPayDeeplink[];
+        };
+
+        if (cancelled || !response.ok) {
+          return;
+        }
+
+        const deeplinks = Array.isArray(payload.deeplinks) ? payload.deeplinks : [];
+
+        setResolvedDeeplinksByRequest((current) => ({
+          ...current,
+          [requestId]: deeplinks,
+        }));
+        setDraftRequest((current) =>
+          current?.id === requestId
+            ? {
+                ...current,
+                qpay_deeplink: deeplinks,
+              }
+            : current,
+        );
+      } finally {
+        if (!cancelled) {
+          setIsLoadingDeeplinksFor((current) => (current === requestId ? null : current));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestDeeplinks.length, resolvedDeeplinksByRequest, visibleRequest]);
 
   function scrollToPayment() {
     requestAnimationFrame(() => {
@@ -488,7 +557,24 @@ export function CreditRequestPanel({
                     : "Багц сонгоход QPay QR болон банкны deeplink энд автоматаар харагдана."}
               </p>
 
-              {visibleDeeplinks.length ? (
+              {isLoadingDeeplinks ? (
+                <div className="mt-5">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Банкны апп
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 min-[420px]:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+                    {Array.from({ length: 8 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3"
+                      >
+                        <div className="aspect-square w-full rounded-2xl bg-white/10" />
+                        <div className="mt-2 h-4 rounded-full bg-white/10" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : visibleDeeplinks.length ? (
                 <div className="mt-5">
                   <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                     Банкны апп
@@ -514,6 +600,10 @@ export function CreditRequestPanel({
                       </a>
                     ))}
                   </div>
+                </div>
+              ) : visibleRequest && qrImageSrc ? (
+                <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-slate-300">
+                  Банкны аппын жагсаалт энэ invoice дээр бэлэн болоогүй байна. QR кодоор төлбөрөө үргэлжлүүлж болно.
                 </div>
               ) : null}
 
