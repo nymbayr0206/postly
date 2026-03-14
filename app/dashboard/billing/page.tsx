@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CreditRequestPanel } from "@/components/dashboard/credit-request-panel";
@@ -16,6 +17,8 @@ import {
   getWallet,
 } from "@/lib/user-data";
 
+type BillingTab = "credit" | "referral";
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
@@ -23,7 +26,12 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -35,12 +43,10 @@ export default async function BillingPage() {
 
   await ensureUserRecords(supabase, user);
 
-  const [profile, wallet, platformSettings, referralSummary, referralActivity, creditRequestResponse] = await Promise.all([
+  const [profile, wallet, platformSettings, creditRequestResponse] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
-    getReferralSummary(supabase, user.id),
-    getReferralActivity(supabase, user.id),
     supabase
       .from("credit_requests")
       .select(CREDIT_REQUEST_SELECT)
@@ -68,6 +74,16 @@ export default async function BillingPage() {
   const approvedCount = approvedRequests.length;
   const approvedCredits = approvedRequests.reduce((sum, request) => sum + request.amount, 0);
   const approvedRevenue = approvedRequests.reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
+  const hasReferral = Boolean(profile.referral_code);
+  const requestedTab = resolvedSearchParams?.tab === "referral" ? "referral" : "credit";
+  const activeTab: BillingTab = hasReferral ? requestedTab : "credit";
+  const [referralSummary, referralActivity] =
+    hasReferral && activeTab === "referral"
+      ? await Promise.all([
+          getReferralSummary(supabase, user.id),
+          getReferralActivity(supabase, user.id),
+        ])
+      : [null, null];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -94,14 +110,50 @@ export default async function BillingPage() {
         </div>
       </section>
 
-      <CreditRequestPanel
-        requests={requests}
-        creditPriceMnt={platformSettings.credit_price_mnt}
-      />
+      {hasReferral ? (
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="grid grid-cols-2 gap-2 rounded-[1.25rem] bg-slate-100 p-1.5 sm:inline-grid sm:min-w-[24rem]">
+            <Link
+              href="/dashboard/billing?tab=credit"
+              aria-current={activeTab === "credit" ? "page" : undefined}
+              className={`inline-flex items-center justify-center rounded-[1rem] px-4 py-3 text-center text-sm font-semibold transition ${
+                activeTab === "credit"
+                  ? "bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] !text-slate-950 shadow-[0_14px_30px_rgba(47,188,230,0.22)]"
+                  : "text-slate-600 hover:bg-white hover:text-slate-950"
+              }`}
+            >
+              Кредит
+            </Link>
+            <Link
+              href="/dashboard/billing?tab=referral"
+              aria-current={activeTab === "referral" ? "page" : undefined}
+              className={`inline-flex items-center justify-center rounded-[1rem] px-4 py-3 text-center text-sm font-semibold transition ${
+                activeTab === "referral"
+                  ? "bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] !text-slate-950 shadow-[0_14px_30px_rgba(47,188,230,0.22)]"
+                  : "text-slate-600 hover:bg-white hover:text-slate-950"
+              }`}
+            >
+              Урилга
+            </Link>
+          </div>
+          <p className="mt-3 px-1 text-sm text-slate-500">
+            {activeTab === "credit"
+              ? "Кредит цэнэглэх, QPay төлбөр болон худалдан авалтын түүхээ эндээс удирдана."
+              : "Урилгын линк, reward болон referral орлогоо эндээс удирдана."}
+          </p>
+        </section>
+      ) : null}
 
-      {profile.referral_code ? (
+      {activeTab === "credit" ? (
+        <CreditRequestPanel
+          requests={requests}
+          creditPriceMnt={platformSettings.credit_price_mnt}
+        />
+      ) : null}
+
+      {hasReferral && activeTab === "referral" && referralSummary && referralActivity ? (
         <ReferralPanel
-          referralCode={profile.referral_code}
+          referralCode={profile.referral_code ?? ""}
           summary={referralSummary}
           activity={referralActivity}
           creditPriceMnt={platformSettings.credit_price_mnt}
