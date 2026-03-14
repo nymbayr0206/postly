@@ -42,30 +42,6 @@ function formatCredits(value: number) {
   return `${new Intl.NumberFormat("mn-MN").format(value)} кредит`;
 }
 
-function statusStyles(status: CreditRequestRow["status"]) {
-  if (status === "approved") {
-    return "bg-emerald-100 text-emerald-800";
-  }
-
-  if (status === "rejected") {
-    return "bg-rose-100 text-rose-800";
-  }
-
-  return "bg-amber-100 text-amber-800";
-}
-
-function statusLabel(status: CreditRequestRow["status"]) {
-  if (status === "approved") {
-    return "Амжилттай";
-  }
-
-  if (status === "rejected") {
-    return "Цуцлагдсан";
-  }
-
-  return "Хүлээгдэж буй";
-}
-
 function qpayStatusLabel(status: string | null) {
   if (status === "PAID") {
     return "Төлөгдсөн";
@@ -167,6 +143,7 @@ export function CreditRequestPanel({
   const qrImageSrc =
     visibleRequest?.qpay_qr_image ? `data:image/png;base64,${visibleRequest.qpay_qr_image}` : null;
   const selectedIsCreating = isCreatingFor === selectedKey;
+  const approvedRequests = requests.filter((request) => request.status === "approved");
 
   useEffect(() => {
     if (!activeRequestId) {
@@ -331,20 +308,6 @@ export function CreditRequestPanel({
     }
   }
 
-  function openPendingRequest(request: CreditRequestListItem) {
-    const requestPackage = request.package_key ? getCreditPackageByKey(request.package_key) : null;
-
-    if (requestPackage) {
-      setSelectedKey(requestPackage.key);
-    }
-
-    setActiveRequestId(request.id);
-    setDraftRequest(request);
-    setError(null);
-    setMessage(null);
-    scrollToPayment();
-  }
-
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[28px] bg-[#090d18] text-white shadow-[0_20px_60px_rgba(2,8,23,0.35)]">
@@ -480,17 +443,6 @@ export function CreditRequestPanel({
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                {visibleRequest?.qpay_short_url ? (
-                  <a
-                    href={visibleRequest.qpay_short_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                  >
-                    QPay линк нээх
-                  </a>
-                ) : null}
-
                 {visibleRequest ? (
                   <button
                     type="button"
@@ -522,7 +474,7 @@ export function CreditRequestPanel({
             <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
               <p className="text-sm font-medium text-slate-300">
                 {visibleRequest
-                  ? "Төлбөрийн QR"
+                  ? "Төлбөрийн хэрэгслүүд"
                   : selectedIsCreating
                     ? "QPay бэлдэж байна"
                     : "QR болон банкны апп"}
@@ -576,28 +528,25 @@ export function CreditRequestPanel({
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-xl font-semibold text-slate-900">Хүсэлтийн түүх</h3>
+        <h3 className="text-xl font-semibold text-slate-900">Худалдан авалтын түүх</h3>
         <p className="mt-1 text-sm text-slate-600">
-          QPay invoice, төлбөрийн төлөв, кредитийн хүсэлтийн явцыг эндээс харна.
+          Зөвхөн амжилттай болсон худалдан авалтуудыг харуулна.
         </p>
 
-        {requests.length ? (
+        {approvedRequests.length ? (
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[1080px] text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="py-3 pr-4 font-medium">Багц</th>
                   <th className="py-3 pr-4 font-medium">Төлбөр</th>
                   <th className="py-3 pr-4 font-medium">Кредит</th>
                   <th className="py-3 pr-4 font-medium">Provider</th>
-                  <th className="py-3 pr-4 font-medium">QPay төлөв</th>
-                  <th className="py-3 pr-4 font-medium">Систем төлөв</th>
                   <th className="py-3 pr-4 font-medium">Огноо</th>
-                  <th className="py-3 font-medium">Үйлдэл</th>
                 </tr>
               </thead>
               <tbody>
-                {requests.map((request) => (
+                {approvedRequests.map((request) => (
                   <tr key={request.id} className="border-b border-slate-100">
                     <td className="py-3 pr-4 text-slate-800">{packageLabel(request)}</td>
                     <td className="py-3 pr-4 text-slate-800">
@@ -605,48 +554,8 @@ export function CreditRequestPanel({
                     </td>
                     <td className="py-3 pr-4 text-slate-800">{formatCredits(request.amount)}</td>
                     <td className="py-3 pr-4 text-slate-700">{providerLabel(request)}</td>
-                    <td className="py-3 pr-4">
-                      {request.payment_provider === "qpay" ? (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${qpayStatusStyles(
-                            request.qpay_payment_status,
-                          )}`}
-                        >
-                          {qpayStatusLabel(request.qpay_payment_status)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusStyles(request.status)}`}
-                      >
-                        {statusLabel(request.status)}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">{request.created_at_label}</td>
-                    <td className="py-3 text-slate-600">
-                      {request.payment_provider === "qpay" && request.status === "pending" ? (
-                        <button
-                          type="button"
-                          onClick={() => openPendingRequest(request)}
-                          className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Үргэлжлүүлэх
-                        </button>
-                      ) : request.payment_screenshot_url ? (
-                        <a
-                          href={request.payment_screenshot_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-cyan-700 hover:text-cyan-600"
-                        >
-                          Баримт үзэх
-                        </a>
-                      ) : (
-                        "-"
-                      )}
+                    <td className="py-3 pr-4 text-slate-600">
+                      {request.paid_at_label ?? request.created_at_label}
                     </td>
                   </tr>
                 ))}
@@ -654,7 +563,7 @@ export function CreditRequestPanel({
             </table>
           </div>
         ) : (
-          <p className="mt-4 text-sm text-slate-600">Одоогоор кредитийн хүсэлт алга.</p>
+          <p className="mt-4 text-sm text-slate-600">Амжилттай худалдан авалтын түүх алга.</p>
         )}
       </section>
     </div>

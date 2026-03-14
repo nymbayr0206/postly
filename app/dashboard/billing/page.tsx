@@ -46,13 +46,10 @@ export default async function BillingPage() {
     created_at_label: formatDate(request.created_at),
     paid_at_label: request.paid_at ? formatDate(request.paid_at) : null,
   }));
-  const pendingCount = requests.filter((request) => request.status === "pending").length;
-  const approvedCredits = requests
-    .filter((request) => request.status === "approved")
-    .reduce((sum, request) => sum + request.amount, 0);
-  const approvedRevenue = requests
-    .filter((request) => request.status === "approved")
-    .reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
+  const approvedRequests = requests.filter((request) => request.status === "approved");
+  const approvedCount = approvedRequests.length;
+  const approvedCredits = approvedRequests.reduce((sum, request) => sum + request.amount, 0);
+  const approvedRevenue = approvedRequests.reduce((sum, request) => sum + (request.amount_mnt ?? 0), 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -63,15 +60,15 @@ export default async function BillingPage() {
             <p className="mt-2 text-4xl font-semibold">{formatCredits(wallet.credits)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-300">Хүлээгдэж буй хүсэлт</p>
-            <p className="mt-2 text-4xl font-semibold">{pendingCount}</p>
+            <p className="text-sm text-slate-300">Амжилттай худалдан авалт</p>
+            <p className="mt-2 text-4xl font-semibold">{approvedCount}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-300">Зөвшөөрөгдсөн кредит</p>
+            <p className="text-sm text-slate-300">Худалдан авсан кредит</p>
             <p className="mt-2 text-4xl font-semibold">{formatCredits(approvedCredits)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-300">Зөвшөөрөгдсөн дүн</p>
+            <p className="text-sm text-slate-300">Нийт төлсөн дүн</p>
             <p className="mt-2 text-4xl font-semibold">
               {new Intl.NumberFormat("mn-MN").format(approvedRevenue)}₮
             </p>
