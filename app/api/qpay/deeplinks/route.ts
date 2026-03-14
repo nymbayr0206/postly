@@ -7,6 +7,10 @@ const requestSchema = z.object({
   short_url: z.string().trim().min(1, "QPay short url хоосон байна."),
 });
 
+export async function HEAD() {
+  return new Response(null, { status: 204 });
+}
+
 export async function POST(request: Request) {
   let body: unknown;
 

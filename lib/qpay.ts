@@ -383,7 +383,7 @@ export async function createQPayInvoice(input: {
     qrText: payload.qr_text,
     qrImage: payload.qr_image,
     shortUrl: payload.qPay_shortUrl ?? null,
-    deeplinks: await resolveQPayDeeplinks(payload.qPay_deeplink, payload.qPay_shortUrl ?? null),
+    deeplinks: normalizeQPayDeeplinks(payload.qPay_deeplink),
   };
 }
 

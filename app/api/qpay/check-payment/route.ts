@@ -22,6 +22,10 @@ function mapQPayCheckError(message: string) {
   return `QPay төлбөр шалгах үед алдаа гарлаа: ${message}`;
 }
 
+export async function HEAD() {
+  return new Response(null, { status: 204 });
+}
+
 export async function POST(request: Request) {
   let body: unknown;
 

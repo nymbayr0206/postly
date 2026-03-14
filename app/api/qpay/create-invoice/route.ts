@@ -53,6 +53,10 @@ function mapQPayCreateError(message: string) {
   return `QPay invoice үүсгэж чадсангүй: ${message}`;
 }
 
+export async function HEAD() {
+  return new Response(null, { status: 204 });
+}
+
 export async function POST(request: Request) {
   let body: unknown;
 

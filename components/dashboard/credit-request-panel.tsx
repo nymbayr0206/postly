@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -172,6 +172,21 @@ export function CreditRequestPanel({
   }, [activeRequestId, activeRequestFromProps, draftRequest]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    void Promise.allSettled(
+      ["/api/qpay/create-invoice", "/api/qpay/check-payment", "/api/qpay/deeplinks"].map((url) =>
+        fetch(url, {
+          method: "HEAD",
+          cache: "no-store",
+        }),
+      ),
+    );
+  }, []);
+
+  useEffect(() => {
     if (
       !visibleRequest ||
       visibleRequest.payment_provider !== "qpay" ||
@@ -295,7 +310,6 @@ export function CreditRequestPanel({
       setActiveRequestId(nextRequest.id);
       setDraftRequest(nextRequest);
       setMessage("QPay invoice бэлэн боллоо. QR болон deeplink-үүд доор гарлаа.");
-      router.refresh();
       scrollToPayment();
     } catch {
       if (createNonceRef.current === nonce) {
@@ -370,7 +384,11 @@ export function CreditRequestPanel({
           ? "Төлбөр баталгаажлаа. Кредит таны дансанд нэмэгдлээ."
           : "Төлбөр хараахан баталгаажаагүй байна. Төлсний дараа дахин шалгана уу.",
       );
-      router.refresh();
+      if (payload.approved) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
     } catch {
       setError("Төлбөр шалгах үед алдаа гарлаа. Дахин оролдоно уу.");
     } finally {
