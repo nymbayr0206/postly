@@ -144,6 +144,7 @@ export function CreditRequestPanel({
   const [isChecking, setIsChecking] = useState(false);
   const [isCreatingFor, setIsCreatingFor] = useState<CreditPackageKey | null>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
+  const createNonceRef = useRef(0);
   const router = useRouter();
 
   const selectedPackage =
@@ -165,6 +166,7 @@ export function CreditRequestPanel({
   const activeAmount = visibleRequest?.amount_mnt ?? selectedPackage.priceMnt;
   const qrImageSrc =
     visibleRequest?.qpay_qr_image ? `data:image/png;base64,${visibleRequest.qpay_qr_image}` : null;
+  const selectedIsCreating = isCreatingFor === selectedKey;
 
   useEffect(() => {
     if (!activeRequestId) {
@@ -210,25 +212,9 @@ export function CreditRequestPanel({
     );
   }
 
-  function handleSelectPackage(packageKey: CreditPackageKey) {
-    setSelectedKey(packageKey);
-    setError(null);
-    setMessage(null);
+  async function createInvoiceForPackage(packageKey: CreditPackageKey) {
+    const nonce = ++createNonceRef.current;
 
-    const matchingRequest = findPendingRequestForPackage(packageKey);
-
-    if (matchingRequest) {
-      setActiveRequestId(matchingRequest.id);
-      setDraftRequest(matchingRequest);
-    } else {
-      setActiveRequestId(null);
-      setDraftRequest(null);
-    }
-
-    scrollToPayment();
-  }
-
-  async function handleCreateInvoice(packageKey: CreditPackageKey) {
     setSelectedKey(packageKey);
     setIsCreatingFor(packageKey);
     setError(null);
@@ -247,7 +233,13 @@ export function CreditRequestPanel({
       const payload = (await response.json()) as { error?: string; request?: CreditRequestRow };
 
       if (!response.ok || !payload.request) {
-        setError(payload.error ?? "QPay invoice үүсгэж чадсангүй.");
+        if (createNonceRef.current === nonce) {
+          setError(payload.error ?? "QPay invoice үүсгэж чадсангүй.");
+        }
+        return;
+      }
+
+      if (createNonceRef.current !== nonce) {
         return;
       }
 
@@ -255,14 +247,42 @@ export function CreditRequestPanel({
       setSelectedKey(packageKey);
       setActiveRequestId(nextRequest.id);
       setDraftRequest(nextRequest);
-      setMessage("QPay invoice бэлэн боллоо. QR эсвэл банкны апп-аар төлбөрөө хийнэ үү.");
+      setMessage("QPay invoice бэлэн боллоо. QR болон deeplink-үүд доор гарлаа.");
       router.refresh();
       scrollToPayment();
     } catch {
-      setError("QPay invoice үүсгэх үед алдаа гарлаа. Дахин оролдоно уу.");
+      if (createNonceRef.current === nonce) {
+        setError("QPay invoice үүсгэх үед алдаа гарлаа. Дахин оролдоно уу.");
+      }
     } finally {
-      setIsCreatingFor(null);
+      if (createNonceRef.current === nonce) {
+        setIsCreatingFor(null);
+      }
     }
+  }
+
+  async function handleSelectPackage(packageKey: CreditPackageKey) {
+    if (isCreatingFor && isCreatingFor !== packageKey) {
+      return;
+    }
+
+    setSelectedKey(packageKey);
+    setError(null);
+    setMessage(null);
+
+    const matchingRequest = findPendingRequestForPackage(packageKey);
+
+    if (matchingRequest) {
+      setActiveRequestId(matchingRequest.id);
+      setDraftRequest(matchingRequest);
+      scrollToPayment();
+      return;
+    }
+
+    setActiveRequestId(null);
+    setDraftRequest(null);
+    scrollToPayment();
+    await createInvoiceForPackage(packageKey);
   }
 
   async function handleCheckPayment() {
@@ -331,8 +351,8 @@ export function CreditRequestPanel({
         <div className="border-b border-white/10 px-6 py-6 sm:px-8">
           <h2 className="text-2xl font-semibold">Кредит худалдан авах</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-300">
-            Багцаа сонгоход доор төлбөрийн хэсэг нээгдэнэ. QPay invoice үүсгээд QR,
-            short link эсвэл банкны deeplink-ээр төлнө.
+            Багц дээр дармагц QPay invoice шууд үүснэ. QR болон банкны deeplink-үүд доор
+            автоматаар харагдана.
           </p>
         </div>
 
@@ -349,7 +369,9 @@ export function CreditRequestPanel({
                   <button
                     key={pkg.key}
                     type="button"
-                    onClick={() => handleSelectPackage(pkg.key)}
+                    onClick={() => {
+                      void handleSelectPackage(pkg.key);
+                    }}
                     className={`relative overflow-hidden rounded-2xl border p-5 text-left transition ${
                       isSelected
                         ? "border-blue-400 bg-gradient-to-br from-blue-500 to-cyan-400 shadow-[0_18px_45px_rgba(59,130,246,0.35)]"
@@ -378,7 +400,11 @@ export function CreditRequestPanel({
                     )}
 
                     <div className="mt-5 inline-flex rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/90">
-                      {isSelected ? "Сонгогдсон" : "Сонгох"}
+                      {isSelected && selectedIsCreating
+                        ? "Бэлдэж байна..."
+                        : isSelected
+                          ? "Сонгогдсон"
+                          : "Сонгох"}
                     </div>
                   </button>
                 );
@@ -391,15 +417,19 @@ export function CreditRequestPanel({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-slate-300">
-                    {visibleRequest ? "QPay төлбөр" : "Төлбөрийн хэсэг"}
+                    {visibleRequest
+                      ? "QPay төлбөр"
+                      : selectedIsCreating
+                        ? "Invoice бэлдэж байна"
+                        : "Төлбөрийн хэсэг"}
                   </p>
-                  <h3 className="mt-1 text-xl font-semibold text-white">
-                    {activePackage.label} багц
-                  </h3>
+                  <h3 className="mt-1 text-xl font-semibold text-white">{activePackage.label} багц</h3>
                   <p className="mt-2 text-sm text-slate-400">
                     {visibleRequest
                       ? `Invoice № ${visibleRequest.qpay_sender_invoice_no ?? visibleRequest.id}`
-                      : "Сонгосон багцдаа QPay invoice үүсгээд доорх QR-ээр төлнө."}
+                      : selectedIsCreating
+                        ? "QPay invoice, QR болон deeplink-үүдийг бэлдэж байна."
+                        : "Багц сонгоход энэ хэсэг автоматаар QPay төлбөрийн мэдээлэл рүү шилжинэ."}
                   </p>
                 </div>
                 <div className="space-y-2 text-right">
@@ -450,38 +480,27 @@ export function CreditRequestPanel({
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                {visibleRequest ? (
-                  <>
-                    {visibleRequest.qpay_short_url ? (
-                      <a
-                        href={visibleRequest.qpay_short_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                      >
-                        QPay линк нээх
-                      </a>
-                    ) : null}
+                {visibleRequest?.qpay_short_url ? (
+                  <a
+                    href={visibleRequest.qpay_short_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                  >
+                    QPay линк нээх
+                  </a>
+                ) : null}
 
-                    <button
-                      type="button"
-                      onClick={handleCheckPayment}
-                      disabled={isChecking || visibleRequest.status === "approved"}
-                      className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isChecking ? "Шалгаж байна..." : "Төлбөр шалгах"}
-                    </button>
-                  </>
-                ) : (
+                {visibleRequest ? (
                   <button
                     type="button"
-                    onClick={() => handleCreateInvoice(selectedPackage.key)}
-                    disabled={isCreatingFor === selectedPackage.key}
-                    className="inline-flex rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={handleCheckPayment}
+                    disabled={isChecking || visibleRequest.status === "approved"}
+                    className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isCreatingFor === selectedPackage.key ? "Үүсгэж байна..." : "QPay invoice үүсгэх"}
+                    {isChecking ? "Шалгаж байна..." : "Төлбөр шалгах"}
                   </button>
-                )}
+                ) : null}
               </div>
 
               <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
@@ -489,7 +508,9 @@ export function CreditRequestPanel({
                 <p className="mt-2 text-sm text-amber-50">
                   {visibleRequest
                     ? "QPay callback ирмэгц кредит автоматаар нэмэгдэнэ. Хэрэв шинэчлэгдэхгүй бол Төлбөр шалгах товчийг дарна уу."
-                    : "Invoice үүсгэсний дараа баруун талд QR болон банкны deeplink-үүд шууд гарна."}
+                    : selectedIsCreating
+                      ? "QPay-с QR болон банкны deeplink-үүдийг татаж байна."
+                      : "Багц сонгоход invoice шууд үүсэж, баруун талд төлбөрийн хэрэгслүүд гарч ирнэ."}
                 </p>
                 <p className="mt-2 text-sm text-amber-50">1 credit = {formatMnt(creditPriceMnt)}</p>
               </div>
@@ -500,12 +521,18 @@ export function CreditRequestPanel({
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
               <p className="text-sm font-medium text-slate-300">
-                {visibleRequest ? "Төлбөрийн QR" : "QR болон банкны апп"}
+                {visibleRequest
+                  ? "Төлбөрийн QR"
+                  : selectedIsCreating
+                    ? "QPay бэлдэж байна"
+                    : "QR болон банкны апп"}
               </p>
               <p className="mt-2 text-sm text-slate-400">
                 {visibleRequest
                   ? "QR кодоо уншуулж эсвэл доорх банкны апп-аар нээж төлнө үү."
-                  : "QPay invoice үүсгэсний дараа QR болон банкны deeplink энд харагдана."}
+                  : selectedIsCreating
+                    ? "QPay-с QR болон deeplink-үүдийг авч байна."
+                    : "Багц сонгоход QPay QR болон банкны deeplink энд автоматаар харагдана."}
               </p>
 
               {qrImageSrc ? (
@@ -515,7 +542,9 @@ export function CreditRequestPanel({
                 </div>
               ) : (
                 <div className="mt-5 rounded-[2rem] border border-dashed border-white/15 px-4 py-10 text-center text-sm text-slate-400">
-                  Сонгосон багцдаа invoice үүсгэхэд QR энд гарч ирнэ.
+                  {selectedIsCreating
+                    ? "QPay invoice бэлдэж байна..."
+                    : "Сонгосон багцын QR болон bank deeplink энд гарч ирнэ."}
                 </div>
               )}
 
