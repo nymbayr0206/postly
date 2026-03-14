@@ -80,10 +80,6 @@ export default async function CommunityGalleryDetailPage({
               <div className="mt-2 text-lg font-semibold text-slate-950">{generation.aspect_ratio}</div>
             </div>
             <div className="rounded-[1.25rem] border border-slate-200 bg-white/80 p-4">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Model</div>
-              <div className="mt-2 text-lg font-semibold text-slate-950">{generation.model_name}</div>
-            </div>
-            <div className="rounded-[1.25rem] border border-slate-200 bg-white/80 p-4">
               <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Зарцуулсан кредит</div>
               <div className="mt-2 text-lg font-semibold text-slate-950">{generation.cost}</div>
             </div>
