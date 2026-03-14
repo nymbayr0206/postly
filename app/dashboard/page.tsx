@@ -44,30 +44,6 @@ function requestStatusLabel(status: "pending" | "approved" | "rejected") {
   return "Хүлээгдэж буй";
 }
 
-function QuickCard({
-  href,
-  title,
-  description,
-  accent,
-}: {
-  href: string;
-  title: string;
-  description: string;
-  accent: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="brand-surface group rounded-[1.75rem] p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(8,30,53,0.08)]"
-    >
-      <div className={`h-1.5 w-16 rounded-full ${accent}`} />
-      <h2 className="mt-5 text-lg font-black text-slate-950">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
-      <div className="mt-5 text-sm font-semibold text-cyan-700">Нээх</div>
-    </Link>
-  );
-}
-
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -181,60 +157,6 @@ export default async function DashboardPage() {
           </div>
         </section>
       ) : null}
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <QuickCard
-          href="/dashboard/image"
-          title="Зураг үүсгэх"
-          description="Сошиал пост, product visual, campaign image үүсгэнэ."
-          accent="bg-[linear-gradient(135deg,#84E0EF,#2FBCE6)]"
-        />
-        <QuickCard
-          href="/dashboard/video"
-          title="Видео үүсгэх"
-          description="Нэг зураг дээр тулгуурлан хөдөлгөөнт богино видео үүсгэнэ."
-          accent="bg-[linear-gradient(135deg,#68E3D0,#2FBCE6)]"
-        />
-        <QuickCard
-          href="/dashboard/audio"
-          title="Аудио үүсгэх"
-          description="Харилцан яриа, voiceover, ad audio-г хурдан бүтээнэ."
-          accent="bg-[linear-gradient(135deg,#9EE7F5,#56C9EC)]"
-        />
-        <QuickCard
-          href="/dashboard/billing"
-          title="Кредит худалдаж авах"
-          description="Багц сонгож, шилжүүлгийн баримт илгээн кредитээ цэнэглэнэ."
-          accent="bg-[linear-gradient(135deg,#84E0EF,#169FD5)]"
-        />
-        <QuickCard
-          href="/dashboard/history"
-          title="Түүх"
-          description="Өмнөх бүх зураг, видео, аудио үүсгэлтээ нэг дороос харна."
-          accent="bg-[linear-gradient(135deg,#B0EEF7,#68D4ED)]"
-        />
-        <QuickCard
-          href="/dashboard/gallery"
-          title="Community gallery"
-          description="Бусад хэрэглэгчдийн бүтээсэн зургуудаас санаа авна."
-          accent="bg-[linear-gradient(135deg,#8DEBE7,#49CDE8)]"
-        />
-        {profile.role === "agent" ? (
-          <QuickCard
-            href="/dashboard/lessons"
-            title="Хичээл"
-            description="Агентуудад зориулсан сургалт, ашиглах аргачлалуудыг үзнэ."
-            accent="bg-[linear-gradient(135deg,#72E4E9,#2FBCE6)]"
-          />
-        ) : (
-          <QuickCard
-            href="/dashboard/settings"
-            title="Тохиргоо"
-            description="Данс, мэдэгдэл, хэрэглэгчийн тохиргоогоо эндээс удирдана."
-            accent="bg-[linear-gradient(135deg,#84E0EF,#42C7EA)]"
-          />
-        )}
-      </section>
 
       <CommunityGallerySection
         items={communityGenerations}
