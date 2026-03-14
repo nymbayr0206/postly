@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -80,23 +80,24 @@ export function AgentOnboardingPanel({
   const [isChecking, setIsChecking] = useState(false);
   const [resolvedDeeplinks, setResolvedDeeplinks] = useState<QPayDeeplink[]>([]);
   const [isLoadingDeeplinks, setIsLoadingDeeplinks] = useState(false);
+  const autoCreateAttemptedRef = useRef(false);
   const router = useRouter();
 
+  const qpayRequest = currentRequest?.payment_provider === "qpay" ? currentRequest : null;
   const isApproved = role === "agent" || currentRequest?.status === "approved";
   const isRejected = currentRequest?.status === "rejected";
-  const isPendingQPay =
-    currentRequest?.status === "pending" &&
-    currentRequest.payment_provider === "qpay" &&
-    Boolean(currentRequest.qpay_invoice_id);
-  const requestDeeplinks = normalizeQPayDeeplinks(currentRequest?.qpay_deeplink);
+  const isPendingQPay = qpayRequest?.status === "pending" && Boolean(qpayRequest.qpay_invoice_id);
+  const requestDeeplinks = normalizeQPayDeeplinks(qpayRequest?.qpay_deeplink);
   const visibleDeeplinks = requestDeeplinks.length > 0 ? requestDeeplinks : resolvedDeeplinks;
-  const qrImageSrc = currentRequest?.qpay_qr_image
-    ? `data:image/png;base64,${currentRequest.qpay_qr_image}`
-    : null;
+  const qrImageSrc = qpayRequest?.qpay_qr_image ? `data:image/png;base64,${qpayRequest.qpay_qr_image}` : null;
 
   useEffect(() => {
     setCurrentRequest(request);
   }, [request]);
+
+  useEffect(() => {
+    autoCreateAttemptedRef.current = false;
+  }, [request?.id, request?.payment_provider, request?.status]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production") {
@@ -113,12 +114,53 @@ export function AgentOnboardingPanel({
     );
   }, []);
 
+  const createInvoice = useCallback(async (silent = false) => {
+    setError(null);
+    if (!silent) {
+      setMessage(null);
+    }
+    setIsCreating(true);
+
+    try {
+      const response = await fetch("/api/agent-request/create-invoice", {
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        request?: AgentRequestRow;
+      };
+
+      if (!response.ok || !payload.request) {
+        setError(payload.error ?? "Agent QPay invoice үүсгэж чадсангүй.");
+        return;
+      }
+
+      setResolvedDeeplinks([]);
+      setCurrentRequest(payload.request);
+      if (!silent) {
+        setMessage("QPay invoice бэлэн боллоо. QR болон банкны апп-ууд доор гарлаа.");
+      }
+    } catch {
+      setError("QPay invoice үүсгэх үед алдаа гарлаа. Дахин оролдоно уу.");
+    } finally {
+      setIsCreating(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isApproved || isPendingQPay || isCreating || autoCreateAttemptedRef.current) {
+      return;
+    }
+
+    autoCreateAttemptedRef.current = true;
+    void createInvoice(true);
+  }, [isApproved, isCreating, isPendingQPay, createInvoice]);
+
   useEffect(() => {
     if (
-      !currentRequest ||
-      currentRequest.payment_provider !== "qpay" ||
-      currentRequest.status !== "pending" ||
-      !currentRequest.qpay_short_url ||
+      !qpayRequest ||
+      qpayRequest.status !== "pending" ||
+      !qpayRequest.qpay_short_url ||
       requestDeeplinks.length > 0 ||
       resolvedDeeplinks.length > 0
     ) {
@@ -136,7 +178,7 @@ export function AgentOnboardingPanel({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            short_url: currentRequest.qpay_short_url,
+            short_url: qpayRequest.qpay_short_url,
           }),
         });
         const payload = (await response.json()) as {
@@ -158,39 +200,15 @@ export function AgentOnboardingPanel({
     return () => {
       cancelled = true;
     };
-  }, [currentRequest, requestDeeplinks.length, resolvedDeeplinks.length]);
+  }, [qpayRequest, requestDeeplinks.length, resolvedDeeplinks.length]);
 
-  async function handleCreateInvoice() {
-    setError(null);
-    setMessage(null);
-    setIsCreating(true);
-
-    try {
-      const response = await fetch("/api/agent-request/create-invoice", {
-        method: "POST",
-      });
-      const payload = (await response.json()) as {
-        error?: string;
-        request?: AgentRequestRow;
-      };
-
-      if (!response.ok || !payload.request) {
-        setError(payload.error ?? "Agent QPay invoice үүсгэж чадсангүй.");
-        return;
-      }
-
-      setResolvedDeeplinks([]);
-      setCurrentRequest(payload.request);
-      setMessage("QPay invoice бэлэн боллоо. QR болон банкны апп-ууд доор гарлаа.");
-    } catch {
-      setError("QPay invoice үүсгэх үед алдаа гарлаа. Дахин оролдоно уу.");
-    } finally {
-      setIsCreating(false);
-    }
+  function handleRetryInvoice() {
+    autoCreateAttemptedRef.current = true;
+    void createInvoice(false);
   }
 
   async function handleCheckPayment() {
-    if (!currentRequest) {
+    if (!qpayRequest) {
       return;
     }
 
@@ -205,7 +223,7 @@ export function AgentOnboardingPanel({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          request_id: currentRequest.id,
+          request_id: qpayRequest.id,
         }),
       });
       const payload = (await response.json()) as {
@@ -286,16 +304,7 @@ export function AgentOnboardingPanel({
             <section className="rounded-2xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-rose-900">Өмнөх хүсэлт татгалзсан</h2>
               <p className="mt-2 text-sm text-rose-800">
-                Доорх товчоор шинэ QPay invoice үүсгээд дахин оролдож болно.
-              </p>
-            </section>
-          ) : null}
-
-          {currentRequest?.payment_provider === "manual" && currentRequest.status === "pending" ? (
-            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-amber-900">Хуучин manual хүсэлт байна</h2>
-              <p className="mt-2 text-sm text-amber-800">
-                Одоо QPay ашиглан шууд төлөх боломжтой. Шинэ invoice үүсгэвэл энэ хүсэлт QPay урсгал руу шинэчлэгдэнэ.
+                Шинэ QPay invoice автоматаар үүсч байна. Хэрэв алдаа гарвал доорх retry товчийг ашиглана уу.
               </p>
             </section>
           ) : null}
@@ -327,32 +336,32 @@ export function AgentOnboardingPanel({
                   <span className="text-slate-500">Төлбөрийн төрөл</span>
                   <span className="font-semibold text-slate-950">QPay</span>
                 </div>
-                {currentRequest ? (
+                {qpayRequest ? (
                   <>
                     <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                       <span className="text-slate-500">Invoice</span>
                       <span className="font-semibold text-slate-950">
-                        {currentRequest.qpay_sender_invoice_no ?? currentRequest.id}
+                        {qpayRequest.qpay_sender_invoice_no ?? qpayRequest.id}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                       <span className="text-slate-500">QPay төлөв</span>
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${qpayStatusStyles(
-                          currentRequest.qpay_payment_status,
+                          qpayRequest.qpay_payment_status,
                         )}`}
                       >
-                        {qpayStatusLabel(currentRequest.qpay_payment_status)}
+                        {qpayStatusLabel(qpayRequest.qpay_payment_status)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                       <span className="text-slate-500">Үүсгэсэн огноо</span>
-                      <span className="font-semibold text-slate-950">{formatDate(currentRequest.created_at)}</span>
+                      <span className="font-semibold text-slate-950">{formatDate(qpayRequest.created_at)}</span>
                     </div>
-                    {currentRequest.paid_at ? (
+                    {qpayRequest.paid_at ? (
                       <div className="flex items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
                         <span className="text-emerald-700">Төлөгдсөн огноо</span>
-                        <span className="font-semibold text-emerald-900">{formatDate(currentRequest.paid_at)}</span>
+                        <span className="font-semibold text-emerald-900">{formatDate(qpayRequest.paid_at)}</span>
                       </div>
                     ) : null}
                   </>
@@ -360,19 +369,6 @@ export function AgentOnboardingPanel({
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={handleCreateInvoice}
-                  disabled={isCreating}
-                  className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-                >
-                  {isCreating
-                    ? "Invoice бэлдэж байна..."
-                    : isPendingQPay
-                      ? "QPay invoice сэргээх"
-                      : "QPay invoice үүсгэх"}
-                </button>
-
                 {isPendingQPay ? (
                   <button
                     type="button"
@@ -383,13 +379,25 @@ export function AgentOnboardingPanel({
                     {isChecking ? "Шалгаж байна..." : "Төлбөр шалгах"}
                   </button>
                 ) : null}
+
+                {!isPendingQPay && error ? (
+                  <button
+                    type="button"
+                    onClick={handleRetryInvoice}
+                    disabled={isCreating}
+                    className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {isCreating ? "Invoice бэлдэж байна..." : "Дахин invoice үүсгэх"}
+                  </button>
+                ) : null}
               </div>
 
               <div className="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-4">
                 <p className="text-sm font-medium text-sky-900">Санамж</p>
                 <p className="mt-2 text-sm text-sky-800">
-                  Агент onboarding дээр screenshot илгээх шаардлагагүй. QPay callback ирмэгц эсвэл `Төлбөр шалгах`
-                  дармагц агент эрх автоматаар идэвхжинэ.
+                  {isCreating && !isPendingQPay
+                    ? "Payment хэсэг рүү ормогц QPay invoice автоматаар үүсч байна."
+                    : "Агент onboarding дээр screenshot илгээх шаардлагагүй. QPay callback ирмэгц эсвэл `Төлбөр шалгах` дармагц агент эрх автоматаар идэвхжинэ."}
                 </p>
               </div>
 
@@ -430,7 +438,7 @@ export function AgentOnboardingPanel({
                     </a>
                   ))}
                 </div>
-              ) : currentRequest && qrImageSrc ? (
+              ) : qpayRequest && qrImageSrc ? (
                 <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
                   Энэ invoice дээр банкны аппын жагсаалт хараахан бэлэн болоогүй байна. QR кодоор төлбөрөө үргэлжлүүлж болно.
                 </div>
@@ -441,7 +449,7 @@ export function AgentOnboardingPanel({
                 {qrImageSrc ? (
                   <div className="overflow-hidden rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200">
                     <a
-                      href={currentRequest?.qpay_short_url ?? undefined}
+                      href={qpayRequest?.qpay_short_url ?? undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block"
@@ -452,7 +460,7 @@ export function AgentOnboardingPanel({
                   </div>
                 ) : (
                   <div className="rounded-[2rem] border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
-                    QPay invoice үүсмэгц QR код энд гарч ирнэ.
+                    {isCreating ? "QPay invoice үүсч байна. QR код удахгүй гарна." : "QPay invoice үүсмэгц QR код энд гарч ирнэ."}
                   </div>
                 )}
               </div>
