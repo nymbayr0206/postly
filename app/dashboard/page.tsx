@@ -140,20 +140,10 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          <div className="grid gap-3">
             <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
               <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Одоогийн кредит</div>
               <div className="mt-2 text-3xl font-black text-white">{formatCredits(wallet.credits)}</div>
-            </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
-              <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Сүүлийн үүсгэлт</div>
-              <div className="mt-2 text-base font-bold text-white">
-                {generations[0] ? formatDate(generations[0].created_at) : "Одоогоор түүх алга"}
-              </div>
-            </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
-              <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Хэрэглэгч</div>
-              <div className="mt-2 truncate text-base font-bold text-white">{profile.email}</div>
             </div>
           </div>
         </div>
