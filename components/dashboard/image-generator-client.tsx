@@ -98,7 +98,6 @@ export function ImageGeneratorClient({
   const [error, setError] = useState<string | null>(null);
   const [promptOptimizationInfo, setPromptOptimizationInfo] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewsRef = useRef<string[]>([]);
   const router = useRouter();
@@ -457,41 +456,6 @@ export function ImageGeneratorClient({
       <div className="generator-shell-surface order-1 overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/70 2xl:order-1">
         <form onSubmit={handleSubmit} className="flex h-full flex-col">
           <div className="flex flex-col gap-4 p-4 pb-28 sm:gap-5 sm:p-6 sm:pb-32 xl:pb-6">
-            <div className="generator-hero-surface order-3 rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)] 2xl:order-1">
-              <div className="flex flex-col gap-4">
-                <div className="space-y-2">
-                  <div>
-                    <h1 className="text-2xl font-semibold text-slate-950">Зураг үүсгэх</h1>
-                    <p className="mt-1 max-w-lg text-sm leading-6 text-slate-600">
-                      Одоо mobile, tablet, desktop дээр нэг логиктой урсгалтай. Эхлээд тайлбараа
-                      оруулаад, дараа нь лавлах зураг болон тохиргоогоо нэмнэ.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үлдэгдэл</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-950">{creditsRemaining}</p>
-                  </div>
-                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үнэ</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-950">{currentCost} кр</p>
-                  </div>
-                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Харьцаа</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-950">{normalizedAspectRatio}</p>
-                  </div>
-                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Лавлах</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-950">
-                      {files.length}/{MAX_REFERENCE_IMAGES}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <GenerationPricingCard
               className="hidden 2xl:order-2 2xl:block"
               currentCost={currentCost}
@@ -705,34 +669,7 @@ export function ImageGeneratorClient({
               </button>
             </section>
 
-            <div className="order-5 2xl:hidden">
-              <button
-                type="button"
-                onClick={() => setSettingsOpen((value) => !value)}
-                className="generator-card flex w-full items-center justify-between rounded-[1.25rem] border border-slate-200 bg-white/80 px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-sm"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Нэмэлт тохиргоо</p>
-                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
-                    <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
-                  </div>
-                </div>
-                <svg
-                  className={`h-4 w-4 transition-transform ${settingsOpen ? "rotate-180" : ""}`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-            </div>
-
-            <section className={`${settingsOpen ? "block" : "hidden 2xl:block"} generator-panel order-6 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5`}>
+            <section className="generator-panel order-5 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Харьцаа</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Хэрэглээний сувгаасаа хамаарч харьцаагаа сонгоно уу.</p>
