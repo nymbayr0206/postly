@@ -150,10 +150,10 @@ export function AudioGeneratorClient({
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
-      <div className="border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
+      <div className="generator-shell-surface border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col">
           <div className="space-y-5 p-4 sm:p-6">
-            <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
+            <div className="generator-hero-surface rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                   <div>
@@ -165,7 +165,7 @@ export function AudioGeneratorClient({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
                   <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
                 </div>
@@ -195,7 +195,7 @@ export function AudioGeneratorClient({
               ]}
             />
 
-            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Харилцан яриа</h2>
@@ -203,7 +203,7 @@ export function AudioGeneratorClient({
                     Хоолой бүрт тусдаа мөр үүсгээд текстээ бөглөнө үү.
                   </p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   {filledCount}/{lines.length} идэвхтэй
                 </span>
               </div>
@@ -216,7 +216,7 @@ export function AudioGeneratorClient({
                   return (
                     <div
                       key={`${line.voice}-${index}`}
-                      className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-3"
+                      className="generator-card rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-3"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
@@ -225,7 +225,7 @@ export function AudioGeneratorClient({
                         <select
                           value={line.voice}
                           onChange={(event) => updateLine(index, "voice", event.target.value)}
-                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                          className="generator-input min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
                         >
                           {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
                             <optgroup key={group} label={group}>
@@ -253,12 +253,12 @@ export function AudioGeneratorClient({
                       </div>
 
                       {voiceDemoUrl ? (
-                        <div className="mt-3 rounded-[1rem] border border-cyan-100 bg-white/80 p-3">
+                        <div className="generator-card mt-3 rounded-[1rem] border border-cyan-100 bg-white/80 p-3">
                           <div className="mb-2 flex items-center justify-between gap-3">
                             <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
                               Demo хоолой
                             </p>
-                            <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-medium text-cyan-700">
+                            <span className="generator-chip-accent rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-medium text-cyan-700">
                               {voiceLabel}
                             </span>
                           </div>
@@ -271,7 +271,7 @@ export function AudioGeneratorClient({
                         onChange={(event) => updateLine(index, "text", event.target.value)}
                         placeholder={`${index + 1}-р мөрийн текст`}
                         rows={3}
-                        className="mt-3 w-full resize-none rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                        className="generator-input mt-3 w-full resize-none rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
                       />
                     </div>
                   );
@@ -282,7 +282,7 @@ export function AudioGeneratorClient({
                 <button
                   type="button"
                   onClick={addLine}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50"
+                  className="generator-upload mt-4 flex w-full items-center justify-center gap-2 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" x2="12" y1="5" y2="19" />
@@ -293,7 +293,7 @@ export function AudioGeneratorClient({
               )}
             </section>
 
-            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Тогтвортой байдал</h2>
@@ -301,7 +301,7 @@ export function AudioGeneratorClient({
                     Дуу хоолойн тогтвортой байдлыг тохируулна.
                   </p>
                 </div>
-                <span className="rounded-full bg-cyan-50 px-3 py-1 text-sm font-semibold text-cyan-700">
+                <span className="generator-chip-accent rounded-full bg-cyan-50 px-3 py-1 text-sm font-semibold text-cyan-700">
                   {stability.toFixed(1)}
                 </span>
               </div>
@@ -323,7 +323,7 @@ export function AudioGeneratorClient({
             </section>
           </div>
 
-          <div className="mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/90 p-4 sm:p-6">
+          <div className="generator-footer mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/90 p-4 sm:p-6">
             {error && (
               <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
@@ -354,7 +354,7 @@ export function AudioGeneratorClient({
                 type="button"
                 onClick={handleClear}
                 disabled={isPending}
-                className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                className="generator-secondary-btn rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
                 Цэвэрлэх
               </button>
@@ -368,7 +368,7 @@ export function AudioGeneratorClient({
         </div>
       </div>
 
-      <div className="bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
+      <div className="generator-stage-surface bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
           <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-7">
             <div className="relative z-10 flex h-full flex-col justify-between gap-6">
@@ -401,7 +401,7 @@ export function AudioGeneratorClient({
           </section>
 
           <aside className="grid gap-4">
-            <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
+            <div className="generator-card rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Хэрэглэх зөвлөмж</p>
               <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
                 <li>1. Нэг мөрт нэг хоолой байлга.</li>
@@ -409,25 +409,25 @@ export function AudioGeneratorClient({
                 <li>3. Дууны хэмнэл, амьсгал, түр зогсолтоо текст дээрээ тусга.</li>
               </ul>
             </div>
-            <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
+            <div className="generator-note rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
               <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
             </div>
           </aside>
         </div>
 
-        <section className="mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+        <section className="generator-stage-surface mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
+          <div className="generator-panel rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-slate-950">Гаралт</h3>
                 <p className="mt-1 text-sm text-slate-500">Үүссэн аудио файл энд шууд тоглогдоно.</p>
               </div>
-              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">MP3</span>
+              <span className="generator-chip-accent rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">MP3</span>
             </div>
 
             {isPending ? (
-              <div className="flex min-h-[18rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center">
+              <div className="generator-note flex min-h-[18rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
                   <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -441,7 +441,7 @@ export function AudioGeneratorClient({
               </div>
             ) : result ? (
               <div className="space-y-4">
-                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="generator-result-card rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
                     <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 18V5l12-2v13" />
@@ -452,8 +452,8 @@ export function AudioGeneratorClient({
                   <audio controls src={result.audio_url} className="w-full" />
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">MP3</span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">{result.cost} кредит</span>
+                      <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 font-medium">MP3</span>
+                      <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 font-medium">{result.cost} кредит</span>
                     </div>
                     <a
                       href={result.audio_url}
@@ -471,8 +471,8 @@ export function AudioGeneratorClient({
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-[18rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-6 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <div className="generator-empty flex min-h-[18rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-6 text-center">
+                <div className="generator-empty-icon flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                   <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 18V5l12-2v13" />
                     <circle cx="6" cy="18" r="3" />
@@ -495,7 +495,7 @@ export function AudioGeneratorClient({
                   <h3 className="text-lg font-semibold text-slate-950">Сүүлийн аудионууд</h3>
                   <p className="mt-1 text-sm text-slate-500">Өмнөх үүсгэлтүүдээ эндээс дахин тоглуулж, татаж болно.</p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   {history.length} бичлэг
                 </span>
               </div>
@@ -504,20 +504,20 @@ export function AudioGeneratorClient({
                 {history.map((item) => (
                   <article
                     key={item.id}
-                    className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"
+                    className="generator-result-card rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="space-y-2">
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
                         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
-                          <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                          <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
+                          <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
                         </div>
                       </div>
                       <a
                         href={item.audio_url}
                         download
-                        className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        className="generator-secondary-btn inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                       >
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

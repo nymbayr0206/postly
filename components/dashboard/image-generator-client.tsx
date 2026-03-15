@@ -339,7 +339,7 @@ export function ImageGeneratorClient({
   function renderPreviewPanel(minHeightClass: string) {
     if (isPending) {
       return (
-        <div className={`flex ${minHeightClass} flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center`}>
+        <div className={`generator-note flex ${minHeightClass} flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center`}>
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
             <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -357,16 +357,16 @@ export function ImageGeneratorClient({
     if (result) {
       return (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-100 shadow-sm">
+          <div className="generator-result-card overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-100 shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={result.image_url} alt="Үүсгэсэн зураг" className="w-full object-cover" />
           </div>
 
-          <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="generator-card flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{normalizedAspectRatio}</span>
-              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">PNG</span>
-              <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{result.cost} кредит</span>
+              <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium text-slate-700">{normalizedAspectRatio}</span>
+              <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium text-slate-700">PNG</span>
+              <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium text-slate-700">{result.cost} кредит</span>
             </div>
             <a
               href={result.image_url}
@@ -386,8 +386,8 @@ export function ImageGeneratorClient({
     }
 
     return (
-      <div className={`flex ${minHeightClass} flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center`}>
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+      <div className={`generator-empty flex ${minHeightClass} flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center`}>
+        <div className="generator-empty-icon flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
           <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
             <circle cx="9" cy="9" r="2" />
@@ -405,8 +405,8 @@ export function ImageGeneratorClient({
 
   return (
     <div className="grid gap-4 2xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
-      <section className="hidden rounded-[2rem] border border-cyan-100/60 bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 shadow-[0_18px_40px_rgba(9,38,66,0.08)] sm:p-6 2xl:sticky 2xl:top-6 2xl:block 2xl:self-start">
-        <div className="rounded-[1.6rem] border border-white/80 bg-white/90 p-4 shadow-sm sm:p-5">
+      <section className="generator-stage-surface hidden rounded-[2rem] border border-cyan-100/60 bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 shadow-[0_18px_40px_rgba(9,38,66,0.08)] sm:p-6 2xl:sticky 2xl:top-6 2xl:block 2xl:self-start">
+        <div className="generator-panel-strong rounded-[1.6rem] border border-white/80 bg-white/90 p-4 shadow-sm sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Preview</p>
@@ -415,7 +415,7 @@ export function ImageGeneratorClient({
                 Утсан дээр prompt эхэндээ байрлана. Том дэлгэц дээр preview тусдаа баганад үлдэнэ.
               </p>
             </div>
-            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
+            <span className="generator-chip-accent rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
               {isPending ? "Үүсгэж байна" : result ? "Бэлэн" : "Хүлээж байна"}
             </span>
           </div>
@@ -425,7 +425,7 @@ export function ImageGeneratorClient({
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           {summaryItems.map((item) => (
-            <div key={item.label} className="rounded-2xl border border-slate-200 bg-white/85 px-3 py-3 shadow-sm">
+            <div key={item.label} className="generator-card rounded-2xl border border-slate-200 bg-white/85 px-3 py-3 shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
               <p className="mt-1 text-base font-semibold text-slate-950">{item.value}</p>
               <p className="mt-1 text-xs text-slate-500">{item.detail}</p>
@@ -434,7 +434,7 @@ export function ImageGeneratorClient({
         </div>
 
         <div className="mt-4 grid gap-3 xl:grid-cols-2">
-          <div className="rounded-[1.25rem] border border-cyan-100 bg-white/85 px-4 py-4 shadow-sm">
+          <div className="generator-card rounded-[1.25rem] border border-cyan-100 bg-white/85 px-4 py-4 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Хурдан checklist</p>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
               {QUICK_CHECKLIST.map((item, index) => (
@@ -445,7 +445,7 @@ export function ImageGeneratorClient({
             </ul>
           </div>
 
-          <div className="rounded-[1.25rem] border border-cyan-100 bg-cyan-50/80 px-4 py-4 shadow-sm">
+          <div className="generator-note rounded-[1.25rem] border border-cyan-100 bg-cyan-50/80 px-4 py-4 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй. Үнэ, харьцаа, нягтралыг дээрээс шууд харна.
@@ -454,10 +454,10 @@ export function ImageGeneratorClient({
         </div>
       </section>
 
-      <div className="order-1 overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/70 2xl:order-1">
+      <div className="generator-shell-surface order-1 overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white/70 2xl:order-1">
         <form onSubmit={handleSubmit} className="flex h-full flex-col">
           <div className="flex flex-col gap-4 p-4 pb-28 sm:gap-5 sm:p-6 sm:pb-32 xl:pb-6">
-            <div className="order-3 rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)] 2xl:order-1">
+            <div className="generator-hero-surface order-3 rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)] 2xl:order-1">
               <div className="flex flex-col gap-4">
                 <div className="space-y-2">
                   <div>
@@ -470,19 +470,19 @@ export function ImageGeneratorClient({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үлдэгдэл</p>
                     <p className="mt-1 text-lg font-semibold text-slate-950">{creditsRemaining}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Үнэ</p>
                     <p className="mt-1 text-lg font-semibold text-slate-950">{currentCost} кр</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Харьцаа</p>
                     <p className="mt-1 text-lg font-semibold text-slate-950">{normalizedAspectRatio}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                  <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Лавлах</p>
                     <p className="mt-1 text-lg font-semibold text-slate-950">
                       {files.length}/{MAX_REFERENCE_IMAGES}
@@ -516,7 +516,7 @@ export function ImageGeneratorClient({
               ]}
             />
 
-            <section className="order-1 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5 2xl:order-3">
+            <section className="generator-panel order-1 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5 2xl:order-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Тайлбар</h2>
@@ -529,11 +529,11 @@ export function ImageGeneratorClient({
                     type="button"
                     onClick={() => void optimizePrompt({ applyToInput: true })}
                     disabled={!prompt.trim() || isPending || isOptimizingPrompt}
-                    className="inline-flex w-full items-center justify-center rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    className="generator-outline-btn inline-flex w-full items-center justify-center rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {isOptimizingPrompt ? "AI сайжруулж байна..." : "AI Prompt сайжруулах"}
                   </button>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-medium text-slate-600">
+                  <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-medium text-slate-600">
                     {prompt.trim().length} тэмдэгт
                   </span>
                 </div>
@@ -544,7 +544,7 @@ export function ImageGeneratorClient({
                 onChange={(event) => handlePromptChange(event.target.value)}
                 placeholder="Жишээ: Минимал студид байрласан бүтээгдэхүүний зураг, зөөлөн cyan гэрэлтүүлэгтэй, cinematic product shot, clean background..."
                 rows={6}
-                className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                className="generator-input mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               />
 
               <SpeechToTextControl
@@ -554,7 +554,7 @@ export function ImageGeneratorClient({
               />
 
               <div className="mt-4 sm:hidden">
-                <div className="rounded-[1.25rem] border border-slate-200/70 bg-slate-50/80 p-4">
+                <div className="generator-card rounded-[1.25rem] border border-slate-200/70 bg-slate-50/80 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold text-slate-900">Лавлах зураг</h3>
@@ -562,7 +562,7 @@ export function ImageGeneratorClient({
                         Prompt болон mic-ийн доор шууд {MAX_REFERENCE_IMAGES} хүртэл зураг хавсаргаж болно.
                       </p>
                     </div>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">
+                    <span className="generator-chip rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">
                       {files.length}/{MAX_REFERENCE_IMAGES}
                     </span>
                   </div>
@@ -572,7 +572,7 @@ export function ImageGeneratorClient({
                       {previews.map((src, index) => (
                         <div
                           key={src}
-                          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"
+                          className="generator-result-card group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={src} alt="Лавлах зураг" className="aspect-square h-full w-full object-cover" />
@@ -593,7 +593,7 @@ export function ImageGeneratorClient({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={files.length >= MAX_REFERENCE_IMAGES}
-                    className="mt-4 flex w-full items-center justify-center gap-3 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="generator-upload mt-4 flex w-full items-center justify-center gap-3 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <svg
                       className="h-5 w-5"
@@ -614,7 +614,7 @@ export function ImageGeneratorClient({
               </div>
 
               {promptOptimizationInfo ? (
-                <div className="mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+                <div className="generator-note mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
                   {promptOptimizationInfo}
                 </div>
               ) : null}
@@ -623,7 +623,7 @@ export function ImageGeneratorClient({
                 {PROMPT_HINTS.map((hint) => (
                   <div
                     key={hint}
-                    className="min-w-[12rem] shrink-0 rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600 sm:min-w-0"
+                    className="generator-card min-w-[12rem] shrink-0 rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600 sm:min-w-0"
                   >
                     {hint}
                   </div>
@@ -631,7 +631,7 @@ export function ImageGeneratorClient({
               </div>
             </section>
 
-            <section className="order-2 rounded-[1.5rem] border border-cyan-100/70 bg-[linear-gradient(180deg,rgba(245,252,255,0.95),rgba(255,255,255,0.96))] p-4 shadow-sm sm:p-5 2xl:hidden">
+            <section className="generator-panel-strong order-2 rounded-[1.5rem] border border-cyan-100/70 bg-[linear-gradient(180deg,rgba(245,252,255,0.95),rgba(255,255,255,0.96))] p-4 shadow-sm sm:p-5 2xl:hidden">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Preview</p>
@@ -640,7 +640,7 @@ export function ImageGeneratorClient({
                     Prompt оруулсны дараах үр дүн яг энэ хэсэгт шууд харагдана.
                   </p>
                 </div>
-                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold text-cyan-800">
+                <span className="generator-chip-accent rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold text-cyan-800">
                   {isPending ? "Үүсгэж байна" : result ? "Бэлэн" : "Хүлээж байна"}
                 </span>
               </div>
@@ -649,7 +649,7 @@ export function ImageGeneratorClient({
 
             </section>
 
-            <section className="order-4 hidden rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:block sm:p-5 2xl:order-4">
+            <section className="generator-panel order-4 hidden rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:block sm:p-5 2xl:order-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Лавлах зураг</h2>
@@ -657,7 +657,7 @@ export function ImageGeneratorClient({
                     Хүсвэл {MAX_REFERENCE_IMAGES} хүртэл зураг хавсаргаж болно.
                   </p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   {files.length}/{MAX_REFERENCE_IMAGES}
                 </span>
               </div>
@@ -665,7 +665,7 @@ export function ImageGeneratorClient({
               {previews.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                   {previews.map((src, index) => (
-                    <div key={src} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                    <div key={src} className="generator-result-card group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={src} alt="Лавлах зураг" className="aspect-square h-full w-full object-cover" />
                       <button
@@ -694,7 +694,7 @@ export function ImageGeneratorClient({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={files.length >= MAX_REFERENCE_IMAGES}
-                className="mt-4 flex w-full items-center justify-center gap-3 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="generator-upload mt-4 flex w-full items-center justify-center gap-3 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -709,13 +709,13 @@ export function ImageGeneratorClient({
               <button
                 type="button"
                 onClick={() => setSettingsOpen((value) => !value)}
-                className="flex w-full items-center justify-between rounded-[1.25rem] border border-slate-200 bg-white/80 px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-sm"
+                className="generator-card flex w-full items-center justify-between rounded-[1.25rem] border border-slate-200 bg-white/80 px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-sm"
               >
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Нэмэлт тохиргоо</p>
                   <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
+                    <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
+                    <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
                   </div>
                 </div>
                 <svg
@@ -732,7 +732,7 @@ export function ImageGeneratorClient({
               </button>
             </div>
 
-            <section className={`${settingsOpen ? "block" : "hidden 2xl:block"} order-6 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5`}>
+            <section className={`${settingsOpen ? "block" : "hidden 2xl:block"} generator-panel order-6 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5`}>
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Харьцаа</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Хэрэглээний сувгаасаа хамаарч харьцаагаа сонгоно уу.</p>
@@ -746,8 +746,8 @@ export function ImageGeneratorClient({
                     onClick={() => setAspectRatio(ratio.value)}
                     className={`min-w-[9.5rem] shrink-0 rounded-[1.25rem] border px-4 py-4 text-left transition ${
                       normalizedAspectRatio === ratio.value
-                        ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
-                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                        ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                        : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                     }`}
                   >
                     <p className="text-base font-semibold">{ratio.label}</p>
@@ -764,8 +764,8 @@ export function ImageGeneratorClient({
                     onClick={() => setAspectRatio(ratio.value)}
                     className={`rounded-[1.25rem] border px-4 py-4 text-left transition ${
                       normalizedAspectRatio === ratio.value
-                        ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
-                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                        ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                        : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                     }`}
                   >
                     <p className="text-base font-semibold">{ratio.label}</p>
@@ -787,8 +787,8 @@ export function ImageGeneratorClient({
                       onClick={() => setResolution(option.value)}
                       className={`min-w-[8.5rem] shrink-0 rounded-[1.25rem] border px-4 py-4 text-left transition ${
                         resolution === option.value
-                          ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                          ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                          : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                       }`}
                     >
                       <p className="text-base font-semibold">{option.label}</p>
@@ -805,8 +805,8 @@ export function ImageGeneratorClient({
                       onClick={() => setResolution(option.value)}
                       className={`rounded-[1.25rem] border px-4 py-4 text-left transition ${
                         resolution === option.value
-                          ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                          ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                          : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                       }`}
                     >
                       <p className="text-base font-semibold">{option.label}</p>
@@ -818,7 +818,7 @@ export function ImageGeneratorClient({
             </section>
           </div>
 
-          <div className="sticky bottom-0 z-20 mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/95 p-4 backdrop-blur sm:p-6 2xl:static 2xl:bg-white/90 2xl:backdrop-blur-none">
+          <div className="generator-footer sticky bottom-0 z-20 mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/95 p-4 backdrop-blur sm:p-6 2xl:static 2xl:bg-white/90 2xl:backdrop-blur-none">
             {error && (
               <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
@@ -827,9 +827,9 @@ export function ImageGeneratorClient({
 
             <div className="mb-3 flex items-center justify-between gap-3 2xl:hidden">
               <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                <span className="rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
-                {files.length > 0 ? <span className="rounded-full bg-slate-100 px-2.5 py-1">{files.length} зураг</span> : null}
+                <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{normalizedAspectRatio}</span>
+                <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{selectedResolution?.label}</span>
+                {files.length > 0 ? <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{files.length} зураг</span> : null}
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold text-slate-950">{currentCost} кредит</p>
@@ -860,7 +860,7 @@ export function ImageGeneratorClient({
                 type="button"
                 onClick={handleClear}
                 disabled={isPending}
-                className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                className="generator-secondary-btn rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
                 Цэвэрлэх
               </button>

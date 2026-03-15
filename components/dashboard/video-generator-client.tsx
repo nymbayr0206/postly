@@ -275,13 +275,13 @@ export function VideoGeneratorClient({
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,29rem)_minmax(0,1fr)]">
-      <div className="border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
+      <div className="generator-shell-surface border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col">
           <div className="space-y-5 p-4 sm:p-6">
-            <div className="rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
+            <div className="generator-hero-surface rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
-                  <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
+                  <span className="generator-chip-accent inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
                     Зургаас видео
                   </span>
                   <div>
@@ -293,7 +293,7 @@ export function VideoGeneratorClient({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
+                <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
                   <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
                 </div>
@@ -331,13 +331,13 @@ export function VideoGeneratorClient({
               ]}
             />
 
-            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Эх зураг</h2>
                   <p className="mt-1 text-xs leading-5 text-slate-500">Mobile дээр дараад эсвэл desktop дээр drag and drop хийгээд оруулна.</p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   JPG, PNG, WebP
                 </span>
               </div>
@@ -352,14 +352,14 @@ export function VideoGeneratorClient({
                 onClick={() => !preview && fileInputRef.current?.click()}
                 className={`mt-4 flex min-h-[14rem] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.5rem] border-2 border-dashed px-6 text-center transition ${
                   isDragging
-                    ? "border-cyan-400 bg-cyan-50"
+                    ? "generator-dropzone-active border-cyan-400 bg-cyan-50"
                     : preview
-                      ? "cursor-default border-slate-200 bg-slate-50"
-                      : "border-cyan-300 bg-cyan-50/60 hover:border-cyan-400 hover:bg-cyan-50"
+                      ? "generator-dropzone-filled cursor-default border-slate-200 bg-slate-50"
+                      : "generator-dropzone border-cyan-300 bg-cyan-50/60 hover:border-cyan-400 hover:bg-cyan-50"
                 }`}
               >
                 {preview ? (
-                  <div className="relative w-full overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+                  <div className="generator-result-card relative w-full overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={preview} alt="Эх зураг" className="max-h-72 w-full object-contain" />
                     <button
@@ -376,7 +376,7 @@ export function VideoGeneratorClient({
                   </div>
                 ) : (
                   <>
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-cyan-700 shadow-sm">
+                    <div className="generator-empty-icon flex h-14 w-14 items-center justify-center rounded-full bg-white text-cyan-700 shadow-sm">
                       <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="17 8 12 3 7 8" />
@@ -408,7 +408,7 @@ export function VideoGeneratorClient({
               )}
             </section>
 
-            <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Тайлбар</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -422,7 +422,7 @@ export function VideoGeneratorClient({
                   type="button"
                   onClick={() => void optimizePrompt({ applyToInput: true })}
                   disabled={!prompt.trim() || isPending || isOptimizingPrompt}
-                  className="rounded-full border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="generator-outline-btn rounded-full border border-cyan-200 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isOptimizingPrompt ? "AI сайжруулж байна..." : "AI Prompt сайжруулах"}
                 </button>
@@ -433,7 +433,7 @@ export function VideoGeneratorClient({
                 onChange={(event) => handlePromptChange(event.target.value)}
                 placeholder="Жишээ: Камер удаанаар zoom in хийж, үс салхинд зөөлөн хөдөлж, cinematic cyan light туссан байдал..."
                 rows={5}
-                className="mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                className="generator-input mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               />
 
               <SpeechToTextControl
@@ -443,13 +443,13 @@ export function VideoGeneratorClient({
               />
 
               {promptOptimizationInfo ? (
-                <div className="mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+                <div className="generator-note mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
                   {promptOptimizationInfo}
                 </div>
               ) : null}
             </section>
 
-            <section className="grid gap-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="generator-panel grid gap-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Видео тохиргоо</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Видеоны урт болон чанараа сонгоно уу.</p>
@@ -466,8 +466,8 @@ export function VideoGeneratorClient({
                         onClick={() => setDuration(item)}
                         className={`rounded-[1rem] border px-3 py-3 text-sm font-medium transition ${
                           duration === item
-                            ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
-                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                            ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                            : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                         }`}
                       >
                         {item} сек
@@ -487,8 +487,8 @@ export function VideoGeneratorClient({
                         disabled={item === "1080p" && duration === 10}
                         className={`rounded-[1rem] border px-3 py-3 text-sm font-medium transition ${
                           quality === item
-                            ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
-                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                            ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                            : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                         } disabled:cursor-not-allowed disabled:opacity-40`}
                       >
                         {item}
@@ -500,7 +500,7 @@ export function VideoGeneratorClient({
             </section>
           </div>
 
-          <div className="mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/90 p-4 sm:p-6">
+          <div className="generator-footer mt-auto border-t border-[rgba(14,42,66,0.08)] bg-white/90 p-4 sm:p-6">
             {error && (
               <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
@@ -531,7 +531,7 @@ export function VideoGeneratorClient({
                 type="button"
                 onClick={handleClear}
                 disabled={isPending}
-                className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                className="generator-secondary-btn rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
                 Цэвэрлэх
               </button>
@@ -545,7 +545,7 @@ export function VideoGeneratorClient({
         </div>
       </div>
 
-      <div className="bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
+      <div className="generator-stage-surface bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
           <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-7">
             <div className="relative z-10 flex h-full flex-col justify-between gap-6">
@@ -578,7 +578,7 @@ export function VideoGeneratorClient({
           </section>
 
           <aside className="grid gap-4">
-            <div className="rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
+            <div className="generator-card rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Сайн тайлбарын бүтэц</p>
               <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
                 <li>1. Объект ямар хөдөлгөөн хийхийг бич.</li>
@@ -586,25 +586,25 @@ export function VideoGeneratorClient({
                 <li>3. Орчны гэрэл, хурд, mood-оо оруул.</li>
               </ul>
             </div>
-            <div className="rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
+            <div className="generator-note rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
               <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
             </div>
           </aside>
         </div>
 
-        <section className="mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+        <section className="generator-stage-surface mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
+          <div className="generator-panel rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-slate-950">Гаралт</h3>
                 <p className="mt-1 text-sm text-slate-500">Үүссэн видео энд preview болон татах хэлбэрээр харагдана.</p>
               </div>
-              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Видео</span>
+              <span className="generator-chip-accent rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Видео</span>
             </div>
 
             {isPending ? (
-              <div className="flex min-h-[20rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center">
+              <div className="generator-note flex min-h-[20rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-cyan-200 bg-cyan-50/40 px-6 text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
                   <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -622,11 +622,11 @@ export function VideoGeneratorClient({
                   <video controls src={result.video_url} className="w-full" />
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="generator-card flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                    <span className="rounded-full bg-white px-3 py-1 font-medium">{duration} сек</span>
-                    <span className="rounded-full bg-white px-3 py-1 font-medium">{quality}</span>
-                    <span className="rounded-full bg-white px-3 py-1 font-medium">{result.cost} кредит</span>
+                    <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{duration} сек</span>
+                    <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{quality}</span>
+                    <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{result.cost} кредит</span>
                   </div>
                   <a
                     href={result.video_url}
@@ -643,8 +643,8 @@ export function VideoGeneratorClient({
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-[20rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-6 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <div className="generator-empty flex min-h-[20rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-white px-6 text-center">
+                <div className="generator-empty-icon flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                   <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m22 8-6 4 6 4V8z" />
                     <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
@@ -665,7 +665,7 @@ export function VideoGeneratorClient({
                   <h3 className="text-lg font-semibold text-slate-950">Сүүлийн видеонууд</h3>
                   <p className="mt-1 text-sm text-slate-500">Өмнөх ажлуудаа mobile card хэлбэрээр тоймлон харна.</p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   {history.length} видео
                 </span>
               </div>
@@ -674,7 +674,7 @@ export function VideoGeneratorClient({
                 {history.map((item) => (
                   <article
                     key={item.id}
-                    className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm"
+                    className="generator-result-card overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm"
                   >
                     <div className="aspect-video bg-slate-950">
                       <video
@@ -687,15 +687,15 @@ export function VideoGeneratorClient({
                     <div className="space-y-3 p-4">
                       <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
                       <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
-                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.duration} сек</span>
-                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.quality}</span>
-                        <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                        <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
+                        <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.duration} сек</span>
+                        <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.quality}</span>
+                        <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
                       </div>
                       <a
                         href={item.video_url}
                         download
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        className="generator-secondary-btn inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                       >
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
