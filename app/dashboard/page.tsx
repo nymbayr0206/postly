@@ -134,7 +134,7 @@ export default async function DashboardPage() {
             </div>
             <Link
               href="/dashboard/lessons"
-              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
+              className="rounded-full bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] px-5 py-3 text-sm font-black text-slate-950 shadow-[0_16px_36px_rgba(47,188,230,0.22)]"
             >
               Хичээл рүү орох
             </Link>
@@ -142,25 +142,7 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      {profile.role === "agent" ? (
-        <section className="brand-surface rounded-[1.75rem] p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-sm font-semibold text-cyan-700">Агентын статус</div>
-              <h2 className="mt-1 text-xl font-black text-slate-950">Хичээлийн хэсэг идэвхтэй</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Агентын сургалтын материалууд тань бэлэн байна. Шинэ материалуудаа тэндээс үзнэ үү.
-              </p>
-            </div>
-            <Link
-              href="/dashboard/lessons"
-              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
-            >
-              Хичээл рүү орох
-            </Link>
-          </div>
-        </section>
-      ) : agentRequest ? (
+      {profile.role !== "agent" && agentRequest ? (
         <section className="brand-surface rounded-[1.75rem] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
