@@ -63,6 +63,8 @@ const IMAGE_RESOLUTION_OPTIONS: Array<{
   { value: "4k", label: "4K" },
 ];
 
+const MAX_REFERENCE_IMAGES = 8;
+
 const PROMPT_HINTS = [
   "Өнгө, гэрэлтүүлэг, камерын өнцгөө тодорхой бич.",
   "Брэндийн мэдрэмж, орчин, уур амьсгалаа оруул.",
@@ -72,7 +74,7 @@ const PROMPT_HINTS = [
 const QUICK_CHECKLIST = [
   "Гол объект, орчноо эхэнд нь бич.",
   "Өнгө, гэрэл, camera style-аа дараа нь нэм.",
-  "Хэрэгтэй бол 1-3 лавлах зураг хавсарга.",
+  "Хэрэгтэй бол 1-8 лавлах зураг хавсарга.",
 ];
 
 export function ImageGeneratorClient({
@@ -137,11 +139,11 @@ export function ImageGeneratorClient({
       return;
     }
 
-    const remainingSlots = Math.max(0, 3 - files.length);
+    const remainingSlots = Math.max(0, MAX_REFERENCE_IMAGES - files.length);
     const accepted = incoming.slice(0, remainingSlots);
 
     if (accepted.length === 0) {
-      setError("Хамгийн ихдээ 3 лавлах зураг оруулна.");
+      setError(`Хамгийн ихдээ ${MAX_REFERENCE_IMAGES} лавлах зураг оруулна.`);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -482,7 +484,9 @@ export function ImageGeneratorClient({
                   </div>
                   <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Лавлах</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-950">{files.length}/3</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-950">
+                      {files.length}/{MAX_REFERENCE_IMAGES}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -506,7 +510,7 @@ export function ImageGeneratorClient({
                 },
                 {
                   label: "Лавлах зураг",
-                  value: `${files.length}/3`,
+                  value: `${files.length}/${MAX_REFERENCE_IMAGES}`,
                   detail: "Хүсвэл хавсаргана",
                 },
               ]}
@@ -549,6 +553,66 @@ export function ImageGeneratorClient({
                 className="mt-4"
               />
 
+              <div className="mt-4 sm:hidden">
+                <div className="rounded-[1.25rem] border border-slate-200/70 bg-slate-50/80 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">Лавлах зураг</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Prompt болон mic-ийн доор шууд {MAX_REFERENCE_IMAGES} хүртэл зураг хавсаргаж болно.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">
+                      {files.length}/{MAX_REFERENCE_IMAGES}
+                    </span>
+                  </div>
+
+                  {previews.length > 0 ? (
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      {previews.map((src, index) => (
+                        <div
+                          key={src}
+                          className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={src} alt="Лавлах зураг" className="aspect-square h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/80 text-sm text-white"
+                            aria-label="Зураг хасах"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={files.length >= MAX_REFERENCE_IMAGES}
+                    className="mt-4 flex w-full items-center justify-center gap-3 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" x2="12" y1="3" y2="15" />
+                    </svg>
+                    Зураг нэмэх
+                  </button>
+                </div>
+              </div>
+
               {promptOptimizationInfo ? (
                 <div className="mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
                   {promptOptimizationInfo}
@@ -585,19 +649,21 @@ export function ImageGeneratorClient({
 
             </section>
 
-            <section className="order-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5 2xl:order-4">
+            <section className="order-4 hidden rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:block sm:p-5 2xl:order-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Лавлах зураг</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">Хүсвэл 3 хүртэл зураг хавсаргаж болно.</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Хүсвэл {MAX_REFERENCE_IMAGES} хүртэл зураг хавсаргаж болно.
+                  </p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  {files.length}/3
+                  {files.length}/{MAX_REFERENCE_IMAGES}
                 </span>
               </div>
 
               {previews.length > 0 && (
-                <div className="mt-4 grid grid-cols-3 gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                   {previews.map((src, index) => (
                     <div key={src} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -627,7 +693,7 @@ export function ImageGeneratorClient({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={files.length >= 3}
+                disabled={files.length >= MAX_REFERENCE_IMAGES}
                 className="mt-4 flex w-full items-center justify-center gap-3 rounded-[1.25rem] border border-dashed border-cyan-300 bg-cyan-50/70 px-4 py-4 text-sm font-medium text-cyan-800 transition hover:border-cyan-400 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

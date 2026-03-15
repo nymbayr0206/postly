@@ -74,7 +74,7 @@ const requestSchema = z.object({
   prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой."),
   aspect_ratio: z.enum(ASPECT_RATIOS),
   resolution: z.enum(["1k", "2k", "4k"] as const).default("1k"),
-  reference_images: z.array(z.string().min(1)).max(3).default([]),
+  reference_images: z.array(z.string().min(1)).max(8).default([]),
 });
 
 export async function POST(request: Request) {

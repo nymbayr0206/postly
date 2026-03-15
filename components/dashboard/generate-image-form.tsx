@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { ImageAspectRatio } from "@/lib/types";
 
 const aspectOptions: ImageAspectRatio[] = ["1:1", "4:5", "16:9", "9:16"];
+const MAX_REFERENCE_IMAGES = 8;
 
 type GenerateResult = {
   image_url: string;
@@ -53,8 +54,8 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
       return;
     }
 
-    if (files.length > 3) {
-      setError("Хамгийн ихдээ 3 лавлах зураг оруулах боломжтой.");
+    if (files.length > MAX_REFERENCE_IMAGES) {
+      setError(`Хамгийн ихдээ ${MAX_REFERENCE_IMAGES} лавлах зураг оруулах боломжтой.`);
       return;
     }
 
@@ -139,14 +140,14 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
         </label>
 
         <label className="block text-sm font-medium text-slate-700">
-          Лавлах зураг (заавал биш, хамгийн ихдээ 3)
+          Лавлах зураг (заавал биш, хамгийн ихдээ 8)
           <input
             type="file"
             accept="image/*"
             multiple
             onChange={(event) => {
               const selectedFiles = Array.from(event.target.files ?? []);
-              setFiles(selectedFiles.slice(0, 3));
+              setFiles(selectedFiles.slice(0, MAX_REFERENCE_IMAGES));
             }}
             className="mt-1 block w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
           />
