@@ -595,7 +595,7 @@ export function ImageGeneratorClient({
               </div>
             </section>
 
-            <section className="generator-panel-strong order-2 rounded-[1.5rem] border border-cyan-100/70 bg-[linear-gradient(180deg,rgba(245,252,255,0.95),rgba(255,255,255,0.96))] p-4 shadow-sm sm:p-5 2xl:hidden">
+            <section className="generator-panel-strong order-5 rounded-[1.5rem] border border-cyan-100/70 bg-[linear-gradient(180deg,rgba(245,252,255,0.95),rgba(255,255,255,0.96))] p-4 shadow-sm sm:p-5 2xl:hidden">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Preview</p>
@@ -669,7 +669,7 @@ export function ImageGeneratorClient({
               </button>
             </section>
 
-            <section className="generator-panel order-5 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+            <section className="generator-panel order-2 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Харьцаа</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Хэрэглээний сувгаасаа хамаарч харьцаагаа сонгоно уу.</p>
