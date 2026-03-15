@@ -278,28 +278,6 @@ export function VideoGeneratorClient({
       <div className="generator-shell-surface border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col">
           <div className="space-y-5 p-4 sm:p-6">
-            <div className="generator-hero-surface rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-2">
-                  <span className="generator-chip-accent inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700">
-                    Зургаас видео
-                  </span>
-                  <div>
-                    <h1 className="text-2xl font-semibold text-slate-950">Зургаас видео</h1>
-                    <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                      Эх зургийнхаа хөдөлгөөн, камерын чиглэл, орчны мэдрэмжийг тайлбарлаад богино
-                      видео үүсгэнэ.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
-                </div>
-              </div>
-            </div>
-
             <GenerationPricingCard
               currentCost={currentCost}
               currentCostDetail={formatMnt(currentCostMnt)}
