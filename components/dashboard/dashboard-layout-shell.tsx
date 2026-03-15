@@ -499,9 +499,12 @@ export default function DashboardLayoutShell({
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="brand-surface rounded-full px-3 py-2 text-xs font-semibold text-slate-700 sm:px-4 sm:text-sm">
+              <Link
+                href="/dashboard/billing"
+                className="brand-surface rounded-full px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-cyan-300/40 hover:text-cyan-700 sm:px-4 sm:text-sm"
+              >
                 {formatCredits(credits)} кредит
-              </div>
+              </Link>
 
               <div className="hidden items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 px-2 py-1.5 shadow-sm sm:flex">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#8EE8F1,#2FBCE6)] text-sm font-black text-slate-950">
