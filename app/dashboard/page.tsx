@@ -83,17 +83,8 @@ export default async function DashboardPage() {
             <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
               {roleLabel(profile.role)}
             </div>
-            <h1 className="mt-4 max-w-2xl text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
-              Нэг dashboard дотор контентын бүх урсгалаа удирд.
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-              Зураг, видео, аудио үүсгэлт болон кредитийн урсгалууд нэг орчинд байна. Одоо
-              өөрийн урилгын линкээ түгээж, энгийн хэрэглэгчийн баталгаажсан кредит
-              цэнэглэлтээс 10%-ийн мөнгөн урамшуулал, агентын урилгын линкээр шинэ агент
-              баталгаажвал 30,000₮-ийн мөнгөн урамшуулал авах боломжтой.
-            </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href="/dashboard/image"
                 className="rounded-full bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] px-5 py-3 text-sm font-black text-slate-950 shadow-[0_18px_40px_rgba(47,188,230,0.28)]"
@@ -105,6 +96,12 @@ export default async function DashboardPage() {
                 className="rounded-full border border-white/12 bg-white/[0.08] px-5 py-3 text-sm font-semibold text-white"
               >
                 Кредит авах
+              </Link>
+              <Link
+                href="/dashboard/chatgpt"
+                className="rounded-full border border-cyan-300/30 bg-cyan-300/12 px-5 py-3 text-sm font-semibold text-cyan-100"
+              >
+                Сургагдсан ChatGPT
               </Link>
             </div>
           </div>
@@ -124,11 +121,11 @@ export default async function DashboardPage() {
             <div>
               <div className="text-sm font-semibold text-cyan-700">Хичээлийн сан</div>
               <h2 className="mt-1 text-xl font-black text-slate-950">
-                {profile.role === "agent" ? "Агентын хичээлүүд бэлэн байна" : "Танд зориулсан хичээлүүд орсон"}
+                {profile.role === "agent" ? "Агентийн хичээлүүд бэлэн байна" : "Танд зориулсан хичээлүүд орсон"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 {profile.role === "agent"
-                  ? "Агентын workflow, борлуулалт, контент үйлдвэрлэлийн материалуудаа нэг дороос үзнэ."
+                  ? "Агентийн workflow, борлуулалт, контент үйлдвэрлэлийн материалуудаа нэг дороос үзнэ."
                   : "Платформ дээр хурдан ажиллах, контент үүсгэх үндсэн урсгалаа сурахад зориулсан материалуудаа эндээс нээнэ."}
               </p>
             </div>
@@ -146,7 +143,7 @@ export default async function DashboardPage() {
         <section className="brand-surface rounded-[1.75rem] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm font-semibold text-amber-600">Агентын хүсэлт</div>
+              <div className="text-sm font-semibold text-amber-600">Агентийн хүсэлт</div>
               <h2 className="mt-1 text-xl font-black text-slate-950">
                 Төлөв: {requestStatusLabel(agentRequest.status)}
               </h2>
