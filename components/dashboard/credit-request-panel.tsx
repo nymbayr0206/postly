@@ -444,11 +444,7 @@ export function CreditRequestPanel({
                       <div className={`mt-1 text-xs ${isSelected ? "text-blue-50" : "text-sky-300"}`}>
                         +{formatCredits(bonusCredits)} бонус
                       </div>
-                    ) : (
-                      <div className={`mt-1 text-xs ${isSelected ? "text-blue-50" : "text-slate-400"}`}>
-                        Суурь кредит багц
-                      </div>
-                    )}
+                    ) : null}
 
                     <div className="mt-5 inline-flex rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/90">
                       {isSelected && selectedIsCreating
@@ -510,12 +506,12 @@ export function CreditRequestPanel({
                   <span className="text-slate-400">Орох кредит</span>
                   <span className="font-medium text-white">{formatCredits(activeCredits)}</span>
                 </div>
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                  <span className="text-slate-400">Бонус</span>
-                  <span className="font-medium text-white">
-                    {activeBonusCredits > 0 ? formatCredits(activeBonusCredits) : "Байхгүй"}
-                  </span>
-                </div>
+                {activeBonusCredits > 0 ? (
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    <span className="text-slate-400">Бонус</span>
+                    <span className="font-medium text-white">{formatCredits(activeBonusCredits)}</span>
+                  </div>
+                ) : null}
                 {visibleRequest ? (
                   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                     <span className="text-slate-400">Үүссэн огноо</span>
