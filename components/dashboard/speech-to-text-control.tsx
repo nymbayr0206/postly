@@ -39,7 +39,7 @@ type AudioContextWindow = Window & typeof globalThis & {
 };
 
 const TARGET_SAMPLE_RATE = 16_000;
-const MAX_RECORDING_SECONDS = 20;
+const MAX_RECORDING_SECONDS = 15;
 const MIN_RMS_LEVEL = 0.003;
 const DEFAULT_SPEECH_LANGUAGE = "mn";
 const DEFAULT_CLEAN_MODE = true;
@@ -248,12 +248,13 @@ export function SpeechToTextControl({
         return;
       }
 
-      const elapsedSeconds = Math.max(1, Math.round((performance.now() - startedAt) / 1000));
-      setRecordingSeconds(elapsedSeconds);
+      const elapsedSeconds = Math.max(0, Math.floor((performance.now() - startedAt) / 1000));
+      const remainingSeconds = Math.max(0, MAX_RECORDING_SECONDS - elapsedSeconds);
+      setRecordingSeconds(remainingSeconds);
 
       if (elapsedSeconds >= MAX_RECORDING_SECONDS && !autoStoppedRef.current) {
         autoStoppedRef.current = true;
-        void stopRecordingRef.current("20 секунд хүрсэн тул бичлэгийг автоматаар зогсоолоо.");
+        void stopRecordingRef.current("15 секунд дууссан тул таны яриаг автоматаар оруулж, микрофоныг унтраалаа.");
       }
     }, 250);
 
@@ -309,13 +310,13 @@ export function SpeechToTextControl({
       : "Микрофон зөвшөөрч эхлэх";
 
   const compactStatusLabel = isRecording
-    ? `Бичиж байна... ${recordingSeconds} сек`
+    ? `Бичиж байна... ${recordingSeconds} сек үлдлээ`
     : isTranscribing
       ? "Transcript авч байна..."
       : "Дуугаар prompt нэмэх";
 
   const statusMessage = isRecording
-    ? `10-20 секундийн тод бичлэг хамгийн сайн танигдана. ${recordingSeconds} сек`
+    ? `${recordingSeconds} сек үлдлээ. Тод ярьж дуусмагц текст автоматаар орно.`
     : isTranscribing
       ? "Chimege рүү илгээж transcript авч, дараа нь текстийг цэвэрлэж байна..."
       : info;
@@ -505,7 +506,7 @@ export function SpeechToTextControl({
 
     const durationMs = recordingStartedAtRef.current
       ? performance.now() - recordingStartedAtRef.current
-      : recordingSeconds * 1000;
+      : Math.max(0, (MAX_RECORDING_SECONDS - recordingSeconds) * 1000);
     const mergedPcm = mergeFloat32Chunks(pcmChunksRef.current);
     const downsampledPcm = downsampleBuffer(mergedPcm, inputSampleRateRef.current, TARGET_SAMPLE_RATE);
     const rmsLevel = calculateRms(downsampledPcm);
@@ -624,9 +625,9 @@ export function SpeechToTextControl({
       isRecordingRef.current = true;
       setMicrophonePermission("granted");
 
-      setRecordingSeconds(0);
+      setRecordingSeconds(MAX_RECORDING_SECONDS);
       setIsRecording(true);
-      setInfo("10-20 секундийн тод бичлэг хамгийн сайн танигдана.");
+      setInfo("15 секундийн дотор тод яриарай. Дуусмагц текстийг автоматаар оруулна.");
     } catch (recordingError) {
       await teardownAudioCapture();
 
@@ -668,15 +669,15 @@ export function SpeechToTextControl({
       </div>
 
       <p className="mt-2 text-xs leading-5 text-slate-500">
-        10-20 секундийн тод, ойрын Монгол яриа хамгийн сайн танигдана. Transcript-ийг автоматаар
-        цэгцлээд тайлбар дээр нэмнэ.
+        15 секундийн дотор тод, ойрын Монгол яриа хэлнэ үү. Хугацаа дуусмагц transcript-ийг
+        автоматаар цэгцлээд тайлбар дээр нэмнэ.
       </p>
 
       <p className="mt-2 text-xs leading-5 text-slate-500">{getMicrophonePermissionText(microphonePermission)}</p>
 
       {isRecording ? (
         <p className="generator-note mt-2 rounded-[0.9rem] border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
-          Бичиж байна... {recordingSeconds} сек
+          Бичиж байна... {recordingSeconds} сек үлдлээ
         </p>
       ) : null}
 
