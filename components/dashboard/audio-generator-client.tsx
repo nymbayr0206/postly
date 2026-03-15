@@ -49,11 +49,13 @@ export function AudioGeneratorClient({
   currentCredits,
   history,
   creditPriceMnt,
+  modelBaseCost,
   tariffMultiplier,
 }: {
   currentCredits: number;
   history: AudioHistoryItem[];
   creditPriceMnt: number;
+  modelBaseCost: number;
   tariffMultiplier: number;
 }) {
   const [lines, setLines] = useState<DialogueLine[]>(() => createInitialLines());
@@ -91,7 +93,10 @@ export function AudioGeneratorClient({
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
     const filledLines = lines.filter((line) => line.text.trim().length > 0);
-    const baseCost = calculateAudioCreditsByCharacterCount(countDialogueCharacters(filledLines));
+    const baseCost = calculateAudioCreditsByCharacterCount(
+      countDialogueCharacters(filledLines),
+      modelBaseCost,
+    );
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (filledLines.length === 0) {
@@ -138,7 +143,7 @@ export function AudioGeneratorClient({
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
   const filledCount = lines.filter((line) => line.text.trim().length > 0).length;
   const characterCount = countDialogueCharacters(lines);
-  const baseCost = calculateAudioCreditsByCharacterCount(characterCount);
+  const baseCost = calculateAudioCreditsByCharacterCount(characterCount, modelBaseCost);
   const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
@@ -170,7 +175,7 @@ export function AudioGeneratorClient({
             <GenerationPricingCard
               currentCost={currentCost}
               currentCostDetail={formatMnt(currentCostMnt)}
-              description="ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд 14 кредитээр бодогдоно."
+              description={`ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд ${formatCredits(modelBaseCost)} кредитээр бодогдоно.`}
               metrics={[
                 {
                   label: "Нийт тэмдэгт",
@@ -179,8 +184,8 @@ export function AudioGeneratorClient({
                 },
                 {
                   label: "Тариф",
-                  value: "14 кредит",
-                  detail: `1,000 тэмдэгт тутамд · ${formatMnt(creditsToMnt(14, creditPriceMnt))}`,
+                  value: `${formatCredits(modelBaseCost)} кредит`,
+                  detail: `1,000 тэмдэгт тутамд · ${formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))}`,
                 },
                 {
                   label: "Идэвхтэй мөр",

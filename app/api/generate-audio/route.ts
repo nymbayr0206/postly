@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     ]);
     const tariff = await getEffectiveTariffForProfile(supabase, profile);
     const totalCharacters = countDialogueCharacters(parsed.data.dialogue);
-    const baseCost = calculateAudioCreditsByCharacterCount(totalCharacters);
+    const baseCost = calculateAudioCreditsByCharacterCount(totalCharacters, model.base_cost);
     const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {

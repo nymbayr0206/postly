@@ -33,11 +33,13 @@ export function VideoGeneratorClient({
   currentCredits,
   history,
   creditPriceMnt,
+  modelBaseCost,
   tariffMultiplier,
 }: {
   currentCredits: number;
   history: VideoHistoryItem[];
   creditPriceMnt: number;
+  modelBaseCost: number;
   tariffMultiplier: number;
 }) {
   const [prompt, setPrompt] = useState("");
@@ -175,7 +177,7 @@ export function VideoGeneratorClient({
   async function handleSubmit() {
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
-    const baseCost = getVideoCredits(duration, quality);
+    const baseCost = getVideoCredits(duration, quality, modelBaseCost);
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (!file) {
@@ -266,7 +268,7 @@ export function VideoGeneratorClient({
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
-  const baseCost = getVideoCredits(duration, quality);
+  const baseCost = getVideoCredits(duration, quality, modelBaseCost);
   const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
@@ -308,16 +310,18 @@ export function VideoGeneratorClient({
                   value: `${duration} сек`,
                   detail:
                     quality === "720p" && duration === 5
-                      ? `12 кредит · ${formatMnt(creditsToMnt(12, creditPriceMnt))}`
-                      : `30 кредит · ${formatMnt(creditsToMnt(30, creditPriceMnt))}`,
+                      ? `${modelBaseCost} кредит · ${formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))}`
+                      : `${getVideoCredits(10, "720p", modelBaseCost)} кредит · ${formatMnt(
+                          creditsToMnt(getVideoCredits(10, "720p", modelBaseCost), creditPriceMnt),
+                        )}`,
                 },
                 {
                   label: "Чанар",
                   value: quality,
                   detail:
                     quality === "720p" && duration === 5
-                      ? "5 сек 720p = 12 кредит"
-                      : "10 сек 720p эсвэл 5 сек 1080p = 30 кредит",
+                      ? `5 сек 720p = ${modelBaseCost} кредит`
+                      : `10 сек 720p эсвэл 5 сек 1080p = ${getVideoCredits(10, "720p", modelBaseCost)} кредит`,
                 },
                 {
                   label: "Гарах үнэ",

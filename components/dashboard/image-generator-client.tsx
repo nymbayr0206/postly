@@ -78,10 +78,12 @@ const QUICK_CHECKLIST = [
 export function ImageGeneratorClient({
   currentCredits,
   creditPriceMnt,
+  modelBaseCost,
   tariffMultiplier,
 }: {
   currentCredits: number;
   creditPriceMnt: number;
+  modelBaseCost: number;
   tariffMultiplier: number;
 }) {
   const [prompt, setPrompt] = useState("");
@@ -230,7 +232,7 @@ export function ImageGeneratorClient({
     event.preventDefault();
     setError(null);
     const availableCredits = result ? result.credits_remaining : currentCredits;
-    const baseCost = getImageResolutionCost(resolution);
+    const baseCost = getImageResolutionCost(resolution, modelBaseCost);
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (!prompt.trim()) {
@@ -297,13 +299,16 @@ export function ImageGeneratorClient({
   }
 
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
-  const baseCost = getImageResolutionCost(resolution);
+  const baseCost = getImageResolutionCost(resolution, modelBaseCost);
   const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
   const normalizedAspectRatio = normalizeAspectRatio(String(aspectRatio));
   const resolutionOptions = IMAGE_RESOLUTION_OPTIONS.map((option) => {
-    const optionCost = calculateFinalCreditCost(getImageResolutionCost(option.value), tariffMultiplier);
+    const optionCost = calculateFinalCreditCost(
+      getImageResolutionCost(option.value, modelBaseCost),
+      tariffMultiplier,
+    );
 
     return {
       ...option,

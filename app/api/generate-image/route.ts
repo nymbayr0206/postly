@@ -119,7 +119,10 @@ export async function POST(request: Request) {
       getWallet(supabase, userId),
     ]);
     const tariff = await getEffectiveTariffForProfile(supabase, profile);
-    const baseCost = getImageResolutionCost(requestData.resolution as ImageResolution);
+    const baseCost = getImageResolutionCost(
+      requestData.resolution as ImageResolution,
+      model.base_cost,
+    );
     const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {

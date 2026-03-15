@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { ImageGeneratorClient } from "@/components/dashboard/image-generator-client";
+import { getActiveModelNames } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getEffectiveTariffForProfile,
+  getModelByName,
   getPlatformSettings,
   getUserProfile,
   getWallet,
@@ -19,10 +21,12 @@ export default async function ImagePage() {
     redirect("/auth");
   }
 
-  const [profile, wallet, platformSettings] = await Promise.all([
+  const { nanoBananaModelName } = getActiveModelNames();
+  const [profile, wallet, platformSettings, model] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
+    getModelByName(supabase, nanoBananaModelName),
   ]);
   const tariff = await getEffectiveTariffForProfile(supabase, profile);
 
@@ -32,6 +36,7 @@ export default async function ImagePage() {
         <ImageGeneratorClient
           currentCredits={wallet.credits}
           creditPriceMnt={platformSettings.credit_price_mnt}
+          modelBaseCost={model.base_cost}
           tariffMultiplier={tariff.multiplier}
         />
       </section>

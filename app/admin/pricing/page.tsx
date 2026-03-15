@@ -9,7 +9,9 @@ import {
   formatCredits,
   formatMnt,
   getAdminPricingSummary,
+  getImageResolutionCost,
   getStartingCreditsForModel,
+  getVideoCredits,
   isFixedPricingModel,
 } from "@/lib/generation-pricing";
 import { getModelDisplayName } from "@/lib/pricing";
@@ -26,6 +28,22 @@ function roleLabel(name: string) {
   }
 
   return name;
+}
+
+function getModelBaseCostLabel(modelName: string) {
+  if (modelName === "elevenlabs/text-to-dialogue-v3") {
+    return "1,000 тэмдэгтийн base cost";
+  }
+
+  if (modelName === "runway/gen4-turbo") {
+    return "5 сек 720p base cost";
+  }
+
+  if (modelName === "nano-banana-2" || modelName === "nanobanana") {
+    return "1K base cost";
+  }
+
+  return "Base cost";
 }
 
 export default async function AdminPricingPage() {
@@ -46,6 +64,16 @@ export default async function AdminPricingPage() {
     [env.elevenlabsModelName, "Аудио үүсгэх"],
     [env.runwayModelName, "Видео үүсгэх"],
   ]);
+  const modelByName = new Map(models.map((model) => [model.name, model]));
+  const imageModel = modelByName.get(env.nanoBananaModelName);
+  const audioModel = modelByName.get(env.elevenlabsModelName);
+  const videoModel = modelByName.get(env.runwayModelName);
+  const image1kCredits = getImageResolutionCost("1k", imageModel?.base_cost);
+  const image2kCredits = getImageResolutionCost("2k", imageModel?.base_cost);
+  const image4kCredits = getImageResolutionCost("4k", imageModel?.base_cost);
+  const audioCredits = getStartingCreditsForModel(env.elevenlabsModelName, audioModel?.base_cost);
+  const videoBaseCredits = getVideoCredits(5, "720p", videoModel?.base_cost);
+  const videoPremiumCredits = getVideoCredits(10, "720p", videoModel?.base_cost);
 
   const orderedModels = [...models].sort((left, right) => {
     const leftPriority = activeModelMap.has(left.name) ? 0 : 1;
@@ -73,15 +101,21 @@ export default async function AdminPricingPage() {
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Зургийн үнэ</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">1K: 8 · 2K: 12 · 4K: 18</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">
+            1K: {image1kCredits} · 2K: {image2kCredits} · 4K: {image4kCredits}
+          </p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Аудионы үнэ</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">14 кредит / 1,000 тэмдэгт</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">
+            {audioCredits} кредит / 1,000 тэмдэгт
+          </p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Видеоны үнэ</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">12 эсвэл 30 кредит / видео</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">
+            {videoBaseCredits} эсвэл {videoPremiumCredits} кредит / видео
+          </p>
         </article>
       </section>
 
@@ -204,8 +238,8 @@ export default async function AdminPricingPage() {
         <div className="border-b border-slate-200 px-6 py-4">
           <h2 className="text-xl font-semibold text-slate-900">Model үнийн дүрэм</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Идэвхтэй model-ууд дээр fixed rule үйлчилнэ. Нөөц model-ууд дээр base cost-г доороос
-            засах боломжтой.
+            Админ model бүрийн base cost-ийг гараар өөрчилнө. Идэвхтэй image, audio, video
+            model-уудын fixed rule нь энэ base cost-оос автоматаар бодогдоно.
           </p>
         </div>
 
@@ -213,7 +247,13 @@ export default async function AdminPricingPage() {
           {orderedModels.map((model) => {
             const usageLabel = activeModelMap.get(model.name);
             const fixedPricing = isFixedPricingModel(model.name);
-            const summary = getAdminPricingSummary(model.name, platformSettings.credit_price_mnt);
+            const summary = getAdminPricingSummary(
+              model.name,
+              platformSettings.credit_price_mnt,
+              model.base_cost,
+            );
+            const startingCredits = getStartingCreditsForModel(model.name, model.base_cost);
+            const baseCostLabel = getModelBaseCostLabel(model.name);
 
             return (
               <article key={model.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -235,14 +275,14 @@ export default async function AdminPricingPage() {
                   <>
                     <div className="grid gap-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
                       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Эхлэх үнэ</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{baseCostLabel}</p>
                         <p className="mt-2 text-lg font-semibold text-slate-950">
-                          {formatCredits(getStartingCreditsForModel(model.name))} кредит
+                          {formatCredits(startingCredits)} кредит
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
                           {formatMnt(
                             creditsToMnt(
-                              getStartingCreditsForModel(model.name),
+                              startingCredits,
                               platformSettings.credit_price_mnt,
                             ),
                           )}
@@ -266,52 +306,50 @@ export default async function AdminPricingPage() {
                     ) : null}
                   </>
                 ) : (
-                  <>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Base cost</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">
-                          {formatCredits(model.base_cost)} кредит
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Энгийн хэрэглэгч</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">
-                          {formatCredits(model.base_cost * regularTariffMultiplier)}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Агент</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">
-                          {formatCredits(model.base_cost * agentTariffMultiplier)}
-                        </p>
-                      </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Base cost</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-950">
+                        {formatCredits(model.base_cost)} кредит
+                      </p>
                     </div>
-
-                    <form action={updateModelCostAction} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-                      <input type="hidden" name="model_id" value={model.id} />
-                      <label className="flex-1">
-                        <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                          Base cost
-                        </span>
-                        <input
-                          type="number"
-                          name="base_cost"
-                          min={1}
-                          step={1}
-                          defaultValue={model.base_cost}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
-                        />
-                      </label>
-                      <button
-                        type="submit"
-                        className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                      >
-                        Үнэ хадгалах
-                      </button>
-                    </form>
-                  </>
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Энгийн хэрэглэгч</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-950">
+                        {formatCredits(model.base_cost * regularTariffMultiplier)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Агент</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-950">
+                        {formatCredits(model.base_cost * agentTariffMultiplier)}
+                      </p>
+                    </div>
+                  </div>
                 )}
+
+                <form action={updateModelCostAction} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <input type="hidden" name="model_id" value={model.id} />
+                  <label className="flex-1">
+                    <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                      {baseCostLabel}
+                    </span>
+                    <input
+                      type="number"
+                      name="base_cost"
+                      min={1}
+                      step={1}
+                      defaultValue={model.base_cost}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Үнэ хадгалах
+                  </button>
+                </form>
               </article>
             );
           })}

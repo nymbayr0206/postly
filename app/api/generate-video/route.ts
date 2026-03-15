@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       getWallet(supabase, user.id),
     ]);
     const tariff = await getEffectiveTariffForProfile(supabase, profile);
-    const baseCost = getVideoCredits(parsed.data.duration, parsed.data.quality);
+    const baseCost = getVideoCredits(parsed.data.duration, parsed.data.quality, model.base_cost);
     const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {

@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { VideoGeneratorClient } from "@/components/dashboard/video-generator-client";
+import { getActiveModelNames } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getEffectiveTariffForProfile,
+  getModelByName,
   getPlatformSettings,
   getUserProfile,
   getWallet,
@@ -26,10 +28,12 @@ export default async function VideoPage() {
     redirect("/auth");
   }
 
-  const [profile, wallet, platformSettings, { data: history }] = await Promise.all([
+  const { runwayModelName } = getActiveModelNames();
+  const [profile, wallet, platformSettings, model, { data: history }] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
+    getModelByName(supabase, runwayModelName),
     supabase
       .from("video_generations")
       .select("id,prompt,video_url,image_url,duration,quality,cost,created_at")
@@ -51,6 +55,7 @@ export default async function VideoPage() {
           currentCredits={wallet.credits}
           history={items}
           creditPriceMnt={platformSettings.credit_price_mnt}
+          modelBaseCost={model.base_cost}
           tariffMultiplier={tariff.multiplier}
         />
       </section>
