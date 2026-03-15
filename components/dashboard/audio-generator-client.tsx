@@ -1,15 +1,10 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
-import {
-  DEFAULT_DIALOGUE_VOICES,
-  getElevenLabsVoiceDemoUrl,
-  getElevenLabsVoiceLabel,
-  ELEVENLABS_VOICE_OPTIONS,
-} from "@/lib/audio-models/types";
+import { DEFAULT_DIALOGUE_VOICES, getElevenLabsVoiceDemoUrl, ELEVENLABS_VOICE_OPTIONS } from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
 import {
   calculateAudioCreditsByCharacterCount,
@@ -63,7 +58,23 @@ export function AudioGeneratorClient({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateAudioResult | null>(null);
+  const [previewVoiceId, setPreviewVoiceId] = useState<ElevenLabsVoice | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const previewAudio = previewAudioRef.current;
+
+    return () => {
+      if (!previewAudio) {
+        return;
+      }
+
+      previewAudio.pause();
+      previewAudio.removeAttribute("src");
+      previewAudio.load();
+    };
+  }, []);
 
   function updateLine(index: number, field: keyof DialogueLine, value: string) {
     setLines((prev) =>
@@ -87,6 +98,31 @@ export function AudioGeneratorClient({
     }
 
     setLines((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+  }
+
+  function handleVoicePreview(voiceId: ElevenLabsVoice) {
+    const previewAudio = previewAudioRef.current;
+    const demoUrl = getElevenLabsVoiceDemoUrl(voiceId);
+
+    if (!previewAudio || !demoUrl) {
+      return;
+    }
+
+    if (previewVoiceId === voiceId && !previewAudio.paused) {
+      previewAudio.pause();
+      previewAudio.currentTime = 0;
+      setPreviewVoiceId(null);
+      return;
+    }
+
+    previewAudio.pause();
+    previewAudio.src = demoUrl;
+    previewAudio.currentTime = 0;
+    setPreviewVoiceId(voiceId);
+
+    void previewAudio.play().catch(() => {
+      setPreviewVoiceId(null);
+    });
   }
 
   async function handleSubmit() {
@@ -150,6 +186,13 @@ export function AudioGeneratorClient({
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
+      <audio
+        ref={previewAudioRef}
+        preload="none"
+        className="hidden"
+        onEnded={() => setPreviewVoiceId(null)}
+      />
+
       <div className="generator-shell-surface border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col">
           <div className="space-y-5 p-4 sm:p-6">
@@ -176,7 +219,7 @@ export function AudioGeneratorClient({
               <div className="mt-4 space-y-3">
                 {lines.map((line, index) => {
                   const voiceDemoUrl = getElevenLabsVoiceDemoUrl(line.voice);
-                  const voiceLabel = getElevenLabsVoiceLabel(line.voice);
+                  const isPreviewing = previewVoiceId === line.voice;
 
                   return (
                     <div
@@ -187,49 +230,53 @@ export function AudioGeneratorClient({
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
                           {index + 1}
                         </div>
-                        <select
-                          value={line.voice}
-                          onChange={(event) => updateLine(index, "voice", event.target.value)}
-                          className="generator-input min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
-                        >
-                          {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
-                            <optgroup key={group} label={group}>
-                              {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
-                                <option key={voice.id} value={voice.id}>
-                                  {voice.label}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <select
+                            value={line.voice}
+                            onChange={(event) => updateLine(index, "voice", event.target.value)}
+                            className="generator-input min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                          >
+                            {(["Эмэгтэй", "Эрэгтэй"] as const).map((group) => (
+                              <optgroup key={group} label={group}>
+                                {ELEVENLABS_VOICE_OPTIONS.filter((voice) => voice.group === group).map((voice) => (
+                                  <option key={voice.id} value={voice.id}>
+                                    {voice.label}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleVoicePreview(line.voice)}
+                            disabled={!voiceDemoUrl}
+                            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-900 text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                            aria-label={isPreviewing ? "Демо хоолой зогсоох" : "Демо хоолой сонсох"}
+                            title={isPreviewing ? "Демо хоолой зогсоох" : "Демо хоолой сонсох"}
+                          >
+                            {isPreviewing ? (
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="6" width="4" height="12" rx="1" />
+                                <rect x="14" y="6" width="4" height="12" rx="1" />
+                              </svg>
+                            ) : (
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 6.5v11l8-5.5-8-5.5Z" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
                         {lines.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeLine(index)}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100"
+                            className="generator-secondary-btn inline-flex h-10 shrink-0 items-center justify-center rounded-xl px-4 text-xs font-semibold"
                             aria-label="Мөр устгах"
                           >
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M18 6 6 18" />
-                              <path d="m6 6 12 12" />
-                            </svg>
+                            Remove
                           </button>
                         )}
                       </div>
-
-                      {voiceDemoUrl ? (
-                        <div className="generator-card mt-3 rounded-[1rem] border border-cyan-100 bg-white/80 p-3">
-                          <div className="mb-2 flex items-center justify-between gap-3">
-                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                              Demo хоолой
-                            </p>
-                            <span className="generator-chip-accent rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-medium text-cyan-700">
-                              {voiceLabel}
-                            </span>
-                          </div>
-                          <audio controls preload="none" src={voiceDemoUrl} className="w-full" />
-                        </div>
-                      ) : null}
 
                       <textarea
                         value={line.text}
