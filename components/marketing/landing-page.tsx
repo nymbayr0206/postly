@@ -2,8 +2,18 @@
 import Link from "next/link";
 
 import { PostlyLogo } from "@/components/brand/postly-logo";
+import { formatCredits, formatMnt } from "@/lib/generation-pricing";
 
 type ShowcaseKind = "image" | "video" | "audio";
+
+type HeroPricingItem = {
+  kind: ShowcaseKind;
+  title: string;
+  unitLabel: string;
+  credits: number;
+  priceMnt: number;
+  description: string;
+};
 
 type ShowcaseItem = {
   kind: ShowcaseKind;
@@ -173,7 +183,7 @@ function ShowcaseSection({ item, reverse = false }: { item: ShowcaseItem; revers
   );
 }
 
-export function LandingPage() {
+export function LandingPage({ pricing }: { pricing: HeroPricingItem[] }) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(132,224,239,0.26),transparent_22%),linear-gradient(180deg,#f6fbfe_0%,#ebf5fa_52%,#e3edf5_100%)]">
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
@@ -213,6 +223,22 @@ export function LandingPage() {
                   бүтээх урсгал. Хүссэн санаагаа English-ээр тайлбарлаад, гарсан үр дүнгээ Монгол хэрэглээндээ шууд ашиглахад зориулагдсан.
                 </p>
 
+                <div className="mt-6 rounded-[1.4rem] border border-cyan-200/14 bg-white/[0.06] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100">
+                    Энгийн хэрэглэгчийн эхлэх үнэ
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {pricing.map((item) => (
+                      <div
+                        key={`${item.kind}-pill`}
+                        className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold text-white"
+                      >
+                        {item.title} {formatMnt(item.priceMnt)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link
                     href="/auth"
@@ -229,18 +255,21 @@ export function LandingPage() {
                 </div>
 
                 <div className="mt-7 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-4">
-                    <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Зураг үүсгэх</div>
-                    <div className="mt-2 text-sm leading-6 text-slate-200">Product visual, poster, ad image</div>
-                  </div>
-                  <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-4">
-                    <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Видео үүсгэх</div>
-                    <div className="mt-2 text-sm leading-6 text-slate-200">Эх зураг + хөдөлгөөний тайлбараас teaser clip</div>
-                  </div>
-                  <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-4">
-                    <div className="text-xs uppercase tracking-[0.22em] text-slate-400">Аудио үүсгэх</div>
-                    <div className="mt-2 text-sm leading-6 text-slate-200">Voiceover, dialogue, branded narration</div>
-                  </div>
+                  {pricing.map((item) => (
+                    <div
+                      key={item.kind}
+                      className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-4"
+                    >
+                      <div className="text-xs uppercase tracking-[0.22em] text-slate-400">{item.title}</div>
+                      <div className="mt-3 text-2xl font-black tracking-tight text-white">
+                        {formatMnt(item.priceMnt)}
+                      </div>
+                      <div className="mt-1 text-xs uppercase tracking-[0.2em] text-cyan-100">
+                        {item.unitLabel} · {formatCredits(item.credits)} кредит
+                      </div>
+                      <div className="mt-3 text-sm leading-6 text-slate-200">{item.description}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
