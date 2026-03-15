@@ -34,10 +34,7 @@ type AudioHistoryItem = {
 };
 
 function createInitialLines(): DialogueLine[] {
-  return [
-    { text: "", voice: DEFAULT_DIALOGUE_VOICES.female },
-    { text: "", voice: DEFAULT_DIALOGUE_VOICES.male },
-  ];
+  return [{ text: "", voice: DEFAULT_DIALOGUE_VOICES.female }];
 }
 
 export function AudioGeneratorClient({
@@ -204,7 +201,7 @@ export function AudioGeneratorClient({
             />
 
             <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Харилцан яриа</h2>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -226,7 +223,7 @@ export function AudioGeneratorClient({
                       key={`${line.voice}-${index}`}
                       className="generator-card rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-3"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-sm font-semibold text-cyan-700">
                           {index + 1}
                         </div>
@@ -270,7 +267,7 @@ export function AudioGeneratorClient({
                           <button
                             type="button"
                             onClick={() => removeLine(index)}
-                            className="generator-secondary-btn inline-flex h-10 shrink-0 items-center justify-center rounded-xl px-4 text-xs font-semibold"
+                            className="generator-secondary-btn inline-flex h-10 w-full items-center justify-center rounded-xl px-4 text-xs font-semibold sm:w-auto"
                             aria-label="Мөр устгах"
                           >
                             Remove
