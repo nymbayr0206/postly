@@ -258,7 +258,7 @@ function SidebarNav({
           const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           const Icon = item.icon;
 
-          if (item.disabled) {
+          if (item.disabled && item.href !== "/admin/users") {
             return (
               <div
                 key={item.href}
