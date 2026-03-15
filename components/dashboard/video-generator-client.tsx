@@ -546,54 +546,7 @@ export function VideoGeneratorClient({
       </div>
 
       <div className="generator-stage-surface bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
-          <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-7">
-            <div className="relative z-10 flex h-full flex-col justify-between gap-6">
-              <div>
-                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
-                  Хөдөлгөөний харагдац
-                </span>
-                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Эх зургаас амьд хөдөлгөөнт дүрс рүү</h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                  Өгсөн зураг, тайлбар, чанарын тохиргоонууд энд нэг мөрөөр харагдаж, mobile
-                  flow-ийг илүү ойлгомжтой болгоно.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Үргэлжлэх хугацаа</p>
-                  <p className="mt-2 text-lg font-semibold">{duration} сек</p>
-                </div>
-                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Чанар</p>
-                  <p className="mt-2 text-lg font-semibold">{quality}</p>
-                </div>
-                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Эх зураг</p>
-                  <p className="mt-2 text-lg font-semibold">{file ? "Бэлэн" : "Хүлээж байна"}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <aside className="grid gap-4">
-            <div className="generator-card rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Сайн тайлбарын бүтэц</p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <li>1. Объект ямар хөдөлгөөн хийхийг бич.</li>
-                <li>2. Камерын чиглэлээ тусад нь нэм.</li>
-                <li>3. Орчны гэрэл, хурд, mood-оо оруул.</li>
-              </ul>
-            </div>
-            <div className="generator-note rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
-            </div>
-          </aside>
-        </div>
-
-        <section className="generator-stage-surface mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
+        <section className="generator-stage-surface rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
           <div className="generator-panel rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
