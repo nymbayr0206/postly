@@ -185,7 +185,7 @@ function ShowcaseSection({ item, reverse = false }: { item: ShowcaseItem; revers
 
 export function LandingPage({ pricing }: { pricing: HeroPricingItem[] }) {
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(132,224,239,0.26),transparent_22%),linear-gradient(180deg,#f6fbfe_0%,#ebf5fa_52%,#e3edf5_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(47,188,230,0.18),transparent_24%),linear-gradient(180deg,#040b14_0%,#07111d_50%,#0b1724_100%)]">
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <header className="brand-surface flex items-center justify-between rounded-[1.6rem] px-4 py-3 sm:px-5">
           <Link href="/" className="flex items-center">

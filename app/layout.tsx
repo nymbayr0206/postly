@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="mn" suppressHydrationWarning>
+    <html lang="mn" className="dark" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${manrope.variable} ${jetBrainsMono.variable} antialiased`}
