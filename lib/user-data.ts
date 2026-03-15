@@ -18,12 +18,36 @@ function isDuplicateViolation(code: string | undefined) {
   return code === "23505";
 }
 
+function normalizeProfileField(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function getSignupProfileFields(user: User) {
+  return {
+    full_name: normalizeProfileField(user.user_metadata?.full_name),
+    phone_number: normalizeProfileField(user.user_metadata?.phone_number),
+    facebook_page_url: normalizeProfileField(user.user_metadata?.facebook_page_url),
+  };
+}
+
 export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
+  const signupProfileFields = getSignupProfileFields(user);
   const { data: profile } = await supabase
     .from("users")
-    .select("id,referral_code")
+    .select("id,referral_code,full_name,phone_number,facebook_page_url")
     .eq("id", user.id)
-    .maybeSingle<{ id: string; referral_code: string | null }>();
+    .maybeSingle<{
+      id: string;
+      referral_code: string | null;
+      full_name: string | null;
+      phone_number: string | null;
+      facebook_page_url: string | null;
+    }>();
 
   if (!profile) {
     const { data: regularTariff } = await supabase
@@ -37,10 +61,34 @@ export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
       email: user.email ?? "",
       role: "user",
       tariff_id: regularTariff?.id ?? null,
+      ...Object.fromEntries(
+        Object.entries(signupProfileFields).filter(([, value]) => value !== null),
+      ),
     });
 
     if (userInsertError && !isDuplicateViolation(userInsertError.code)) {
       throw new Error(`Хэрэглэгчийн профайл үүсгэж чадсангүй: ${userInsertError.message}`);
+    }
+  } else {
+    const missingProfileUpdates = {
+      ...(profile.full_name ? {} : signupProfileFields.full_name ? { full_name: signupProfileFields.full_name } : {}),
+      ...(profile.phone_number ? {} : signupProfileFields.phone_number ? { phone_number: signupProfileFields.phone_number } : {}),
+      ...(profile.facebook_page_url
+        ? {}
+        : signupProfileFields.facebook_page_url
+          ? { facebook_page_url: signupProfileFields.facebook_page_url }
+          : {}),
+    };
+
+    if (Object.keys(missingProfileUpdates).length > 0) {
+      const { error: userUpdateError } = await supabase
+        .from("users")
+        .update(missingProfileUpdates)
+        .eq("id", user.id);
+
+      if (userUpdateError) {
+        throw new Error(`Failed to update signup profile fields: ${userUpdateError.message}`);
+      }
     }
   }
 
@@ -61,7 +109,7 @@ export async function ensureUserRecords(supabase: SupabaseClient, user: User) {
 export async function getUserProfile(supabase: SupabaseClient, userId: string) {
   const { data, error } = await supabase
     .from("users")
-    .select("id,email,role,tariff_id,referral_code,referred_by_user_id,created_at")
+    .select("id,email,role,tariff_id,full_name,phone_number,facebook_page_url,referral_code,referred_by_user_id,created_at")
     .eq("id", userId)
     .maybeSingle<UserRow>();
 

@@ -9,6 +9,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Mode = "login" | "signup";
 type RequestedRole = "user" | "agent";
+type SignupStep = 1 | 2;
 
 function formatNumber(value: number) {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -23,45 +24,72 @@ function normalizeReferralCode(value: string | null) {
   return normalized.length > 0 ? normalized : null;
 }
 
+function normalizeProfileField(value: string) {
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
 export function AuthForm() {
   const searchParams = useSearchParams();
   const referralCode = normalizeReferralCode(searchParams.get("ref"));
 
   const [mode, setMode] = useState<Mode>(referralCode ? "signup" : "login");
   const [requestedRole, setRequestedRole] = useState<RequestedRole>("user");
+  const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [facebookPageUrl, setFacebookPageUrl] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const isRegularUserSignup = mode === "signup" && requestedRole === "user";
+  const isProfileStep = isRegularUserSignup && signupStep === 2;
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function resetFeedback() {
     setError(null);
     setMessage(null);
+  }
 
+  function validateCredentials() {
     if (!email.trim()) {
       setError("Имэйл хаягаа оруулна уу.");
-      return;
+      return false;
     }
 
     if (password.length < 6) {
       setError("Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой.");
-      return;
+      return false;
     }
 
     if (mode === "signup" && password !== confirmPassword) {
       setError("Нууц үг таарахгүй байна.");
+      return false;
+    }
+
+    return true;
+  }
+
+  function resetSignupStep() {
+    setSignupStep(1);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    resetFeedback();
+
+    if (!validateCredentials()) {
       return;
     }
 
-    setIsPending(true);
-
     if (mode === "login") {
+      setIsPending(true);
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -78,9 +106,22 @@ export function AuthForm() {
       return;
     }
 
+    if (requestedRole === "user" && signupStep === 1) {
+      setSignupStep(2);
+      return;
+    }
+
+    setIsPending(true);
+
+    const normalizedFullName = normalizeProfileField(fullName);
+    const normalizedPhoneNumber = normalizeProfileField(phoneNumber);
+    const normalizedFacebookPageUrl = normalizeProfileField(facebookPageUrl);
     const metadata = {
       requested_role: requestedRole,
       ...(referralCode ? { referral_code: referralCode } : {}),
+      ...(normalizedFullName ? { full_name: normalizedFullName } : {}),
+      ...(normalizedPhoneNumber ? { phone_number: normalizedPhoneNumber } : {}),
+      ...(normalizedFacebookPageUrl ? { facebook_page_url: normalizedFacebookPageUrl } : {}),
     };
 
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -104,8 +145,12 @@ export function AuthForm() {
           : "Бүртгэл үүслээ. Имэйлээ баталгаажуулаад дараа нь нэвтэрнэ үү.",
       );
       setMode("login");
+      setSignupStep(1);
       setPassword("");
       setConfirmPassword("");
+      setFullName("");
+      setPhoneNumber("");
+      setFacebookPageUrl("");
       setIsPending(false);
       return;
     }
@@ -144,8 +189,8 @@ export function AuthForm() {
           type="button"
           onClick={() => {
             setMode("login");
-            setError(null);
-            setMessage(null);
+            resetFeedback();
+            resetSignupStep();
           }}
           className={`rounded-[1rem] px-4 py-3 text-sm font-semibold transition ${
             mode === "login" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
@@ -157,8 +202,8 @@ export function AuthForm() {
           type="button"
           onClick={() => {
             setMode("signup");
-            setError(null);
-            setMessage(null);
+            resetFeedback();
+            resetSignupStep();
           }}
           className={`rounded-[1rem] px-4 py-3 text-sm font-semibold transition ${
             mode === "signup" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
@@ -171,11 +216,24 @@ export function AuthForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "signup" ? (
           <div className="space-y-3">
-            <div className="text-sm font-semibold text-slate-700">Бүртгэлийн төрөл</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm font-semibold text-slate-700">Бүртгэлийн төрөл</div>
+              {requestedRole === "user" ? (
+                <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+                  Алхам {signupStep}/2
+                </div>
+              ) : null}
+            </div>
             <div className="grid gap-3">
               <button
                 type="button"
-                onClick={() => setRequestedRole("user")}
+                onClick={() => {
+                  resetFeedback();
+                  if (requestedRole !== "user") {
+                    setRequestedRole("user");
+                    setSignupStep(1);
+                  }
+                }}
                 className={`rounded-[1.5rem] border p-4 text-left transition ${
                   requestedRole === "user"
                     ? "border-cyan-300 bg-cyan-50 shadow-[0_10px_30px_rgba(47,188,230,0.12)]"
@@ -197,7 +255,13 @@ export function AuthForm() {
 
               <button
                 type="button"
-                onClick={() => setRequestedRole("agent")}
+                onClick={() => {
+                  resetFeedback();
+                  if (requestedRole !== "agent") {
+                    setRequestedRole("agent");
+                  }
+                  setSignupStep(1);
+                }}
                 className={`rounded-[1.5rem] border p-4 text-left transition ${
                   requestedRole === "agent"
                     ? "brand-shell text-white"
@@ -237,42 +301,86 @@ export function AuthForm() {
           </div>
         ) : null}
 
-        <label className="block">
-          <div className="mb-2 text-sm font-semibold text-slate-700">Имэйл</div>
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-            placeholder="name@example.com"
-            required
-          />
-        </label>
+        {!isProfileStep ? (
+          <>
+            <label className="block">
+              <div className="mb-2 text-sm font-semibold text-slate-700">Имэйл</div>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                placeholder="name@example.com"
+                required
+              />
+            </label>
 
-        <label className="block">
-          <div className="mb-2 text-sm font-semibold text-slate-700">Нууц үг</div>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-            placeholder="Хамгийн багадаа 6 тэмдэгт"
-            required
-          />
-        </label>
+            <label className="block">
+              <div className="mb-2 text-sm font-semibold text-slate-700">Нууц үг</div>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                placeholder="Хамгийн багадаа 6 тэмдэгт"
+                required
+              />
+            </label>
 
-        {mode === "signup" ? (
-          <label className="block">
-            <div className="mb-2 text-sm font-semibold text-slate-700">Нууц үг давтах</div>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-              required
-            />
-          </label>
-        ) : null}
+            {mode === "signup" ? (
+              <label className="block">
+                <div className="mb-2 text-sm font-semibold text-slate-700">Нууц үг давтах</div>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                  required
+                />
+              </label>
+            ) : null}
+          </>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="text-sm font-semibold text-slate-700">Бүртгэлийн мэдээлэл</div>
+              <div className="mt-1 text-sm text-slate-500">{email.trim()}</div>
+            </div>
+
+            <label className="block">
+              <div className="mb-2 text-sm font-semibold text-slate-700">Нэр</div>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                placeholder="Таны нэр"
+              />
+            </label>
+
+            <label className="block">
+              <div className="mb-2 text-sm font-semibold text-slate-700">Утасны дугаар</div>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                placeholder="+976 99119911"
+              />
+            </label>
+
+            <label className="block">
+              <div className="mb-2 text-sm font-semibold text-slate-700">Facebook page хаяг</div>
+              <input
+                type="text"
+                value={facebookPageUrl}
+                onChange={(event) => setFacebookPageUrl(event.target.value)}
+                className="w-full rounded-[1.15rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                placeholder="facebook.com/your-page"
+              />
+            </label>
+          </div>
+        )}
 
         {error ? (
           <div className="rounded-[1.15rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -286,13 +394,34 @@ export function AuthForm() {
           </div>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full rounded-[1.2rem] bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] px-4 py-3.5 text-sm font-black text-slate-950 shadow-[0_18px_40px_rgba(47,188,230,0.28)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isPending ? "Түр хүлээнэ үү..." : mode === "login" ? "Нэвтрэх" : "Бүртгэл үүсгэх"}
-        </button>
+        <div className={`grid gap-3 ${isProfileStep ? "sm:grid-cols-[0.95fr_1.05fr]" : ""}`}>
+          {isProfileStep ? (
+            <button
+              type="button"
+              onClick={() => {
+                resetFeedback();
+                setSignupStep(1);
+              }}
+              className="rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+            >
+              Буцах
+            </button>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isPending}
+            className="w-full rounded-[1.2rem] bg-[linear-gradient(135deg,#84E0EF,#2FBCE6_60%,#129FD5)] px-4 py-3.5 text-sm font-black text-slate-950 shadow-[0_18px_40px_rgba(47,188,230,0.28)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isPending
+              ? "Түр хүлээнэ үү..."
+              : mode === "login"
+                ? "Нэвтрэх"
+                : isRegularUserSignup && signupStep === 1
+                  ? "Үргэлжлүүлэх"
+                  : "Бүртгэл үүсгэх"}
+          </button>
+        </div>
       </form>
     </div>
   );

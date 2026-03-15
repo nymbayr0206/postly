@@ -32,6 +32,9 @@ export type UserRow = {
   email: string;
   role: UserRole;
   tariff_id: string | null;
+  full_name: string | null;
+  phone_number: string | null;
+  facebook_page_url: string | null;
   referral_code: string | null;
   referred_by_user_id: string | null;
   created_at: string;
