@@ -42,15 +42,17 @@ export function GenerationPricingCard({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {metrics.map((metric) => (
-          <div key={metric.label} className="generator-card rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{metric.label}</p>
-            <p className="mt-2 text-lg font-semibold text-slate-950">{metric.value}</p>
-            {metric.detail ? <p className="mt-1 text-xs text-slate-500">{metric.detail}</p> : null}
-          </div>
-        ))}
-      </div>
+      {metrics.length > 0 ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="generator-card rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{metric.label}</p>
+              <p className="mt-2 text-lg font-semibold text-slate-950">{metric.value}</p>
+              {metric.detail ? <p className="mt-1 text-xs text-slate-500">{metric.detail}</p> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {note ? (
         <div className="generator-note mt-4 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3 text-sm text-cyan-900">

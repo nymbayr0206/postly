@@ -153,46 +153,11 @@ export function AudioGeneratorClient({
       <div className="generator-shell-surface border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col">
           <div className="space-y-5 p-4 sm:p-6">
-            <div className="generator-hero-surface rounded-[1.75rem] border border-cyan-100 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,248,252,0.92))] p-5 shadow-[0_20px_45px_rgba(9,38,66,0.06)]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-2">
-                  <div>
-                    <h1 className="text-2xl font-semibold text-slate-950">Аудио үүсгэх</h1>
-                    <p className="mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                      Харилцан ярианы мөрүүдээ оруулаад, дуу хоолойгоо сонгон нэг дор MP3 файл
-                      болгон гаргана.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="generator-card rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Үлдэгдэл кредит</p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-950">{creditsRemaining}</p>
-                </div>
-              </div>
-            </div>
-
             <GenerationPricingCard
               currentCost={currentCost}
-              currentCostDetail={formatMnt(currentCostMnt)}
+              currentCostDetail={undefined}
               description={`ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд ${formatCredits(modelBaseCost)} кредитээр бодогдоно.`}
-              metrics={[
-                {
-                  label: "Нийт тэмдэгт",
-                  value: `${formatCredits(characterCount)}`,
-                  detail: "Оруулсан бүх мөрийн нийлбэр",
-                },
-                {
-                  label: "Тариф",
-                  value: `${formatCredits(modelBaseCost)} кредит`,
-                  detail: `1,000 тэмдэгт тутамд · ${formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))}`,
-                },
-                {
-                  label: "Идэвхтэй мөр",
-                  value: `${filledCount}`,
-                  detail: "Хоосон бус мөр",
-                },
-              ]}
+              metrics={[]}
             />
 
             <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
@@ -369,54 +334,7 @@ export function AudioGeneratorClient({
       </div>
 
       <div className="generator-stage-surface bg-[radial-gradient(circle_at_top_right,rgba(132,224,239,0.24),transparent_28%),linear-gradient(180deg,rgba(247,252,255,0.72),rgba(239,248,251,0.95))] p-4 sm:p-6 lg:p-8">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
-          <section className="brand-shell brand-grid overflow-hidden rounded-[2rem] p-6 text-white sm:p-7">
-            <div className="relative z-10 flex h-full flex-col justify-between gap-6">
-              <div>
-                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-100">
-                  Шууд сонсох
-                </span>
-                <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Нэг дэлгэц дээр бичиж, үүсгэж, сонсох</h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                  Мобайл хэрэглээнд текстээ зүүн талд бэлдээд, гарсан MP3-аа баруун талд шууд сонсох
-                  урсгалтай болгосон.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Мөр</p>
-                  <p className="mt-2 text-lg font-semibold">{lines.length}</p>
-                </div>
-                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Идэвхтэй</p>
-                  <p className="mt-2 text-lg font-semibold">{filledCount}</p>
-                </div>
-                <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-cyan-100/80">Тогтвортой байдал</p>
-                  <p className="mt-2 text-lg font-semibold">{stability.toFixed(1)}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <aside className="grid gap-4">
-            <div className="generator-card rounded-[1.75rem] border border-cyan-100 bg-white/80 p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Хэрэглэх зөвлөмж</p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <li>1. Нэг мөрт нэг хоолой байлга.</li>
-                <li>2. Урт өгүүлбэрийг жижиглэвэл илүү цэвэр гарна.</li>
-                <li>3. Дууны хэмнэл, амьсгал, түр зогсолтоо текст дээрээ тусга.</li>
-              </ul>
-            </div>
-            <div className="generator-note rounded-[1.75rem] border border-cyan-100 bg-cyan-50/70 p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй.</p>
-            </div>
-          </aside>
-        </div>
-
-        <section className="generator-stage-surface mt-5 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
+        <section className="generator-stage-surface rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_22px_50px_rgba(9,38,66,0.08)] sm:p-6">
           <div className="generator-panel rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
