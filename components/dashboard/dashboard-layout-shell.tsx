@@ -52,8 +52,25 @@ function roleLabel(role: UserRole) {
   return "Хэрэглэгч";
 }
 
-function NavIcon({ navKey, active }: { navKey: NavKey; active?: boolean }) {
-  const className = cx("h-[18px] w-[18px]", active ? "text-white" : "text-slate-500");
+function NavIcon({
+  navKey,
+  active,
+  tone = "default",
+}: {
+  navKey: NavKey;
+  active?: boolean;
+  tone?: "default" | "mobile-bottom";
+}) {
+  const className = cx(
+    "h-[18px] w-[18px]",
+    tone === "mobile-bottom"
+      ? active
+        ? "text-slate-950"
+        : "text-slate-400"
+      : active
+        ? "text-white"
+        : "text-slate-500",
+  );
 
   switch (navKey) {
     case "home":
@@ -326,8 +343,8 @@ function MobileBottomNav({
   );
 
   return (
-    <div className="mobile-nav-safe fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/92 backdrop-blur-xl lg:hidden">
-      <div className="mx-auto grid max-w-xl grid-cols-5 px-2 py-2">
+    <div className="mobile-nav-safe fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[rgba(5,13,22,0.96)] backdrop-blur-xl lg:hidden">
+      <div className="mx-auto grid max-w-xl grid-cols-5 gap-1 px-2 py-2">
         {bottomItems.map((item) => {
           const active = isActive(pathname, item);
 
@@ -337,10 +354,12 @@ function MobileBottomNav({
               href={item.href}
               className={cx(
                 "flex flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-semibold transition",
-                active ? "bg-cyan-50 text-cyan-700" : "text-slate-500",
+                active
+                  ? "bg-white text-slate-950 shadow-[0_10px_24px_rgba(0,0,0,0.22)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white",
               )}
             >
-              <NavIcon navKey={item.key} active={active} />
+              <NavIcon navKey={item.key} active={active} tone="mobile-bottom" />
               <span className="truncate">{item.label}</span>
             </Link>
           );
