@@ -37,7 +37,7 @@ export default async function DashboardLayout({
       email={profile.email}
       role={profile.role}
       showAgentOnboarding={profile.role !== "agent" && Boolean(agentRequest)}
-      showLessons={profile.role === "agent"}
+      showLessons={profile.role !== "admin"}
     >
       {children}
     </DashboardLayoutShell>

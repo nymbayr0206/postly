@@ -1,5 +1,7 @@
 export type UserRole = "agent" | "user" | "admin";
 
+export type LessonAudience = "user" | "agent" | "all";
+
 export type CreditRequestStatus = "pending" | "approved" | "rejected";
 
 export type PaymentProvider = "manual" | "qpay";
@@ -38,6 +40,20 @@ export type UserRow = {
   referral_code: string | null;
   referred_by_user_id: string | null;
   created_at: string;
+};
+
+export type LessonRow = {
+  id: string;
+  title: string;
+  description: string;
+  audience: LessonAudience;
+  file_name: string | null;
+  file_path: string | null;
+  file_size_bytes: number | null;
+  content_type: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type WalletRow = {

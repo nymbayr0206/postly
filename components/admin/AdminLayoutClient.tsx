@@ -59,6 +59,23 @@ function WalletIcon({ className }: { className?: string }) {
   );
 }
 
+function LessonsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v18H6.5A2.5 2.5 0 0 1 4 17.5V4.5A2.5 2.5 0 0 1 6.5 2Z" />
+    </svg>
+  );
+}
+
 function PriceTagIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -228,7 +245,8 @@ const adminNavItems: NavItem[] = [
   { href: "/admin/agents", label: "Агент хүсэлт", icon: AgentIcon, exact: false },
   { href: "/admin/credits", label: "Кредит хүсэлт", icon: CreditRequestsIcon, exact: false },
   { href: "/admin/referrals", label: "Урамшууллын мөнгө", icon: WalletIcon, exact: false },
-  { href: "/admin/users", label: "Хэрэглэгчид", icon: UsersIcon, exact: false, disabled: true },
+  { href: "/admin/lessons", label: "Хичээл", icon: LessonsIcon, exact: false },
+  { href: "/admin/users", label: "Хэрэглэгчид", icon: UsersIcon, exact: false },
   { href: "/admin/settings", label: "Тохиргоо", icon: SettingsIcon, exact: false, disabled: true },
 ];
 
@@ -258,7 +276,7 @@ function SidebarNav({
           const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           const Icon = item.icon;
 
-          if (item.disabled && item.href !== "/admin/users") {
+          if (item.disabled) {
             return (
               <div
                 key={item.href}

@@ -118,6 +118,30 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      {profile.role !== "admin" ? (
+        <section className="brand-surface rounded-[1.75rem] p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-cyan-700">Хичээлийн сан</div>
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                {profile.role === "agent" ? "Агентын хичээлүүд бэлэн байна" : "Танд зориулсан хичээлүүд орсон"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {profile.role === "agent"
+                  ? "Агентын workflow, борлуулалт, контент үйлдвэрлэлийн материалуудаа нэг дороос үзнэ."
+                  : "Платформ дээр хурдан ажиллах, контент үүсгэх үндсэн урсгалаа сурахад зориулсан материалуудаа эндээс нээнэ."}
+              </p>
+            </div>
+            <Link
+              href="/dashboard/lessons"
+              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white"
+            >
+              Хичээл рүү орох
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       {profile.role === "agent" ? (
         <section className="brand-surface rounded-[1.75rem] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

@@ -42,6 +42,7 @@ function revalidateAdminAndDashboardPaths() {
   revalidatePath("/admin/credits");
   revalidatePath("/admin/agents");
   revalidatePath("/admin/referrals");
+  revalidatePath("/admin/lessons");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/image");
   revalidatePath("/dashboard/audio");
