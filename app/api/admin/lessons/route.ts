@@ -52,6 +52,16 @@ async function ensureLessonsBucket() {
   const bucketExists = buckets?.some((bucket) => bucket.name === LESSON_STORAGE_BUCKET);
 
   if (bucketExists) {
+    const { error: updateError } = await admin.storage.updateBucket(LESSON_STORAGE_BUCKET, {
+      public: false,
+      fileSizeLimit: LESSON_MAX_SIZE_BYTES,
+      allowedMimeTypes: [...LESSON_ALLOWED_MIME_TYPES],
+    });
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
     return admin;
   }
 

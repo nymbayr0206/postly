@@ -1,7 +1,7 @@
 import type { LessonAudience, UserRole } from "@/lib/types";
 
 export const LESSON_STORAGE_BUCKET = "lessons";
-export const LESSON_MAX_SIZE_BYTES = 100 * 1024 * 1024;
+export const LESSON_MAX_SIZE_BYTES = 3 * 1024 * 1024 * 1024;
 export const LESSON_ALLOWED_MIME_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
