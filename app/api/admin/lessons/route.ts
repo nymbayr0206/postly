@@ -54,7 +54,6 @@ async function ensureLessonsBucket() {
   if (bucketExists) {
     const { error: updateError } = await admin.storage.updateBucket(LESSON_STORAGE_BUCKET, {
       public: false,
-      fileSizeLimit: LESSON_MAX_SIZE_BYTES,
       allowedMimeTypes: [...LESSON_ALLOWED_MIME_TYPES],
     });
 
@@ -67,7 +66,6 @@ async function ensureLessonsBucket() {
 
   const { error: createError } = await admin.storage.createBucket(LESSON_STORAGE_BUCKET, {
     public: false,
-    fileSizeLimit: LESSON_MAX_SIZE_BYTES,
     allowedMimeTypes: [...LESSON_ALLOWED_MIME_TYPES],
   });
 
@@ -127,7 +125,13 @@ export async function POST(request: Request) {
     return Response.json({ error: "Файлын хэмжээ зөвшөөрөгдөх хэмжээнээс хэтэрсэн байна." }, { status: 400 });
   }
 
-  const admin = await ensureLessonsBucket();
+  let admin;
+  try {
+    admin = await ensureLessonsBucket();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Storage бэлтгэж чадсангүй.";
+    return Response.json({ error: `Storage бэлтгэхэд алдаа гарлаа: ${message}` }, { status: 500 });
+  }
   const filename = sanitizeLessonFilename(file.name);
   const path = `${adminUserId}/${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID()}-${filename}`;
   const fileBuffer = Buffer.from(await file.arrayBuffer());

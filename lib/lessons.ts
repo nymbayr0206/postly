@@ -1,7 +1,8 @@
 import type { LessonAudience, UserRole } from "@/lib/types";
 
 export const LESSON_STORAGE_BUCKET = "lessons";
-export const LESSON_MAX_SIZE_BYTES = 3 * 1024 * 1024 * 1024;
+// Must not exceed the Supabase project's global Storage file size limit.
+export const LESSON_MAX_SIZE_BYTES = 50 * 1024 * 1024;
 export const LESSON_ALLOWED_MIME_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
