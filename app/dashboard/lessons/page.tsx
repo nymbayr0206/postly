@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { LessonVideoPlayer } from "@/components/dashboard/lesson-video-player";
 import {
   formatLessonFileSize,
   getLessonAudienceLabel,
@@ -28,6 +29,10 @@ function normalizeLessons(rows: LessonRow[]) {
   }));
 }
 
+function isVideoLesson(contentType: string | null) {
+  return contentType?.startsWith("video/") ?? false;
+}
+
 export default async function LessonsPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -47,7 +52,9 @@ export default async function LessonsPage() {
 
   const { data, error } = await supabase
     .from("lessons")
-    .select("id,title,description,audience,file_name,file_path,file_size_bytes,content_type,created_by,created_at,updated_at")
+    .select(
+      "id,title,description,audience,file_name,file_path,file_size_bytes,content_type,created_by,created_at,updated_at",
+    )
     .in("audience", getVisibleLessonAudiences(profile.role))
     .order("created_at", { ascending: false });
 
@@ -64,7 +71,9 @@ export default async function LessonsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
       <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <p className="text-sm text-cyan-700">{profile.role === "agent" ? "Агент хөтөлбөр" : "Хэрэглэгчийн сургалт"}</p>
+        <p className="text-sm text-cyan-700">
+          {profile.role === "agent" ? "Агент хөтөлбөр" : "Хэрэглэгчийн сургалт"}
+        </p>
         <h1 className="mt-2 text-3xl font-semibold text-slate-900">Хичээл</h1>
         <p className="mt-3 max-w-2xl text-sm text-slate-600">{intro}</p>
       </section>
@@ -94,8 +103,18 @@ export default async function LessonsPage() {
               </div>
 
               <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">
-                {lesson.description || "Энэ материалын файлыг нээж үзнэ үү."}
+                {lesson.description || "Энэ хичээлийг доорх player дээрээс шууд үзнэ."}
               </p>
+
+              {isVideoLesson(lesson.content_type) ? (
+                <div className="mt-4">
+                  <LessonVideoPlayer lessonId={lesson.id} title={lesson.title} />
+                </div>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                  Урьдчилан харах боломжгүй файл байна. Видео хичээл энд шууд player-аар харагдана.
+                </div>
+              )}
 
               <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
                 <span className="rounded-full border border-slate-200 px-3 py-1">
@@ -104,18 +123,9 @@ export default async function LessonsPage() {
                 <span className="rounded-full border border-slate-200 px-3 py-1">
                   {formatLessonFileSize(lesson.file_size_bytes)}
                 </span>
-                <span className="rounded-full border border-slate-200 px-3 py-1">{formatDate(lesson.created_at)}</span>
-              </div>
-
-              <div className="mt-5">
-                <a
-                  href={`/api/lessons/${lesson.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
-                  Нээж үзэх
-                </a>
+                <span className="rounded-full border border-slate-200 px-3 py-1">
+                  {formatDate(lesson.created_at)}
+                </span>
               </div>
             </article>
           ))}
