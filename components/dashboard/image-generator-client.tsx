@@ -242,7 +242,7 @@ export function ImageGeneratorClient({
     }
 
     if (availableCredits < currentCost) {
-      setError(`Кредит хүрэлцэхгүй байна. ${currentCost} кредит шаардлагатай.`);
+      setError(`Үлдэгдэл хүрэлцэхгүй байна. ${formatMnt(creditsToMnt(currentCost, creditPriceMnt))} шаардлагатай.`);
       return;
     }
 
@@ -313,7 +313,7 @@ export function ImageGeneratorClient({
 
     return {
       ...option,
-      detail: `${optionCost} кредит`,
+      detail: formatMnt(creditsToMnt(optionCost, creditPriceMnt)),
       cost: optionCost,
       costMnt: creditsToMnt(optionCost, creditPriceMnt),
     };
@@ -321,8 +321,8 @@ export function ImageGeneratorClient({
   const selectedAspectRatio = ASPECT_RATIOS.find((ratio) => ratio.value === normalizedAspectRatio);
   const selectedResolution = resolutionOptions.find((option) => option.value === resolution);
   const summaryItems = [
-    { label: "Үнэ", value: `${currentCost} кр`, detail: formatMnt(currentCostMnt) },
-    { label: "Үлдэгдэл", value: String(creditsRemaining), detail: "Кредит" },
+    { label: "Үнэ", value: formatMnt(currentCostMnt), detail: "" },
+    { label: "Үлдэгдэл", value: formatMnt(creditsToMnt(creditsRemaining, creditPriceMnt)), detail: "" },
     {
       label: "Харьцаа",
       value: normalizedAspectRatio,
@@ -365,7 +365,7 @@ export function ImageGeneratorClient({
             <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
               <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium text-slate-700">{normalizedAspectRatio}</span>
               <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium text-slate-700">PNG</span>
-              <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium text-slate-700">{result.cost} кредит</span>
+              <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium text-slate-700">{formatMnt(creditsToMnt(result.cost, creditPriceMnt))}</span>
             </div>
             <a
               href={result.image_url}
@@ -445,7 +445,7 @@ export function ImageGeneratorClient({
           </div>
 
           <div className="generator-note rounded-[1.25rem] border border-cyan-100 bg-cyan-50/80 px-4 py-4 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Кредит зөвхөн амжилттай үүссэн үед хасагдана.</p>
+            <p className="text-sm font-semibold text-slate-900">Төлбөр зөвхөн амжилттай үүссэн үед хасагдана.</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Алдаа гарвал үлдэгдэлд өөрчлөлт орохгүй. Үнэ, харьцаа, нягтралыг дээрээс шууд харна.
             </p>
@@ -458,14 +458,13 @@ export function ImageGeneratorClient({
           <div className="flex flex-col gap-4 p-4 pb-28 sm:gap-5 sm:p-6 sm:pb-32 xl:pb-6">
             <GenerationPricingCard
               className="hidden 2xl:order-2 2xl:block"
-              currentCost={currentCost}
-              currentCostDetail={formatMnt(currentCostMnt)}
-              description="Сонгосон нягтрал болон таны тарифын дагуу кредит бодогдоно."
+              currentCost={formatMnt(currentCostMnt)}
+              description="Сонгосон нягтрал болон таны тарифын дагуу үнэ бодогдоно."
               metrics={[
                 {
                   label: "Сонгосон нягтрал",
                   value: getImageResolutionLabel(resolution),
-                  detail: `${selectedResolution?.detail ?? `${currentCost} кредит`} · ${formatMnt(selectedResolution?.costMnt ?? currentCostMnt)}`,
+                  detail: selectedResolution?.detail ?? formatMnt(currentCostMnt),
                 },
                 {
                   label: "Харьцаа",
@@ -714,7 +713,7 @@ export function ImageGeneratorClient({
               <div className="mt-5">
                 <h2 className="text-sm font-semibold text-slate-900">Нягтрал</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Нягтралаас хамаарч таны тарифын үнээр кредит өөрчлөгдөнө.
+                  Нягтралаас хамаарч таны тарифын үнэ өөрчлөгдөнө.
                 </p>
                 <div className="mt-4 flex gap-3 overflow-x-auto pb-1 2xl:hidden">
                   {resolutionOptions.map((option) => (
@@ -769,8 +768,7 @@ export function ImageGeneratorClient({
                 {files.length > 0 ? <span className="generator-chip rounded-full bg-slate-100 px-2.5 py-1">{files.length} зураг</span> : null}
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-slate-950">{currentCost} кредит</p>
-                <p className="text-xs text-slate-500">{formatMnt(currentCostMnt)}</p>
+                <p className="text-sm font-semibold text-slate-950">{formatMnt(currentCostMnt)}</p>
               </div>
             </div>
 
@@ -789,7 +787,7 @@ export function ImageGeneratorClient({
                     Зураг боловсруулж байна...
                   </>
                 ) : (
-                  `Зураг үүсгэх · ${currentCost} кр · ${formatMnt(currentCostMnt)}`
+                  `Зураг үүсгэх · ${formatMnt(currentCostMnt)}`
                 )}
               </button>
 
@@ -804,7 +802,7 @@ export function ImageGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит буюу {formatMnt(currentCostMnt)} шаардлагатай.
+                Үлдэгдэл хүрэлцэхгүй байна. Доод тал нь {formatMnt(currentCostMnt)} шаардлагатай.
               </p>
             ) : null}
           </div>

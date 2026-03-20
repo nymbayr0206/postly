@@ -400,7 +400,7 @@ export function CreditRequestPanel({
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[28px] bg-[#090d18] text-white shadow-[0_20px_60px_rgba(2,8,23,0.35)]">
         <div className="border-b border-white/10 px-6 py-6 sm:px-8">
-          <h2 className="text-2xl font-semibold">Кредит худалдан авах</h2>
+          <h2 className="text-2xl font-semibold">Багц худалдан авах</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-300">
             Багц дээр дармагц QPay invoice шууд үүснэ. QR болон банкны deeplink-үүд доор
             автоматаар харагдана.
@@ -437,14 +437,11 @@ export function CreditRequestPanel({
 
                     <div className="text-xs uppercase tracking-[0.2em] text-white/60">{pkg.label}</div>
                     <div className="mt-4 text-4xl font-semibold">{formatMnt(pkg.priceMnt)}</div>
-                    <div className={`mt-4 text-sm ${isSelected ? "text-white" : "text-slate-200"}`}>
-                      {formatCredits(totalCredits)}
-                    </div>
                     {bonusCredits > 0 ? (
-                      <div className={`mt-1 text-xs ${isSelected ? "text-blue-50" : "text-sky-300"}`}>
-                        +{formatCredits(bonusCredits)} бонус
+                      <div className={`mt-4 text-xs font-semibold ${isSelected ? "text-blue-50" : "text-sky-300"}`}>
+                        {pkg.badge}
                       </div>
-                    ) : null}
+                    ) : <div className="mt-4" />}
 
                     <div className="mt-5 inline-flex rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/90">
                       {isSelected && selectedIsCreating
@@ -481,7 +478,7 @@ export function CreditRequestPanel({
                 </div>
                 <div className="space-y-2 text-right">
                   <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">
-                    {formatCredits(activeCredits)}
+                    {formatMnt(activeAmount)}
                   </span>
                   {visibleRequest ? (
                     <div>
@@ -502,14 +499,10 @@ export function CreditRequestPanel({
                   <span className="text-slate-400">Төлөх дүн</span>
                   <span className="font-medium text-white">{formatMnt(activeAmount)}</span>
                 </div>
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                  <span className="text-slate-400">Орох кредит</span>
-                  <span className="font-medium text-white">{formatCredits(activeCredits)}</span>
-                </div>
                 {activeBonusCredits > 0 ? (
                   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                     <span className="text-slate-400">Бонус</span>
-                    <span className="font-medium text-white">{formatCredits(activeBonusCredits)}</span>
+                    <span className="font-medium text-white">{selectedPackage.badge}</span>
                   </div>
                 ) : null}
                 {visibleRequest ? (
@@ -543,12 +536,11 @@ export function CreditRequestPanel({
                 <p className="text-sm font-medium text-amber-100">Санамж</p>
                 <p className="mt-2 text-sm text-amber-50">
                   {visibleRequest
-                    ? "QPay callback ирмэгц кредит автоматаар нэмэгдэнэ. Хэрэв шинэчлэгдэхгүй бол Төлбөр шалгах товчийг дарна уу."
+                    ? "QPay callback ирмэгц таны данс автоматаар нэмэгдэнэ. Хэрэв шинэчлэгдэхгүй бол Төлбөр шалгах товчийг дарна уу."
                     : selectedIsCreating
                       ? "QPay-с QR болон банкны deeplink-үүдийг татаж байна."
                       : "Багц сонгоход invoice шууд үүсэж, баруун талд төлбөрийн хэрэгслүүд гарч ирнэ."}
                 </p>
-                <p className="mt-2 text-sm text-amber-50">1 credit = {formatMnt(creditPriceMnt)}</p>
               </div>
 
               {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
@@ -667,7 +659,6 @@ export function CreditRequestPanel({
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="py-3 pr-4 font-medium">Багц</th>
                   <th className="py-3 pr-4 font-medium">Төлбөр</th>
-                  <th className="py-3 pr-4 font-medium">Кредит</th>
                   <th className="py-3 pr-4 font-medium">Provider</th>
                   <th className="py-3 pr-4 font-medium">Огноо</th>
                 </tr>
@@ -679,7 +670,6 @@ export function CreditRequestPanel({
                     <td className="py-3 pr-4 text-slate-800">
                       {request.amount_mnt ? formatMnt(request.amount_mnt) : "-"}
                     </td>
-                    <td className="py-3 pr-4 text-slate-800">{formatCredits(request.amount)}</td>
                     <td className="py-3 pr-4 text-slate-700">{providerLabel(request)}</td>
                     <td className="py-3 pr-4 text-slate-600">
                       {request.paid_at_label ?? request.created_at_label}

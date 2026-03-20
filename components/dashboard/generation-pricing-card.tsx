@@ -4,10 +4,6 @@ type PricingMetric = {
   detail?: string;
 };
 
-function titleCaseValue(value: number | string) {
-  return typeof value === "number" ? new Intl.NumberFormat("mn-MN").format(value) : value;
-}
-
 export function GenerationPricingCard({
   currentCost,
   currentCostDetail,
@@ -16,7 +12,7 @@ export function GenerationPricingCard({
   note,
   className = "",
 }: {
-  currentCost: number | string;
+  currentCost: string;
   currentCostDetail?: string;
   description: string;
   metrics: PricingMetric[];
@@ -29,15 +25,12 @@ export function GenerationPricingCard({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Кредитийн үнэ</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Үнэ</h2>
           <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
         </div>
         <div className="generator-note rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3">
           <p className="text-xs uppercase tracking-[0.18em] text-cyan-700">Одоогийн үнэ</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-950">
-            {titleCaseValue(currentCost)}
-            {typeof currentCost === "number" ? " кр" : ""}
-          </p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{currentCost}</p>
           {currentCostDetail ? <p className="mt-1 text-xs text-cyan-800">{currentCostDetail}</p> : null}
         </div>
       </div>

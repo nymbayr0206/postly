@@ -138,7 +138,7 @@ export function AudioGeneratorClient({
     }
 
     if (availableCredits < currentCost) {
-      setError(`Кредит хүрэлцэхгүй байна. ${currentCost} кредит шаардлагатай.`);
+      setError(`Үлдэгдэл хүрэлцэхгүй байна. ${formatMnt(creditsToMnt(currentCost, creditPriceMnt))} шаардлагатай.`);
       return;
     }
 
@@ -194,9 +194,8 @@ export function AudioGeneratorClient({
         <div className="flex h-full flex-col">
           <div className="space-y-5 p-4 sm:p-6">
             <GenerationPricingCard
-              currentCost={currentCost}
-              currentCostDetail={undefined}
-              description={`ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд ${formatCredits(modelBaseCost)} кредитээр бодогдоно.`}
+              currentCost={formatMnt(currentCostMnt)}
+              description={`ElevenLabs Text-to-Speech V3 нь 1,000 тэмдэгт тутамд ${formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))} үнэтэй.`}
               metrics={[]}
             />
 
@@ -370,7 +369,7 @@ export function AudioGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит буюу {formatMnt(currentCostMnt)} шаардлагатай.
+                Үлдэгдэл хүрэлцэхгүй байна. Доод тал нь {formatMnt(currentCostMnt)} шаардлагатай.
               </p>
             ) : null}
           </div>
@@ -415,7 +414,7 @@ export function AudioGeneratorClient({
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap gap-2 text-sm text-slate-600">
                       <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 font-medium">MP3</span>
-                      <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 font-medium">{result.cost} кредит</span>
+                      <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 font-medium">{formatMnt(creditsToMnt(result.cost, creditPriceMnt))}</span>
                     </div>
                     <a
                       href={result.audio_url}
@@ -473,7 +472,7 @@ export function AudioGeneratorClient({
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
                         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                           <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
-                          <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                          <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{formatMnt(creditsToMnt(item.cost, creditPriceMnt))}</span>
                         </div>
                       </div>
                       <a

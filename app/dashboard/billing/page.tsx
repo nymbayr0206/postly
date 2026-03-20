@@ -2,6 +2,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 
+import { BillingValueBanner } from "@/components/dashboard/billing-value-banner";
+
 import { CREDIT_REQUEST_SELECT } from "@/lib/credit-requests";
 import { formatCredits } from "@/lib/generation-pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -129,16 +131,20 @@ export default async function BillingPage({
         <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
           <div className="grid gap-4 md:grid-cols-4">
             <div>
-              <p className="text-sm text-slate-300">Одоогийн кредит</p>
-              <p className="mt-2 text-4xl font-semibold">{formatCredits(wallet.credits)}</p>
+              <p className="text-sm text-slate-300">Үлдэгдэл</p>
+              <p className="mt-2 text-4xl font-semibold">
+                {new Intl.NumberFormat("mn-MN").format(wallet.credits * platformSettings.credit_price_mnt)}₮
+              </p>
             </div>
             <div>
               <p className="text-sm text-slate-300">Амжилттай худалдан авалт</p>
               <p className="mt-2 text-4xl font-semibold">{approvedCount}</p>
             </div>
             <div>
-              <p className="text-sm text-slate-300">Худалдан авсан кредит</p>
-              <p className="mt-2 text-4xl font-semibold">{formatCredits(approvedCredits)}</p>
+              <p className="text-sm text-slate-300">Нийт зарцуулсан</p>
+              <p className="mt-2 text-4xl font-semibold">
+                {new Intl.NumberFormat("mn-MN").format(approvedCredits * platformSettings.credit_price_mnt)}₮
+              </p>
             </div>
             <div>
               <p className="text-sm text-slate-300">Нийт төлсөн дүн</p>
@@ -152,8 +158,10 @@ export default async function BillingPage({
         <section className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm">
           <div className="grid gap-4 md:grid-cols-4">
             <div>
-              <p className="text-sm text-slate-300">Одоогийн кредит</p>
-              <p className="mt-2 text-4xl font-semibold">{formatCredits(wallet.credits)}</p>
+              <p className="text-sm text-slate-300">Үлдэгдэл</p>
+              <p className="mt-2 text-4xl font-semibold">
+                {new Intl.NumberFormat("mn-MN").format(wallet.credits * platformSettings.credit_price_mnt)}₮
+              </p>
             </div>
             <div>
               <p className="text-sm text-slate-300">Урьсан хүн</p>
@@ -187,7 +195,7 @@ export default async function BillingPage({
                   : "text-slate-600 hover:bg-white hover:text-slate-950"
               }`}
             >
-              Кредит
+              Төлбөр
             </Link>
             <Link
               href="/dashboard/billing?tab=referral"
@@ -203,11 +211,13 @@ export default async function BillingPage({
           </div>
           <p className="mt-3 px-1 text-sm text-slate-500">
             {activeTab === "credit"
-              ? "Кредит цэнэглэх, QPay төлбөр болон худалдан авалтын түүхээ эндээс удирдана."
+              ? "Төлбөр хийх, QPay болон худалдан авалтын түүхээ эндээс удирдана."
               : "Урилгын линк, reward болон referral орлогоо эндээс удирдана."}
           </p>
         </section>
       ) : null}
+
+      {activeTab === "credit" ? <BillingValueBanner /> : null}
 
       {activeTab === "credit" ? (
         <CreditRequestPanel

@@ -1,5 +1,7 @@
 import type { GenerationRow } from "@/lib/types";
 
+import { DownloadButton } from "@/components/dashboard/download-button";
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
     dateStyle: "medium",
@@ -21,7 +23,6 @@ export function GenerationHistory({ generations }: { generations: GenerationRow[
               <tr className="border-b border-slate-200 text-slate-500">
                 <th className="py-2 pr-4 font-medium">Промпт</th>
                 <th className="py-2 pr-4 font-medium">Зураг</th>
-                <th className="py-2 pr-4 font-medium">Кредит</th>
                 <th className="py-2 pr-4 font-medium">Огноо</th>
                 <th className="py-2 font-medium">Татах</th>
               </tr>
@@ -38,18 +39,12 @@ export function GenerationHistory({ generations }: { generations: GenerationRow[
                       className="h-20 w-20 rounded-lg border border-slate-200 object-cover"
                     />
                   </td>
-                  <td className="py-3 pr-4 text-slate-800">{generation.cost}</td>
                   <td className="py-3 pr-4 text-slate-600">{formatDate(generation.created_at)}</td>
                   <td className="py-3">
-                    <a
-                      href={generation.image_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
+                    <DownloadButton
+                      url={generation.image_url}
                       className="inline-flex rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700"
-                    >
-                      Татах
-                    </a>
+                    />
                   </td>
                 </tr>
               ))}

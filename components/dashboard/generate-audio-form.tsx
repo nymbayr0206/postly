@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { DownloadButton } from "@/components/dashboard/download-button";
+
 import {
   DEFAULT_DIALOGUE_VOICES,
   getElevenLabsVoiceDemoUrl,
@@ -10,6 +12,7 @@ import {
   ELEVENLABS_VOICE_OPTIONS,
 } from "@/lib/audio-models/types";
 import type { ElevenLabsVoice } from "@/lib/audio-models/types";
+import { creditsToMnt, formatMnt } from "@/lib/generation-pricing";
 
 type DialogueLine = {
   text: string;
@@ -22,7 +25,7 @@ type GenerateAudioResult = {
   credits_remaining: number;
 };
 
-export function GenerateAudioForm({ currentCredits }: { currentCredits: number }) {
+export function GenerateAudioForm({ currentCredits, creditPriceMnt }: { currentCredits: number; creditPriceMnt: number }) {
   const [lines, setLines] = useState<DialogueLine[]>([
     { text: "", voice: DEFAULT_DIALOGUE_VOICES.female },
     { text: "", voice: DEFAULT_DIALOGUE_VOICES.male },
@@ -109,7 +112,7 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
           <p className="mt-0.5 text-xs text-slate-500">Олон хоолойтой яриаг нэг дор бэлтгэнэ</p>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-          Кредит: {currentCredits}
+          Үлдэгдэл: {formatMnt(creditsToMnt(currentCredits, creditPriceMnt))}
         </span>
       </div>
 
@@ -214,22 +217,14 @@ export function GenerateAudioForm({ currentCredits }: { currentCredits: number }
       {result ? (
         <div className="mt-6 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-sm text-emerald-800">
-            Аудио амжилттай үүслээ. {result.cost} кредит хасагдлаа.
+            Аудио амжилттай үүслээ. {formatMnt(creditsToMnt(result.cost, creditPriceMnt))} хасагдлаа.
           </p>
           <audio controls src={result.audio_url} className="w-full" />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm font-medium text-emerald-900">
-              Үлдсэн кредит: {result.credits_remaining}
+              Үлдэгдэл: {formatMnt(creditsToMnt(result.credits_remaining, creditPriceMnt))}
             </span>
-            <a
-              href={result.audio_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
-            >
-              Татах
-            </a>
+            <DownloadButton url={result.audio_url} />
           </div>
         </div>
       ) : null}

@@ -3,8 +3,11 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { DownloadButton } from "@/components/dashboard/download-button";
+
 import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
 import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
+import { creditsToMnt, formatMnt } from "@/lib/generation-pricing";
 
 type GenerateVideoResult = {
   video_url: string;
@@ -12,7 +15,7 @@ type GenerateVideoResult = {
   credits_remaining: number;
 };
 
-export function GenerateVideoForm({ currentCredits }: { currentCredits: number }) {
+export function GenerateVideoForm({ currentCredits, creditPriceMnt }: { currentCredits: number; creditPriceMnt: number }) {
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -132,7 +135,7 @@ export function GenerateVideoForm({ currentCredits }: { currentCredits: number }
           <p className="mt-0.5 text-xs text-slate-500">Runway Gen-4 Turbo · Зургаас видео</p>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-          Кредит: {currentCredits}
+          Үлдэгдэл: {formatMnt(creditsToMnt(currentCredits, creditPriceMnt))}
         </span>
       </div>
 
@@ -257,22 +260,14 @@ export function GenerateVideoForm({ currentCredits }: { currentCredits: number }
       {result ? (
         <div className="mt-6 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-sm text-emerald-800">
-            Видео амжилттай үүслээ. {result.cost} кредит хасагдлаа.
+            Видео амжилттай үүслээ. {formatMnt(creditsToMnt(result.cost, creditPriceMnt))} хасагдлаа.
           </p>
           <video controls src={result.video_url} className="w-full rounded-xl border border-emerald-200" />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm font-medium text-emerald-900">
-              Үлдсэн кредит: {result.credits_remaining}
+              Үлдэгдэл: {formatMnt(creditsToMnt(result.credits_remaining, creditPriceMnt))}
             </span>
-            <a
-              href={result.video_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
-            >
-              Татах
-            </a>
+            <DownloadButton url={result.video_url} />
           </div>
         </div>
       ) : null}

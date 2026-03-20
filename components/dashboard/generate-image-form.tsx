@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { DownloadButton } from "@/components/dashboard/download-button";
+
 import type { ImageAspectRatio } from "@/lib/types";
 
 const aspectOptions: ImageAspectRatio[] = ["1:1", "4:5", "16:9", "9:16"];
@@ -187,15 +189,7 @@ export function GenerateImageForm({ currentCredits }: { currentCredits: number }
             <span className="text-sm font-medium text-emerald-900">
               Үлдэгдэл: {result.credits_remaining} кредит
             </span>
-            <a
-              href={result.image_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
-            >
-              Татах
-            </a>
+            <DownloadButton url={result.image_url} />
           </div>
         </div>
       ) : null}

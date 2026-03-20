@@ -28,7 +28,7 @@ export async function issueGenerationCommitToken(
   });
 
   if (error) {
-    throw new Error(`Server commit token uusgej chadsangui: ${error.message}`);
+    throw new Error(`Server commit token үүсгэж чадсангүй: ${error.message}`);
   }
 
   return token;

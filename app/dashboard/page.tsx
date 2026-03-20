@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CommunityGallerySection } from "@/components/dashboard/community-gallery";
+import { PlatformFeaturesBanner } from "@/components/dashboard/platform-features-banner";
 import { listCommunityGenerations } from "@/lib/community-gallery";
-import { formatCredits } from "@/lib/generation-pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GenerationRow } from "@/lib/types";
 import {
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
             href="/dashboard/billing"
             className="flex min-h-[4.25rem] items-center justify-center rounded-[1.4rem] border border-white/12 bg-white/[0.08] px-5 py-4 text-base font-semibold text-white transition-colors duration-200 hover:bg-white/[0.12]"
           >
-            Кредит авах
+            Багц авах
           </Link>
           <Link
             href={TRAINED_CHATGPT_URL}
@@ -137,6 +137,8 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
+      <PlatformFeaturesBanner />
+
       <CommunityGallerySection
         items={communityGenerations}
         title="Хэрэглэгчдийн нээлттэй зургийн урсгал"
@@ -171,7 +173,7 @@ export default async function DashboardPage() {
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-slate-950">{generation.prompt}</div>
                     <div className="mt-2 text-xs text-slate-500">
-                      {formatCredits(generation.cost)} кредит · {formatDate(generation.created_at)}
+                      {formatDate(generation.created_at)}
                     </div>
                   </div>
                   <a

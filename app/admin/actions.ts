@@ -198,3 +198,33 @@ export async function approveReferralPayoutRequestAction(formData: FormData) {
 export async function rejectReferralPayoutRequestAction(formData: FormData) {
   await processReferralPayoutRequest(formData, "rejected");
 }
+
+// ─── Gallery management (admin-only) ────────────────────────────────────────
+
+export async function addToGalleryAction(formData: FormData) {
+  const generationId = String(formData.get("generation_id") ?? "");
+  if (!generationId) throw new Error("Generation ID олдсонгүй.");
+
+  const supabase = await requireAdmin();
+  const { error } = await supabase.rpc("admin_add_to_gallery", {
+    p_generation_id: generationId,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/gallery");
+  revalidatePath("/dashboard/gallery");
+}
+
+export async function removeFromGalleryAction(formData: FormData) {
+  const generationId = String(formData.get("generation_id") ?? "");
+  if (!generationId) throw new Error("Generation ID олдсонгүй.");
+
+  const supabase = await requireAdmin();
+  const { error } = await supabase.rpc("admin_remove_from_gallery", {
+    p_generation_id: generationId,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/gallery");
+  revalidatePath("/dashboard/gallery");
+}

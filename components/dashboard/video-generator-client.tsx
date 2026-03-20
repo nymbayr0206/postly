@@ -196,7 +196,7 @@ export function VideoGeneratorClient({
     }
 
     if (availableCredits < currentCost) {
-      setError(`Кредит хүрэлцэхгүй байна. ${currentCost} кредит шаардлагатай.`);
+      setError(`Үлдэгдэл хүрэлцэхгүй байна. ${formatMnt(creditsToMnt(currentCost, creditPriceMnt))} шаардлагатай.`);
       return;
     }
 
@@ -279,8 +279,7 @@ export function VideoGeneratorClient({
         <div className="flex h-full flex-col">
           <div className="space-y-5 p-4 sm:p-6">
             <GenerationPricingCard
-              currentCost={currentCost}
-              currentCostDetail={formatMnt(currentCostMnt)}
+              currentCost={formatMnt(currentCostMnt)}
               description="Runway-ийн үнэ нь хугацаа болон чанараасаа хамаарна."
               metrics={[
                 {
@@ -288,22 +287,20 @@ export function VideoGeneratorClient({
                   value: `${duration} сек`,
                   detail:
                     quality === "720p" && duration === 5
-                      ? `${modelBaseCost} кредит · ${formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))}`
-                      : `${getVideoCredits(10, "720p", modelBaseCost)} кредит · ${formatMnt(
-                          creditsToMnt(getVideoCredits(10, "720p", modelBaseCost), creditPriceMnt),
-                        )}`,
+                      ? formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))
+                      : formatMnt(creditsToMnt(getVideoCredits(10, "720p", modelBaseCost), creditPriceMnt)),
                 },
                 {
                   label: "Чанар",
                   value: quality,
                   detail:
                     quality === "720p" && duration === 5
-                      ? `5 сек 720p = ${modelBaseCost} кредит`
-                      : `10 сек 720p эсвэл 5 сек 1080p = ${getVideoCredits(10, "720p", modelBaseCost)} кредит`,
+                      ? `5 сек 720p = ${formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))}`
+                      : `10 сек 720p эсвэл 5 сек 1080p = ${formatMnt(creditsToMnt(getVideoCredits(10, "720p", modelBaseCost), creditPriceMnt))}`,
                 },
                 {
                   label: "Гарах үнэ",
-                  value: `${currentCost} кредит`,
+                  value: formatMnt(currentCostMnt),
                   detail: "Видео бүрээр бодогдоно",
                 },
               ]}
@@ -516,7 +513,7 @@ export function VideoGeneratorClient({
             </div>
             {!hasEnoughCredits ? (
               <p className="mt-3 text-sm text-amber-700">
-                Кредит хүрэлцэхгүй байна. Доод тал нь {currentCost} кредит буюу {formatMnt(currentCostMnt)} шаардлагатай.
+                Үлдэгдэл хүрэлцэхгүй байна. Доод тал нь {formatMnt(currentCostMnt)} шаардлагатай.
               </p>
             ) : null}
           </div>
@@ -557,7 +554,7 @@ export function VideoGeneratorClient({
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{duration} сек</span>
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{quality}</span>
-                    <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{result.cost} кредит</span>
+                    <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{formatMnt(creditsToMnt(result.cost, creditPriceMnt))}</span>
                   </div>
                   <a
                     href={result.video_url}
@@ -621,7 +618,7 @@ export function VideoGeneratorClient({
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.duration} сек</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.quality}</span>
-                        <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
+                        <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{formatMnt(creditsToMnt(item.cost, creditPriceMnt))}</span>
                       </div>
                       <a
                         href={item.video_url}

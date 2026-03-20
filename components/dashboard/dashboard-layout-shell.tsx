@@ -40,6 +40,10 @@ function formatCredits(value: number) {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+function formatMnt(value: number) {
+  return `${new Intl.NumberFormat("mn-MN").format(Math.round(value))}₮`;
+}
+
 function roleLabel(role: UserRole) {
   if (role === "admin") {
     return "Админ";
@@ -209,12 +213,14 @@ function DesktopSidebar({
   role,
   email,
   credits,
+  creditPriceMnt,
   navItems,
 }: {
   pathname: string;
   role: UserRole;
   email: string;
   credits: number;
+  creditPriceMnt: number;
   navItems: NavItem[];
 }) {
   return (
@@ -246,8 +252,8 @@ function DesktopSidebar({
           </div>
         </div>
         <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-          <div className="text-xs text-slate-400">Нийт кредит</div>
-          <div className="mt-1 text-xl font-black text-white">{formatCredits(credits)}</div>
+          <div className="text-xs text-slate-400">Үлдэгдэл</div>
+          <div className="mt-1 text-xl font-black text-white">{formatMnt(credits * creditPriceMnt)}</div>
         </div>
       </div>
     </div>
@@ -259,6 +265,7 @@ function MobileDrawer({
   role,
   email,
   credits,
+  creditPriceMnt,
   navItems,
   onClose,
   onSignOut,
@@ -268,6 +275,7 @@ function MobileDrawer({
   role: UserRole;
   email: string;
   credits: number;
+  creditPriceMnt: number;
   navItems: NavItem[];
   onClose: () => void;
   onSignOut: () => void;
@@ -299,7 +307,7 @@ function MobileDrawer({
               {roleLabel(role)}
             </span>
             <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
-              {formatCredits(credits)} кредит
+              {formatMnt(credits * creditPriceMnt)}
             </span>
           </div>
         </div>
@@ -372,6 +380,7 @@ function MobileBottomNav({
 export default function DashboardLayoutShell({
   children,
   credits,
+  creditPriceMnt,
   email,
   role,
   showAgentOnboarding,
@@ -379,6 +388,7 @@ export default function DashboardLayoutShell({
 }: {
   children: React.ReactNode;
   credits: number;
+  creditPriceMnt: number;
   email: string;
   role: UserRole;
   showAgentOnboarding: boolean;
@@ -404,7 +414,7 @@ export default function DashboardLayoutShell({
 
     items.push(
       { href: "/dashboard/history", label: "Түүх", key: "history" },
-      { href: "/dashboard/billing", label: "Кредит", key: "billing" },
+      { href: "/dashboard/billing", label: "Төлбөр", key: "billing" },
     );
 
     if (showAgentOnboarding) {
@@ -456,7 +466,7 @@ export default function DashboardLayoutShell({
   return (
     <div className="min-h-screen lg:flex">
       <aside className="hidden w-[300px] shrink-0 lg:block">
-        <DesktopSidebar pathname={pathname} role={role} email={email} credits={credits} navItems={navItems} />
+        <DesktopSidebar pathname={pathname} role={role} email={email} credits={credits} creditPriceMnt={creditPriceMnt} navItems={navItems} />
       </aside>
 
       {mobileOpen ? (
@@ -465,6 +475,7 @@ export default function DashboardLayoutShell({
           role={role}
           email={email}
           credits={credits}
+          creditPriceMnt={creditPriceMnt}
           navItems={navItems}
           onClose={() => setMobileOpen(false)}
           onSignOut={handleSignOut}
@@ -503,7 +514,7 @@ export default function DashboardLayoutShell({
                 href="/dashboard/billing"
                 className="brand-surface rounded-full px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-cyan-300/40 hover:text-cyan-700 sm:px-4 sm:text-sm"
               >
-                {formatCredits(credits)} кредит
+                {formatMnt(credits * creditPriceMnt)}
               </Link>
 
               <div className="hidden items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 px-2 py-1.5 shadow-sm sm:flex">

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { DownloadButton } from "@/components/dashboard/download-button";
 
 type HistoryItem =
   | {
@@ -270,9 +271,9 @@ export default async function HistoryPage() {
                     </svg>
                     Харах
                   </a>
-                  <a
-                    href={item.url}
-                    download
+                  <DownloadButton
+                    url={item.url}
+                    label="Татах"
                     className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     <svg
@@ -289,7 +290,7 @@ export default async function HistoryPage() {
                       <line x1="12" x2="12" y1="15" y2="3" />
                     </svg>
                     Татах
-                  </a>
+                  </DownloadButton>
                 </div>
               </div>
             </article>
