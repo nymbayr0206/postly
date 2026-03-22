@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import { SpeechToTextControl } from "@/components/dashboard/speech-to-text-control";
-import { creditsToMnt, formatMnt, getVideoCredits } from "@/lib/generation-pricing";
+import { creditsToMnt, formatMnt, getVideoCreditsForModel } from "@/lib/generation-pricing";
 import { containsCyrillicText, type OptimizedPromptResponse } from "@/lib/prompt-optimizer";
-import { calculateFinalCreditCost } from "@/lib/pricing";
-import { VIDEO_DURATIONS, VIDEO_QUALITIES } from "@/lib/video-models/types";
-import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
+import { calculateFinalCreditCost, getModelDisplayName } from "@/lib/pricing";
+import type { VideoAspectRatio, VideoDuration, VideoQuality } from "@/lib/video-models/types";
 
 type GenerateVideoResult = {
   video_url: string;
@@ -25,28 +24,54 @@ type VideoHistoryItem = {
   duration: number;
   quality: string;
   cost: number;
+  model_name: string;
   created_at: string;
   created_at_label: string;
 };
+
+type VideoModelOption = {
+  name: string;
+  label: string;
+  description: string;
+  durationOptions: VideoDuration[];
+  qualityOptions: VideoQuality[];
+  defaultDuration: VideoDuration;
+  defaultQuality: VideoQuality;
+  baseCost: number;
+};
+
+function detectAspectRatio(width: number, height: number): VideoAspectRatio {
+  if (!width || !height || width === height) {
+    return "Auto";
+  }
+
+  return width > height ? "16:9" : "9:16";
+}
 
 export function VideoGeneratorClient({
   currentCredits,
   history,
   creditPriceMnt,
-  modelBaseCost,
   tariffMultiplier,
+  models,
 }: {
   currentCredits: number;
   history: VideoHistoryItem[];
   creditPriceMnt: number;
-  modelBaseCost: number;
   tariffMultiplier: number;
+  models: VideoModelOption[];
 }) {
+  const fallbackModel = models[0];
+  const [selectedModelName, setSelectedModelName] = useState(
+    fallbackModel?.name ?? "runway/gen4-turbo",
+  );
+  const selectedModel = models.find((model) => model.name === selectedModelName) ?? fallbackModel;
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [duration, setDuration] = useState<VideoDuration>(5);
-  const [quality, setQuality] = useState<VideoQuality>("720p");
+  const [duration, setDuration] = useState<VideoDuration>(fallbackModel?.defaultDuration ?? 5);
+  const [quality, setQuality] = useState<VideoQuality>(fallbackModel?.defaultQuality ?? "720p");
+  const [detectedAspectRatio, setDetectedAspectRatio] = useState<VideoAspectRatio>("Auto");
   const [isPending, setIsPending] = useState(false);
   const [isOptimizingPrompt, setIsOptimizingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +89,35 @@ export function VideoGeneratorClient({
     };
   }, [preview]);
 
+  useEffect(() => {
+    if (!selectedModel) {
+      return;
+    }
+
+    setDuration((current) =>
+      selectedModel.durationOptions.includes(current) ? current : selectedModel.defaultDuration,
+    );
+    setQuality((current) =>
+      selectedModel.qualityOptions.includes(current) ? current : selectedModel.defaultQuality,
+    );
+  }, [selectedModel]);
+
+  function updateDetectedAspectRatio(nextPreview: string | null) {
+    if (!nextPreview) {
+      setDetectedAspectRatio("Auto");
+      return;
+    }
+
+    const image = new Image();
+    image.onload = () => {
+      setDetectedAspectRatio(detectAspectRatio(image.naturalWidth, image.naturalHeight));
+    };
+    image.onerror = () => {
+      setDetectedAspectRatio("Auto");
+    };
+    image.src = nextPreview;
+  }
+
   function replaceFile(nextFile: File | null) {
     setFile(nextFile);
 
@@ -71,7 +125,9 @@ export function VideoGeneratorClient({
       URL.revokeObjectURL(preview);
     }
 
-    setPreview(nextFile ? URL.createObjectURL(nextFile) : null);
+    const nextPreview = nextFile ? URL.createObjectURL(nextFile) : null;
+    setPreview(nextPreview);
+    updateDetectedAspectRatio(nextPreview);
 
     if (!nextFile && fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -176,8 +232,13 @@ export function VideoGeneratorClient({
 
   async function handleSubmit() {
     setError(null);
+    if (!selectedModel) {
+      setError("Видео model олдсонгүй.");
+      return;
+    }
+
     const availableCredits = result ? result.credits_remaining : currentCredits;
-    const baseCost = getVideoCredits(duration, quality, modelBaseCost);
+    const baseCost = getVideoCreditsForModel(selectedModel.name, duration, quality, selectedModel.baseCost);
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
 
     if (!file) {
@@ -190,7 +251,7 @@ export function VideoGeneratorClient({
       return;
     }
 
-    if (quality === "1080p" && duration === 10) {
+    if (selectedModel.name === "runway/gen4-turbo" && quality === "1080p" && duration === 10) {
       setError("1080p чанар зөвхөн 5 секундын видеод дэмжигдэнэ.");
       return;
     }
@@ -234,10 +295,12 @@ export function VideoGeneratorClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          model_name: selectedModel.name,
           prompt: promptForGeneration,
           image_url: imageUrl,
           duration,
           quality,
+          aspect_ratio: detectedAspectRatio,
         }),
       });
       const generatePayload = await generateResponse.json();
@@ -267,11 +330,17 @@ export function VideoGeneratorClient({
     setPromptOptimizationInfo(null);
   }
 
+  if (!selectedModel) {
+    return null;
+  }
+
   const creditsRemaining = result ? result.credits_remaining : currentCredits;
-  const baseCost = getVideoCredits(duration, quality, modelBaseCost);
+  const baseCost = getVideoCreditsForModel(selectedModel.name, duration, quality, selectedModel.baseCost);
   const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
   const currentCostMnt = creditsToMnt(currentCost, creditPriceMnt);
   const hasEnoughCredits = creditsRemaining >= currentCost;
+  const isDurationLocked = selectedModel.durationOptions.length === 1;
+  const isVeoModel = selectedModel.name.startsWith("veo");
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,29rem)_minmax(0,1fr)]">
@@ -280,31 +349,73 @@ export function VideoGeneratorClient({
           <div className="space-y-5 p-4 sm:p-6">
             <GenerationPricingCard
               currentCost={formatMnt(currentCostMnt)}
-              description="Runway-ийн үнэ нь хугацаа болон чанараасаа хамаарна."
+              description={
+                isVeoModel
+                  ? `${selectedModel.label} нь fixed 8 секундын video гаргана. 1080p нь нэмэлт HD боловсруулалттай.`
+                  : "Runway-ийн үнэ нь хугацаа болон чанараасаа хамаарна."
+              }
               metrics={[
+                {
+                  label: "Model",
+                  value: selectedModel.label,
+                  detail: selectedModel.description,
+                },
                 {
                   label: "Үргэлжлэх хугацаа",
                   value: `${duration} сек`,
-                  detail:
-                    quality === "720p" && duration === 5
-                      ? formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))
-                      : formatMnt(creditsToMnt(getVideoCredits(10, "720p", modelBaseCost), creditPriceMnt)),
+                  detail: isDurationLocked ? "Энэ model fixed хугацаатай." : "5 эсвэл 10 секундын сонголттой.",
                 },
                 {
                   label: "Чанар",
                   value: quality,
-                  detail:
-                    quality === "720p" && duration === 5
-                      ? `5 сек 720p = ${formatMnt(creditsToMnt(modelBaseCost, creditPriceMnt))}`
-                      : `10 сек 720p эсвэл 5 сек 1080p = ${formatMnt(creditsToMnt(getVideoCredits(10, "720p", modelBaseCost), creditPriceMnt))}`,
+                  detail: isVeoModel ? "1080p нь HD upgrade-р гарна." : "Runway дээр 1080p нь зөвхөн 5 сек дэмжинэ.",
                 },
                 {
                   label: "Гарах үнэ",
                   value: formatMnt(currentCostMnt),
-                  detail: "Видео бүрээр бодогдоно",
+                  detail: `${currentCost} кредит`,
                 },
               ]}
             />
+
+            <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Видео model</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Runway-г хадгалсан хэвээр, дээр нь Veo 3.1 Fast болон Veo 3 Quality нэмэгдсэн.
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                {models.map((model) => (
+                  <button
+                    key={model.name}
+                    type="button"
+                    onClick={() => setSelectedModelName(model.name)}
+                    className={`rounded-[1.25rem] border px-4 py-4 text-left transition ${
+                      selectedModel.name === model.name
+                        ? "border-cyan-400 bg-cyan-50 shadow-[0_18px_40px_rgba(18,159,213,0.12)]"
+                        : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{model.label}</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">{model.description}</p>
+                      </div>
+                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-slate-600">
+                        {formatMnt(
+                          creditsToMnt(
+                            calculateFinalCreditCost(model.baseCost, tariffMultiplier),
+                            creditPriceMnt,
+                          ),
+                        )}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
 
             <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
@@ -313,7 +424,7 @@ export function VideoGeneratorClient({
                   <p className="mt-1 text-xs leading-5 text-slate-500">Mobile дээр дараад эсвэл desktop дээр drag and drop хийгээд оруулна.</p>
                 </div>
                 <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  JPG, PNG, WebP
+                  {detectedAspectRatio === "Auto" ? "Auto ratio" : detectedAspectRatio}
                 </span>
               </div>
 
@@ -427,14 +538,18 @@ export function VideoGeneratorClient({
             <section className="generator-panel grid gap-4 rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Видео тохиргоо</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">Видеоны урт болон чанараа сонгоно уу.</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {isVeoModel
+                    ? "Veo model нь 8 секундын fixed output-тай. 1080p сонголт бол HD upgrade."
+                    : "Видеоны урт болон чанараа сонгоно уу."}
+                </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Үргэлжлэх хугацаа</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {VIDEO_DURATIONS.map((item) => (
+                    {selectedModel.durationOptions.map((item) => (
                       <button
                         key={item}
                         type="button"
@@ -443,7 +558,7 @@ export function VideoGeneratorClient({
                           duration === item
                             ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
                             : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
-                        }`}
+                        } ${isDurationLocked ? "cursor-default" : ""}`}
                       >
                         {item} сек
                       </button>
@@ -454,21 +569,28 @@ export function VideoGeneratorClient({
                 <div>
                   <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Чанар</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {VIDEO_QUALITIES.map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => setQuality(item)}
-                        disabled={item === "1080p" && duration === 10}
-                        className={`rounded-[1rem] border px-3 py-3 text-sm font-medium transition ${
-                          quality === item
-                            ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
-                            : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
-                        } disabled:cursor-not-allowed disabled:opacity-40`}
-                      >
-                        {item}
-                      </button>
-                    ))}
+                    {selectedModel.qualityOptions.map((item) => {
+                      const isDisabled =
+                        selectedModel.name === "runway/gen4-turbo" &&
+                        item === "1080p" &&
+                        duration === 10;
+
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setQuality(item)}
+                          disabled={isDisabled}
+                          className={`rounded-[1rem] border px-3 py-3 text-sm font-medium transition ${
+                            quality === item
+                              ? "generator-option-active border-cyan-400 bg-cyan-50 text-cyan-900 shadow-[0_16px_32px_rgba(18,159,213,0.16)]"
+                              : "generator-option-idle border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-white"
+                          } disabled:cursor-not-allowed disabled:opacity-40`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -528,7 +650,9 @@ export function VideoGeneratorClient({
                 <h3 className="text-lg font-semibold text-slate-950">Гаралт</h3>
                 <p className="mt-1 text-sm text-slate-500">Үүссэн видео энд preview болон татах хэлбэрээр харагдана.</p>
               </div>
-              <span className="generator-chip-accent rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Видео</span>
+              <span className="generator-chip-accent rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
+                {selectedModel.label}
+              </span>
             </div>
 
             {isPending ? (
@@ -541,7 +665,9 @@ export function VideoGeneratorClient({
                 </div>
                 <h4 className="mt-5 text-xl font-semibold text-slate-950">Видео үүсгэж байна...</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Энэ процесс зураг үүсгэхээс арай урт үргэлжилж болно. Дуусмагц preview автоматаар шинэчлэгдэнэ.
+                  {isVeoModel
+                    ? "Veo generation болон HD upgrade нь арай урт үргэлжилж болно. Дуусмагц preview автоматаар шинэчлэгдэнэ."
+                    : "Энэ процесс зураг үүсгэхээс арай урт үргэлжилж болно. Дуусмагц preview автоматаар шинэчлэгдэнэ."}
                 </p>
               </div>
             ) : result ? (
@@ -552,6 +678,7 @@ export function VideoGeneratorClient({
 
                 <div className="generator-card flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{selectedModel.label}</span>
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{duration} сек</span>
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{quality}</span>
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{formatMnt(creditsToMnt(result.cost, creditPriceMnt))}</span>
@@ -580,7 +707,7 @@ export function VideoGeneratorClient({
                 </div>
                 <h4 className="mt-5 text-xl font-semibold text-slate-950">Таны видео энд гарна</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  Эх зургаа оруулаад тайлбараа сайн тодорхойлбол илүү тогтвортой хөдөлгөөнтэй видео гарна.
+                  {selectedModel.label} ашиглаад эх зургаа оруулж, хөдөлгөөнөө тодорхой бичвэл илүү тогтвортой видео гарна.
                 </p>
               </div>
             )}
@@ -616,6 +743,7 @@ export function VideoGeneratorClient({
                       <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
                       <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
+                        <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{getModelDisplayName(item.model_name)}</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.duration} сек</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.quality}</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{formatMnt(creditsToMnt(item.cost, creditPriceMnt))}</span>

@@ -71,7 +71,7 @@ function getSystemPrompt(target: PromptOptimizerTarget) {
 function buildUserContext(data: z.infer<typeof requestSchema>) {
   const lines = [
     `Target: ${data.target}`,
-    data.target === "image" ? "Model: Nano Banana" : "Model: Runway image-to-video",
+    data.target === "image" ? "Model: Nano Banana" : "Model: Video generation (Runway / Veo)",
     `Original prompt: ${data.prompt}`,
   ];
 

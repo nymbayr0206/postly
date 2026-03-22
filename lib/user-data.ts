@@ -217,6 +217,20 @@ export async function getModelByName(supabase: SupabaseClient, modelName: string
   return data;
 }
 
+export async function getOptionalModelByName(supabase: SupabaseClient, modelName: string) {
+  const { data, error } = await supabase
+    .from("models")
+    .select("id,name,base_cost,created_at")
+    .eq("name", modelName)
+    .maybeSingle<ModelRow>();
+
+  if (error) {
+    throw new Error(`ÐœÐ¾Ð´ÐµÐ»ÑŒ Ð°Ñ‡Ð°Ð°Ð»Ð¶ Ñ‡Ð°Ð´ÑÐ°Ð½Ð³Ò¯Ð¹: ${error.message}`);
+  }
+
+  return data ?? null;
+}
+
 export async function getModels(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from("models")

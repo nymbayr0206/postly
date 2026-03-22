@@ -155,7 +155,7 @@ export class RunwayProvider {
         if (!videoUrl) {
           throw new VideoModelError("Runway видеоны холбоос буцаасангүй.", 502);
         }
-        return { videoUrl, rawResponse: pollData };
+        return { videoUrl, rawResponse: pollData, duration: input.duration, quality: input.quality };
       }
 
       if (state === "fail") {

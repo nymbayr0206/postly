@@ -26,6 +26,8 @@ export function getModelDisplayName(modelName: string) {
     nanobanana: "NanoBanana зураг",
     "elevenlabs/text-to-dialogue-v3": "ElevenLabs аудио",
     "runway/gen4-turbo": "Runway видео",
+    veo3_fast: "Veo 3.1 Fast видео",
+    veo3: "Veo 3 Quality видео",
   };
 
   return labels[modelName] ?? modelName;
@@ -66,4 +68,3 @@ export function buildGenerationPricingPreview(params: {
     agent_cost: calculateFinalCreditCost(params.baseCost, agentTariff.multiplier),
   };
 }
-

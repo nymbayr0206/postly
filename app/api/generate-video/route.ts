@@ -1,17 +1,27 @@
 import { z } from "zod";
 
 import { getActiveModelNames } from "@/lib/env";
-import { getVideoCredits } from "@/lib/generation-pricing";
+import { getVideoCreditsForModel } from "@/lib/generation-pricing";
 import { issueGenerationCommitToken } from "@/lib/generation-commit-tokens";
+import {
+  getVideoModelCatalogOrThrow,
+  getVideoRequestValidationError,
+  isVideoModelName,
+} from "@/lib/video-models/catalog";
 import { getVideoModelProvider } from "@/lib/video-models/registry";
-import { VIDEO_QUALITIES, VideoModelError } from "@/lib/video-models/types";
+import {
+  VIDEO_ASPECT_RATIOS,
+  VIDEO_QUALITIES,
+  type VideoDuration,
+  VideoModelError,
+} from "@/lib/video-models/types";
 import { calculateFinalCreditCost } from "@/lib/pricing";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   ensureUserRecords,
   getEffectiveTariffForProfile,
-  getModelByName,
+  getOptionalModelByName,
   getUserProfile,
   getWallet,
 } from "@/lib/user-data";
@@ -19,8 +29,10 @@ import {
 const requestSchema = z.object({
   prompt: z.string().trim().min(3, "Промпт хамгийн багадаа 3 тэмдэгт байх ёстой."),
   image_url: z.string().url("Хүчинтэй зургийн холбоос шаардлагатай."),
-  duration: z.union([z.literal(5), z.literal(10)]).default(5),
+  model_name: z.string().trim().default(getActiveModelNames().runwayModelName),
+  duration: z.union([z.literal(5), z.literal(8), z.literal(10)]).default(5),
   quality: z.enum(VIDEO_QUALITIES).default("720p"),
+  aspect_ratio: z.enum(VIDEO_ASPECT_RATIOS).default("Auto"),
 });
 
 export async function POST(request: Request) {
@@ -39,16 +51,25 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1080p only supports 5-second videos
-  if (parsed.data.quality === "1080p" && parsed.data.duration === 10) {
-    return Response.json(
-      { error: "1080p чанар зөвхөн 5 секундын видеод дэмжигдэнэ." },
-      { status: 400 },
-    );
+  if (!isVideoModelName(parsed.data.model_name)) {
+    return Response.json({ error: "Дэмжигдэхгүй видео model байна." }, { status: 400 });
+  }
+
+  const validationError = getVideoRequestValidationError(
+    parsed.data.model_name,
+    parsed.data.duration,
+    parsed.data.quality,
+  );
+
+  if (validationError) {
+    return Response.json({ error: validationError }, { status: 400 });
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
   if (userError || !user) {
     return Response.json({ error: "Видео үүсгэхийн тулд нэвтэрнэ үү." }, { status: 401 });
@@ -57,14 +78,27 @@ export async function POST(request: Request) {
   try {
     await ensureUserRecords(supabase, user);
 
-    const { runwayModelName: modelName } = getActiveModelNames();
-    const [profile, model, wallet] = await Promise.all([
+    const modelConfig = getVideoModelCatalogOrThrow(parsed.data.model_name);
+    const [profile, modelRow, wallet] = await Promise.all([
       getUserProfile(supabase, user.id),
-      getModelByName(supabase, modelName),
+      getOptionalModelByName(supabase, parsed.data.model_name),
       getWallet(supabase, user.id),
     ]);
+
+    const model = modelRow ?? {
+      id: `fallback:${modelConfig.name}`,
+      name: modelConfig.name,
+      base_cost: modelConfig.defaultBaseCost,
+      created_at: new Date(0).toISOString(),
+    };
+
     const tariff = await getEffectiveTariffForProfile(supabase, profile);
-    const baseCost = getVideoCredits(parsed.data.duration, parsed.data.quality, model.base_cost);
+    const baseCost = getVideoCreditsForModel(
+      model.name,
+      parsed.data.duration as VideoDuration,
+      parsed.data.quality,
+      model.base_cost,
+    );
     const cost = calculateFinalCreditCost(baseCost, tariff.multiplier);
 
     if (wallet.credits < cost) {
@@ -77,10 +111,12 @@ export async function POST(request: Request) {
     const provider = getVideoModelProvider(model.name);
 
     const generation = await provider.generateVideo({
+      modelName: model.name,
       prompt: parsed.data.prompt,
       imageUrl: parsed.data.image_url,
-      duration: parsed.data.duration,
+      duration: parsed.data.duration as VideoDuration,
       quality: parsed.data.quality,
+      aspectRatio: parsed.data.aspect_ratio,
     });
     const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
       userId: user.id,
@@ -97,8 +133,8 @@ export async function POST(request: Request) {
         p_prompt: parsed.data.prompt,
         p_image_url: parsed.data.image_url,
         p_video_url: generation.videoUrl,
-        p_duration: parsed.data.duration,
-        p_quality: parsed.data.quality,
+        p_duration: generation.duration ?? parsed.data.duration,
+        p_quality: generation.quality ?? parsed.data.quality,
         p_server_token: serverToken,
       },
     );

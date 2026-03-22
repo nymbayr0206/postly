@@ -8,6 +8,18 @@ function readEnv(name: string): string {
   return value;
 }
 
+function readEnvAny(names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name];
+
+    if (value?.trim()) {
+      return value;
+    }
+  }
+
+  throw new Error(`Ð¨Ð°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹ Ð¾Ñ€Ñ‡Ð½Ñ‹ Ñ…ÑƒÐ²ÑŒÑÐ°Ð³Ñ‡ Ð°Ð»Ð³Ð°: ${names.join(" | ")}`);
+}
+
 function normalizeOptionalUrl(value: string | undefined) {
   if (!value) {
     return null;
@@ -40,6 +52,8 @@ const KIE_CREATE_TASK_URL = "https://api.kie.ai/api/v1/jobs/createTask";
 const DEFAULT_NANOBANANA_MODEL_NAME = "nano-banana-2";
 const DEFAULT_ELEVENLABS_MODEL_NAME = "elevenlabs/text-to-dialogue-v3";
 const DEFAULT_RUNWAY_MODEL_NAME = "runway/gen4-turbo";
+const DEFAULT_VEO_FAST_MODEL_NAME = "veo3_fast";
+const DEFAULT_VEO_MODEL_NAME = "veo3";
 
 export function getNanoBananaEnv() {
   return {
@@ -61,12 +75,31 @@ export function getElevenLabsEnv() {
 
 export function getRunwayEnv() {
   return {
-    runwayApiKey: readEnv("RUNWAY_API_KEY"),
+    runwayApiKey: readEnvAny(["KIE_API_KEY", "RUNWAY_API_KEY"]),
     runwayGenerateUrl: "https://api.kie.ai/api/v1/runway/generate",
     runwayPollUrl: "https://api.kie.ai/api/v1/runway/record-detail",
     runwayTimeoutMs: Number(process.env.RUNWAY_TIMEOUT_MS ?? "300000"),
     runwayModelName: DEFAULT_RUNWAY_MODEL_NAME,
   };
+}
+
+export function getVeoEnv() {
+  return {
+    veoApiKey: readEnvAny(["KIE_API_KEY", "VEO_API_KEY", "RUNWAY_API_KEY"]),
+    veoGenerateUrl: "https://api.kie.ai/api/v1/veo/generate",
+    veoPollUrl: "https://api.kie.ai/api/v1/veo/record-info",
+    veo1080pUrl: "https://api.kie.ai/api/v1/veo/get-1080p-video",
+    veoTimeoutMs: Number(process.env.VEO_TIMEOUT_MS ?? "420000"),
+    veoFastModelName: process.env.VEO_FAST_MODEL_NAME ?? DEFAULT_VEO_FAST_MODEL_NAME,
+    veoModelName: process.env.VEO_MODEL_NAME ?? DEFAULT_VEO_MODEL_NAME,
+  };
+}
+
+export function getActiveVideoModelNames() {
+  const { runwayModelName } = getRunwayEnv();
+  const { veoFastModelName, veoModelName } = getVeoEnv();
+
+  return [runwayModelName, veoFastModelName, veoModelName];
 }
 
 export function getQPayEnv() {
@@ -87,6 +120,8 @@ export function getActiveModelNames() {
     nanoBananaModelName: process.env.NANOBANANA_MODEL_NAME ?? DEFAULT_NANOBANANA_MODEL_NAME,
     elevenlabsModelName: DEFAULT_ELEVENLABS_MODEL_NAME,
     runwayModelName: DEFAULT_RUNWAY_MODEL_NAME,
+    veoFastModelName: process.env.VEO_FAST_MODEL_NAME ?? DEFAULT_VEO_FAST_MODEL_NAME,
+    veoModelName: process.env.VEO_MODEL_NAME ?? DEFAULT_VEO_MODEL_NAME,
   };
 }
 
@@ -95,6 +130,7 @@ export function getServerEnv() {
     ...getNanoBananaEnv(),
     ...getElevenLabsEnv(),
     ...getRunwayEnv(),
+    ...getVeoEnv(),
     ...getQPayEnv(),
   };
 }

@@ -1,4 +1,5 @@
 import type { DialogueLine } from "@/lib/audio-models/types";
+import { getVideoModelCatalogItem } from "@/lib/video-models/catalog";
 import type { VideoDuration, VideoQuality } from "@/lib/video-models/types";
 
 export const IMAGE_RESOLUTIONS = ["1k", "2k", "4k"] as const;
@@ -103,6 +104,25 @@ export function getVideoCredits(
   return Math.max(normalizedBaseCost + 1, Math.ceil(normalizedBaseCost * 2.5));
 }
 
+export function getVideoCreditsForModel(
+  modelName: string,
+  duration: VideoDuration,
+  quality: VideoQuality,
+  baseCost: number = DEFAULT_VIDEO_BASE_COST,
+) {
+  const normalizedBaseCost = normalizeBaseCost(baseCost, DEFAULT_VIDEO_BASE_COST);
+
+  if (modelName === "veo3_fast" || modelName === "veo3") {
+    if (quality === "720p") {
+      return normalizedBaseCost;
+    }
+
+    return Math.max(normalizedBaseCost + 2, Math.ceil(normalizedBaseCost * 1.75));
+  }
+
+  return getVideoCredits(duration, quality, normalizedBaseCost);
+}
+
 export function getHighTierEffectiveCredits(rawCredits: number) {
   return rawCredits / (1 + HIGH_TIER_TOPUP_BONUS_RATE);
 }
@@ -113,6 +133,8 @@ export function isFixedPricingModel(modelName: string) {
     "nanobanana",
     "elevenlabs/text-to-dialogue-v3",
     "runway/gen4-turbo",
+    "veo3_fast",
+    "veo3",
   ].includes(modelName);
 }
 
@@ -122,6 +144,10 @@ export function getStartingCreditsForModel(modelName: string, baseCost?: number)
   }
 
   if (modelName === "runway/gen4-turbo") {
+    return normalizeBaseCost(baseCost, DEFAULT_VIDEO_BASE_COST);
+  }
+
+  if (modelName === "veo3_fast" || modelName === "veo3") {
     return normalizeBaseCost(baseCost, DEFAULT_VIDEO_BASE_COST);
   }
 
@@ -164,6 +190,27 @@ export function getAdminPricingSummary(
         `5 секунд · 720p: ${formatCredits(baseVideoCredits)} кредит · ${formatMnt(creditsToMnt(baseVideoCredits, creditPriceMnt))}`,
         `10 секунд · 720p: ${formatCredits(premiumVideoCredits)} кредит · ${formatMnt(creditsToMnt(premiumVideoCredits, creditPriceMnt))}`,
         `5 секунд · 1080p: ${formatCredits(premiumVideoCredits)} кредит · ${formatMnt(creditsToMnt(premiumVideoCredits, creditPriceMnt))}`,
+      ],
+    };
+  }
+
+  if (modelName === "veo3_fast" || modelName === "veo3") {
+    const model = getVideoModelCatalogItem(modelName);
+    const baseVideoCredits = normalizeBaseCost(baseCost, DEFAULT_VIDEO_BASE_COST);
+    const premiumVideoCredits = getVideoCreditsForModel(
+      modelName,
+      (model?.defaultDuration ?? 8) as VideoDuration,
+      "1080p",
+      baseVideoCredits,
+    );
+
+    return {
+      title: `${formatCredits(baseVideoCredits)} эсвэл ${formatCredits(premiumVideoCredits)} кредит / видео`,
+      description:
+        `${model?.label ?? "Veo"} нь fixed 8 секундын видео гаргана. 720p нь base credit, 1080p нь upgrade credit-ээр бодогдоно.`,
+      bullets: [
+        `8 секунд · 720p: ${formatCredits(baseVideoCredits)} кредит · ${formatMnt(creditsToMnt(baseVideoCredits, creditPriceMnt))}`,
+        `8 секунд · 1080p: ${formatCredits(premiumVideoCredits)} кредит · ${formatMnt(creditsToMnt(premiumVideoCredits, creditPriceMnt))}`,
       ],
     };
   }

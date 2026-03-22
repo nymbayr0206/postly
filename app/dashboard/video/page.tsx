@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 
 import { VideoGeneratorClient } from "@/components/dashboard/video-generator-client";
-import { getActiveModelNames } from "@/lib/env";
+import { getActiveVideoModelNames } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getEffectiveTariffForProfile,
-  getModelByName,
+  getModels,
   getPlatformSettings,
   getUserProfile,
   getWallet,
 } from "@/lib/user-data";
+import { getVideoModelCatalogOrThrow } from "@/lib/video-models/catalog";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("mn-MN", {
@@ -28,19 +29,36 @@ export default async function VideoPage() {
     redirect("/auth");
   }
 
-  const { runwayModelName } = getActiveModelNames();
-  const [profile, wallet, platformSettings, model, { data: history }] = await Promise.all([
+  const activeVideoModelNames = getActiveVideoModelNames();
+  const [profile, wallet, platformSettings, allModels, { data: history }] = await Promise.all([
     getUserProfile(supabase, user.id),
     getWallet(supabase, user.id),
     getPlatformSettings(supabase),
-    getModelByName(supabase, runwayModelName),
+    getModels(supabase),
     supabase
       .from("video_generations")
-      .select("id,prompt,video_url,image_url,duration,quality,cost,created_at")
+      .select("id,prompt,video_url,image_url,duration,quality,cost,created_at,model_name")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
+
+  const modelByName = new Map(allModels.map((model) => [model.name, model]));
+  const videoModels = activeVideoModelNames.map((modelName) => {
+    const catalog = getVideoModelCatalogOrThrow(modelName);
+    const dbModel = modelByName.get(modelName);
+
+    return {
+      name: catalog.name,
+      label: catalog.label,
+      description: catalog.description,
+      durationOptions: [...catalog.durationOptions],
+      qualityOptions: [...catalog.qualityOptions],
+      defaultDuration: catalog.defaultDuration,
+      defaultQuality: catalog.defaultQuality,
+      baseCost: dbModel?.base_cost ?? catalog.defaultBaseCost,
+    };
+  });
 
   const items = (history ?? []).map((item) => ({
     ...item,
@@ -55,8 +73,8 @@ export default async function VideoPage() {
           currentCredits={wallet.credits}
           history={items}
           creditPriceMnt={platformSettings.credit_price_mnt}
-          modelBaseCost={model.base_cost}
           tariffMultiplier={tariff.multiplier}
+          models={videoModels}
         />
       </section>
     </div>
