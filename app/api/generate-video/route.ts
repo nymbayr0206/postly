@@ -33,6 +33,7 @@ const requestSchema = z.object({
   duration: z.union([z.literal(5), z.literal(8), z.literal(10)]).default(5),
   quality: z.enum(VIDEO_QUALITIES).default("720p"),
   aspect_ratio: z.enum(VIDEO_ASPECT_RATIOS).default("Auto"),
+  seed: z.number().int().min(0, "Seed 0-ээс их эсвэл тэнцүү байх ёстой.").max(2147483647).optional(),
 });
 
 export async function POST(request: Request) {
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
       duration: parsed.data.duration as VideoDuration,
       quality: parsed.data.quality,
       aspectRatio: parsed.data.aspect_ratio,
+      seed: parsed.data.seed,
     });
     const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
       userId: user.id,

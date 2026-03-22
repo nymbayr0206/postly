@@ -80,6 +80,7 @@ export class VeoProvider {
           imageUrls: [input.imageUrl],
           model: input.modelName,
           aspect_ratio: input.aspectRatio ?? "Auto",
+          ...(input.seed === undefined ? {} : { seeds: input.seed }),
           enableTranslation: true,
           enableFallback: false,
           generationType: "FIRST_AND_LAST_FRAMES_2_VIDEO",

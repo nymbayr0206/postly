@@ -72,6 +72,7 @@ export function VideoGeneratorClient({
   const [duration, setDuration] = useState<VideoDuration>(fallbackModel?.defaultDuration ?? 5);
   const [quality, setQuality] = useState<VideoQuality>(fallbackModel?.defaultQuality ?? "720p");
   const [detectedAspectRatio, setDetectedAspectRatio] = useState<VideoAspectRatio>("Auto");
+  const [seed, setSeed] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [isOptimizingPrompt, setIsOptimizingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -240,6 +241,7 @@ export function VideoGeneratorClient({
     const availableCredits = result ? result.credits_remaining : currentCredits;
     const baseCost = getVideoCreditsForModel(selectedModel.name, duration, quality, selectedModel.baseCost);
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
+    const normalizedSeed = seed.trim();
 
     if (!file) {
       setError("Эх зураг сонгоно уу.");
@@ -253,6 +255,11 @@ export function VideoGeneratorClient({
 
     if (selectedModel.name === "runway/gen4-turbo" && quality === "1080p" && duration === 10) {
       setError("1080p чанар зөвхөн 5 секундын видеод дэмжигдэнэ.");
+      return;
+    }
+
+    if (normalizedSeed && !/^\d+$/.test(normalizedSeed)) {
+      setError("Seed зөвхөн бүхэл тоо байна.");
       return;
     }
 
@@ -301,6 +308,9 @@ export function VideoGeneratorClient({
           duration,
           quality,
           aspect_ratio: detectedAspectRatio,
+          ...(selectedModel.name.startsWith("veo") && normalizedSeed
+            ? { seed: Number(normalizedSeed) }
+            : {}),
         }),
       });
       const generatePayload = await generateResponse.json();
@@ -328,6 +338,7 @@ export function VideoGeneratorClient({
     setResult(null);
     setError(null);
     setPromptOptimizationInfo(null);
+    setSeed("");
   }
 
   if (!selectedModel) {
@@ -594,6 +605,27 @@ export function VideoGeneratorClient({
                   </div>
                 </div>
               </div>
+
+              {isVeoModel ? (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Seed (Optional)
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={1}
+                      value={seed}
+                      onChange={(event) => setSeed(event.target.value)}
+                      placeholder="Жишээ: 12345"
+                      className="generator-input mt-2 w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                    />
+                  </label>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Ижил seed ашиглавал ойролцоо composition, motion-той Veo video дахин авахад тусална.
+                  </p>
+                </div>
+              ) : null}
             </section>
           </div>
 

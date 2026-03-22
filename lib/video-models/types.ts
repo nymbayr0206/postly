@@ -13,6 +13,7 @@ export type VideoGenerationInput = {
   duration: VideoDuration;
   quality: VideoQuality;
   aspectRatio?: VideoAspectRatio;
+  seed?: number;
 };
 
 export type VideoGenerationOutput = {
