@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DownloadButton } from "@/components/dashboard/download-button";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type HistoryItem =
   | {
@@ -30,6 +30,7 @@ type HistoryItem =
       prompt: string;
       duration: number;
       quality: string;
+      seed: number | null;
       cost: number;
       url: string;
       image_url: string;
@@ -87,7 +88,7 @@ export default async function HistoryPage() {
       .limit(50),
     supabase
       .from("video_generations")
-      .select("id,model_name,prompt,duration,quality,cost,video_url,image_url,created_at")
+      .select("id,model_name,prompt,duration,quality,seed,cost,video_url,image_url,created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -120,6 +121,7 @@ export default async function HistoryPage() {
       prompt: row.prompt,
       duration: row.duration,
       quality: row.quality,
+      seed: row.seed ?? null,
       cost: row.cost,
       url: row.video_url,
       image_url: row.image_url,
@@ -194,21 +196,23 @@ export default async function HistoryPage() {
               className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/85 shadow-[0_18px_40px_rgba(9,38,66,0.08)] backdrop-blur"
             >
               <div className="relative aspect-video bg-slate-100">
-                {item.type === "image" && (
+                {item.type === "image" ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={item.url} alt={item.prompt} className="h-full w-full object-cover" />
                   </>
-                )}
-                {item.type === "video" && (
+                ) : null}
+
+                {item.type === "video" ? (
                   <video
                     src={item.url}
                     poster={item.image_url}
                     controls
                     className="h-full w-full object-cover"
                   />
-                )}
-                {item.type === "audio" && (
+                ) : null}
+
+                {item.type === "audio" ? (
                   <div className="brand-shell brand-grid flex h-full w-full flex-col items-center justify-center gap-4 p-5 text-white">
                     <div className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-cyan-100">
                       <svg
@@ -227,7 +231,8 @@ export default async function HistoryPage() {
                     </div>
                     <audio controls src={item.url} className="relative z-10 w-full" />
                   </div>
-                )}
+                ) : null}
+
                 <div className="absolute left-3 top-3">
                   <TypeBadge type={item.type} />
                 </div>
@@ -239,14 +244,19 @@ export default async function HistoryPage() {
                   <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                     <span className="rounded-full bg-slate-100 px-3 py-1">{formatDate(item.created_at)}</span>
                     <span className="rounded-full bg-slate-100 px-3 py-1">{item.cost} кредит</span>
-                    {item.type === "image" && (
+                    {item.type === "image" ? (
                       <span className="rounded-full bg-slate-100 px-3 py-1">{item.aspect_ratio ?? "-"}</span>
-                    )}
-                    {item.type === "video" && (
-                      <span className="rounded-full bg-slate-100 px-3 py-1">
-                        {item.duration} сек · {item.quality}
-                      </span>
-                    )}
+                    ) : null}
+                    {item.type === "video" ? (
+                      <>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                          {item.duration} сек · {item.quality}
+                        </span>
+                        {item.seed !== null ? (
+                          <span className="rounded-full bg-slate-100 px-3 py-1">Seed {item.seed}</span>
+                        ) : null}
+                      </>
+                    ) : null}
                   </div>
                 </div>
 
@@ -271,6 +281,7 @@ export default async function HistoryPage() {
                     </svg>
                     Харах
                   </a>
+
                   <DownloadButton
                     url={item.url}
                     label="Татах"

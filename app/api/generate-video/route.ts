@@ -12,6 +12,8 @@ import { getVideoModelProvider } from "@/lib/video-models/registry";
 import {
   VIDEO_ASPECT_RATIOS,
   VIDEO_QUALITIES,
+  VEO_SEED_MAX,
+  VEO_SEED_MIN,
   type VideoDuration,
   VideoModelError,
 } from "@/lib/video-models/types";
@@ -33,7 +35,12 @@ const requestSchema = z.object({
   duration: z.union([z.literal(5), z.literal(8), z.literal(10)]).default(5),
   quality: z.enum(VIDEO_QUALITIES).default("720p"),
   aspect_ratio: z.enum(VIDEO_ASPECT_RATIOS).default("Auto"),
-  seed: z.number().int().min(0, "Seed 0-ээс их эсвэл тэнцүү байх ёстой.").max(2147483647).optional(),
+  seed: z
+    .number()
+    .int("Seed бүхэл тоо байна.")
+    .min(VEO_SEED_MIN, `Seed ${VEO_SEED_MIN}-${VEO_SEED_MAX} хооронд байх ёстой.`)
+    .max(VEO_SEED_MAX, `Seed ${VEO_SEED_MIN}-${VEO_SEED_MAX} хооронд байх ёстой.`)
+    .optional(),
 });
 
 export async function POST(request: Request) {
@@ -64,6 +71,10 @@ export async function POST(request: Request) {
 
   if (validationError) {
     return Response.json({ error: validationError }, { status: 400 });
+  }
+
+  if (!parsed.data.model_name.startsWith("veo") && parsed.data.seed !== undefined) {
+    return Response.json({ error: "Seed зөвхөн Veo model дээр дэмжигдэнэ." }, { status: 400 });
   }
 
   const supabase = await createSupabaseServerClient();
@@ -120,6 +131,8 @@ export async function POST(request: Request) {
       aspectRatio: parsed.data.aspect_ratio,
       seed: parsed.data.seed,
     });
+    const resolvedSeed =
+      model.name.startsWith("veo") ? generation.seed ?? parsed.data.seed ?? null : null;
     const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
       userId: user.id,
       modelName: model.name,
@@ -138,6 +151,7 @@ export async function POST(request: Request) {
         p_duration: generation.duration ?? parsed.data.duration,
         p_quality: generation.quality ?? parsed.data.quality,
         p_server_token: serverToken,
+        p_seed: resolvedSeed,
       },
     );
 
@@ -148,6 +162,14 @@ export async function POST(request: Request) {
           { status: 409 },
         );
       }
+
+      if (deductionError.message.includes("INVALID_SEED")) {
+        return Response.json(
+          { error: `Seed ${VEO_SEED_MIN}-${VEO_SEED_MAX} хооронд байх ёстой.` },
+          { status: 400 },
+        );
+      }
+
       return Response.json(
         { error: "Видео амжилттай үүссэн ч төлбөрийн гүйлгээг дуусгаж чадсангүй. Дэмжлэгтэй холбогдоно уу." },
         { status: 500 },
@@ -161,6 +183,7 @@ export async function POST(request: Request) {
       cost: result?.charged_cost ?? cost,
       generation_id: result?.generation_id ?? null,
       credits_remaining: result?.remaining_credits ?? wallet.credits - (result?.charged_cost ?? cost),
+      seed: resolvedSeed,
     });
   } catch (error) {
     console.error("[generate-video] ERROR:", error);

@@ -8,12 +8,19 @@ import { SpeechToTextControl } from "@/components/dashboard/speech-to-text-contr
 import { creditsToMnt, formatMnt, getVideoCreditsForModel } from "@/lib/generation-pricing";
 import { containsCyrillicText, type OptimizedPromptResponse } from "@/lib/prompt-optimizer";
 import { calculateFinalCreditCost, getModelDisplayName } from "@/lib/pricing";
-import type { VideoAspectRatio, VideoDuration, VideoQuality } from "@/lib/video-models/types";
+import {
+  VEO_SEED_MAX,
+  VEO_SEED_MIN,
+  type VideoAspectRatio,
+  type VideoDuration,
+  type VideoQuality,
+} from "@/lib/video-models/types";
 
 type GenerateVideoResult = {
   video_url: string;
   cost: number;
   credits_remaining: number;
+  seed?: number | null;
 };
 
 type VideoHistoryItem = {
@@ -25,6 +32,7 @@ type VideoHistoryItem = {
   quality: string;
   cost: number;
   model_name: string;
+  seed?: number | null;
   created_at: string;
   created_at_label: string;
 };
@@ -242,6 +250,7 @@ export function VideoGeneratorClient({
     const baseCost = getVideoCreditsForModel(selectedModel.name, duration, quality, selectedModel.baseCost);
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
     const normalizedSeed = seed.trim();
+    const isVeoModelRequest = selectedModel.name.startsWith("veo");
 
     if (!file) {
       setError("Эх зураг сонгоно уу.");
@@ -258,9 +267,17 @@ export function VideoGeneratorClient({
       return;
     }
 
-    if (normalizedSeed && !/^\d+$/.test(normalizedSeed)) {
-      setError("Seed зөвхөн бүхэл тоо байна.");
-      return;
+    if (isVeoModelRequest && normalizedSeed) {
+      if (!/^\d+$/.test(normalizedSeed)) {
+        setError("Seed зөвхөн бүхэл тоо байна.");
+        return;
+      }
+
+      const numericSeed = Number(normalizedSeed);
+      if (numericSeed < VEO_SEED_MIN || numericSeed > VEO_SEED_MAX) {
+        setError(`Seed ${VEO_SEED_MIN}-${VEO_SEED_MAX} хооронд байна.`);
+        return;
+      }
     }
 
     if (availableCredits < currentCost) {
@@ -308,7 +325,7 @@ export function VideoGeneratorClient({
           duration,
           quality,
           aspect_ratio: detectedAspectRatio,
-          ...(selectedModel.name.startsWith("veo") && normalizedSeed
+          ...(isVeoModelRequest && normalizedSeed
             ? { seed: Number(normalizedSeed) }
             : {}),
         }),
@@ -320,7 +337,11 @@ export function VideoGeneratorClient({
         return;
       }
 
-      setResult(generatePayload as GenerateVideoResult);
+      const nextResult = generatePayload as GenerateVideoResult;
+      setResult(nextResult);
+      if (isVeoModelRequest && typeof nextResult.seed === "number") {
+        setSeed(String(nextResult.seed));
+      }
       setPrompt("");
       setPromptOptimizationInfo(null);
       replaceFile(null);
@@ -613,16 +634,17 @@ export function VideoGeneratorClient({
                     <input
                       type="number"
                       inputMode="numeric"
-                      min={0}
+                      min={VEO_SEED_MIN}
+                      max={VEO_SEED_MAX}
                       step={1}
                       value={seed}
                       onChange={(event) => setSeed(event.target.value)}
-                      placeholder="Жишээ: 12345"
+                      placeholder={`Жишээ: ${VEO_SEED_MIN}`}
                       className="generator-input mt-2 w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
                     />
                   </label>
                   <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Ижил seed ашиглавал ойролцоо composition, motion-той Veo video дахин авахад тусална.
+                    {`Ижил seed (${VEO_SEED_MIN}-${VEO_SEED_MAX}) ашиглавал ойролцоо composition, motion-той Veo video дахин авахад тусална. Хоосон орхивол Veo өөрөө seed оноогоод generate болсны дараа харуулна.`}
                   </p>
                 </div>
               ) : null}
@@ -713,6 +735,9 @@ export function VideoGeneratorClient({
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{selectedModel.label}</span>
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{duration} сек</span>
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{quality}</span>
+                    {typeof result.seed === "number" ? (
+                      <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">Seed {result.seed}</span>
+                    ) : null}
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{formatMnt(creditsToMnt(result.cost, creditPriceMnt))}</span>
                   </div>
                   <a
@@ -778,6 +803,9 @@ export function VideoGeneratorClient({
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{getModelDisplayName(item.model_name)}</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.duration} сек</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.quality}</span>
+                        {typeof item.seed === "number" ? (
+                          <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">Seed {item.seed}</span>
+                        ) : null}
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{formatMnt(creditsToMnt(item.cost, creditPriceMnt))}</span>
                       </div>
                       <a

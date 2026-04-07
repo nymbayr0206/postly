@@ -21,6 +21,7 @@ type VeoDetailsResponse = {
   msg: string;
   data?: {
     taskId?: string;
+    paramJson?: string | null;
     successFlag?: number;
     errorMessage?: string | null;
     fallbackFlag?: boolean;
@@ -29,6 +30,7 @@ type VeoDetailsResponse = {
       resultUrls?: string[];
       originUrls?: string[];
       resolution?: string;
+      paramJson?: string | null;
     };
   };
 };
@@ -43,6 +45,53 @@ type VeoUpgradeResponse = {
 
 function extractVeoVideoUrl(data: VeoDetailsResponse["data"]) {
   return data?.response?.resultUrls?.[0] ?? data?.response?.originUrls?.[0] ?? null;
+}
+
+function normalizeSeedValue(value: unknown) {
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+    return Number(value.trim());
+  }
+
+  return undefined;
+}
+
+function extractVeoSeed(data: VeoDetailsResponse["data"], fallbackSeed?: number) {
+  const directSeed = normalizeSeedValue((data as { seed?: unknown } | undefined)?.seed);
+  if (directSeed !== undefined) {
+    return directSeed;
+  }
+
+  const directSeeds = normalizeSeedValue((data as { seeds?: unknown } | undefined)?.seeds);
+  if (directSeeds !== undefined) {
+    return directSeeds;
+  }
+
+  for (const source of [data?.paramJson, data?.response?.paramJson]) {
+    if (!source?.trim()) {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(source) as { seed?: unknown; seeds?: unknown };
+      const parsedSeed = normalizeSeedValue(parsed.seed);
+      if (parsedSeed !== undefined) {
+        return parsedSeed;
+      }
+
+      const parsedSeeds = normalizeSeedValue(parsed.seeds);
+      if (parsedSeeds !== undefined) {
+        return parsedSeeds;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return fallbackSeed;
 }
 
 function getKieErrorMessage(message: string, fallbackMessage: string) {
@@ -134,6 +183,7 @@ export class VeoProvider {
 
       if (successFlag === 1) {
         const standardVideoUrl = extractVeoVideoUrl(detailsData.data);
+        const resolvedSeed = extractVeoSeed(detailsData.data, input.seed);
 
         if (!standardVideoUrl) {
           throw new VideoModelError("Veo видеоны холбоос буцаасангүй.", 502);
@@ -145,6 +195,7 @@ export class VeoProvider {
             rawResponse: detailsData,
             duration: input.duration,
             quality: input.quality,
+            seed: resolvedSeed,
           };
         }
 
@@ -163,6 +214,7 @@ export class VeoProvider {
           },
           duration: input.duration,
           quality: input.quality,
+          seed: resolvedSeed,
         };
       }
 

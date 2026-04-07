@@ -37,7 +37,7 @@ export default async function VideoPage() {
     getModels(supabase),
     supabase
       .from("video_generations")
-      .select("id,prompt,video_url,image_url,duration,quality,cost,created_at,model_name")
+      .select("id,prompt,video_url,image_url,duration,quality,cost,created_at,model_name,seed")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20),
