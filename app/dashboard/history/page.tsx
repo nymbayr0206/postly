@@ -287,26 +287,50 @@ export default async function HistoryPage() {
                 ) : null}
 
                 <div className="grid gap-3">
-                  {item.type === "video" && item.model_name.startsWith("veo") && item.can_extend ? (
-                    <Link
-                      href={`/dashboard/video?extend=${item.id}`}
-                      className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                  {item.type === "video" && item.model_name.startsWith("veo") ? (
+                    item.can_extend ? (
+                      <Link
+                        href={`/dashboard/video?extend=${item.id}`}
+                        className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
                       >
-                        <path d="M3 12h6" />
-                        <path d="M9 6l6 6-6 6" />
-                        <path d="M15 12h6" />
-                      </svg>
-                      Төгсгөлөөс үргэлжлүүлэх
-                    </Link>
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 12h6" />
+                          <path d="M9 6l6 6-6 6" />
+                          <path d="M15 12h6" />
+                        </svg>
+                        Төгсгөлөөс үргэлжлүүлэх
+                      </Link>
+                    ) : (
+                      <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                        <div className="inline-flex items-center gap-2 font-semibold text-slate-500">
+                          <svg
+                            className="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M3 12h6" />
+                            <path d="M9 6l6 6-6 6" />
+                            <path d="M15 12h6" />
+                          </svg>
+                          Төгсгөлөөс үргэлжлүүлэх боломжгүй
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          Энэ video хуучин generation тул real continue хийх task id хадгалагдаагүй байна.
+                        </p>
+                      </div>
+                    )
                   ) : null}
 
                   <div className="grid grid-cols-2 gap-3">

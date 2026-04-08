@@ -1033,19 +1033,35 @@ export function VideoGeneratorClient({
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{formatMnt(creditsToMnt(item.cost, creditPriceMnt))}</span>
                       </div>
                       <div className="grid gap-3">
-                        {item.model_name.startsWith("veo") && item.can_extend ? (
-                          <button
-                            type="button"
-                            onClick={() => handleExtendVideo(item)}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
-                          >
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M3 12h6" />
-                              <path d="M9 6l6 6-6 6" />
-                              <path d="M15 12h6" />
-                            </svg>
-                            Төгсгөлөөс үргэлжлүүлэх
-                          </button>
+                        {item.model_name.startsWith("veo") ? (
+                          item.can_extend ? (
+                            <button
+                              type="button"
+                              onClick={() => handleExtendVideo(item)}
+                              className="inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
+                            >
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 12h6" />
+                                <path d="M9 6l6 6-6 6" />
+                                <path d="M15 12h6" />
+                              </svg>
+                              Төгсгөлөөс үргэлжлүүлэх
+                            </button>
+                          ) : (
+                            <div className="rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                              <div className="inline-flex items-center gap-2 font-semibold text-slate-500">
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 12h6" />
+                                  <path d="M9 6l6 6-6 6" />
+                                  <path d="M15 12h6" />
+                                </svg>
+                                Төгсгөлөөс үргэлжлүүлэх боломжгүй
+                              </div>
+                              <p className="mt-2 text-xs leading-5 text-slate-500">
+                                Энэ video хуучин generation тул real continue хийх task id хадгалагдаагүй байна.
+                              </p>
+                            </div>
+                          )
                         ) : null}
                         {item.model_name.startsWith("veo") && typeof item.seed === "number" ? (
                           <button
