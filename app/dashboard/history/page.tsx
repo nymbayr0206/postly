@@ -63,6 +63,22 @@ function TypeBadge({ type }: { type: "image" | "audio" | "video" }) {
   );
 }
 
+function SeedPanel({ seed }: { seed: number | null }) {
+  return (
+    <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Seed</p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">
+        {seed !== null ? seed : "Хадгалагдаагүй"}
+      </p>
+      <p className="mt-1 text-xs leading-5 text-slate-600">
+        {seed !== null
+          ? "Шинэ Veo generation дээр энэ seed-ийг дахин оруулаад ойролцоо үр дүн авч болно."
+          : "Энэ video дээр seed хадгалагдаагүй байна."}
+      </p>
+    </div>
+  );
+}
+
 export default async function HistoryPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -259,6 +275,10 @@ export default async function HistoryPage() {
                     ) : null}
                   </div>
                 </div>
+
+                {item.type === "video" && item.model_name.startsWith("veo") ? (
+                  <SeedPanel seed={item.seed} />
+                ) : null}
 
                 <div className="grid grid-cols-2 gap-3">
                   <a

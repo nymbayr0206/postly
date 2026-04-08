@@ -48,6 +48,22 @@ type VideoModelOption = {
   baseCost: number;
 };
 
+function renderVeoSeedPanel(seedValue: number | null | undefined) {
+  return (
+    <div className="rounded-[1rem] border border-cyan-100 bg-cyan-50/70 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Seed</p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">
+        {typeof seedValue === "number" ? seedValue : "Хадгалагдаагүй"}
+      </p>
+      <p className="mt-1 text-xs leading-5 text-slate-600">
+        {typeof seedValue === "number"
+          ? "Энэ seed-ийг дахин оруулаад ойролцоо composition, motion-оо үргэлжлүүлж ашиглаж болно."
+          : "Энэ video дээр seed хадгалагдаагүй байна. Шинэ Veo generation хийхдээ seed оруулбал энд харагдана."}
+      </p>
+    </div>
+  );
+}
+
 function detectAspectRatio(width: number, height: number): VideoAspectRatio {
   if (!width || !height || width === height) {
     return "Auto";
@@ -730,6 +746,8 @@ export function VideoGeneratorClient({
                   <video controls src={result.video_url} className="w-full" />
                 </div>
 
+                {isVeoModel ? renderVeoSeedPanel(result.seed) : null}
+
                 <div className="generator-card flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
                     <span className="generator-chip rounded-full bg-white px-3 py-1 font-medium">{selectedModel.label}</span>
@@ -798,6 +816,9 @@ export function VideoGeneratorClient({
                     </div>
                     <div className="space-y-3 p-4">
                       <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.prompt}</p>
+
+                      {item.model_name.startsWith("veo") ? renderVeoSeedPanel(item.seed) : null}
+
                       <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{item.created_at_label}</span>
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{getModelDisplayName(item.model_name)}</span>
