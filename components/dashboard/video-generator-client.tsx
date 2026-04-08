@@ -58,7 +58,7 @@ function renderVeoSeedPanel(seedValue: number | null | undefined) {
       <p className="mt-1 text-xs leading-5 text-slate-600">
         {typeof seedValue === "number"
           ? "Энэ seed-ийг дахин оруулаад ойролцоо composition, motion-оо үргэлжлүүлж ашиглаж болно."
-          : "Энэ generation дээр Veo seed-ээ response дотроо буцаагаагүй байна. Seed-ээ өөрөө оруулаад generate хийвэл энд тогтвортой харагдана."}
+          : "Энэ бол хуучин generation. Одоо seed хоосон байсан ч систем өөрөө seed үүсгээд хадгалдаг болсон."}
       </p>
     </div>
   );
@@ -92,7 +92,9 @@ export function VideoGeneratorClient({
   const selectedModel = models.find((model) => model.name === selectedModelName) ?? fallbackModel;
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [previewIsObjectUrl, setPreviewIsObjectUrl] = useState(false);
   const [duration, setDuration] = useState<VideoDuration>(fallbackModel?.defaultDuration ?? 5);
   const [quality, setQuality] = useState<VideoQuality>(fallbackModel?.defaultQuality ?? "720p");
   const [detectedAspectRatio, setDetectedAspectRatio] = useState<VideoAspectRatio>("Auto");
@@ -104,15 +106,16 @@ export function VideoGeneratorClient({
   const [result, setResult] = useState<GenerateVideoResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formTopRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     return () => {
-      if (preview) {
+      if (preview && previewIsObjectUrl) {
         URL.revokeObjectURL(preview);
       }
     };
-  }, [preview]);
+  }, [preview, previewIsObjectUrl]);
 
   useEffect(() => {
     if (!selectedModel) {
@@ -143,20 +146,56 @@ export function VideoGeneratorClient({
     image.src = nextPreview;
   }
 
-  function replaceFile(nextFile: File | null) {
-    setFile(nextFile);
-
-    if (preview) {
+  function replacePreview(nextPreview: string | null, nextIsObjectUrl: boolean) {
+    if (preview && previewIsObjectUrl) {
       URL.revokeObjectURL(preview);
     }
 
-    const nextPreview = nextFile ? URL.createObjectURL(nextFile) : null;
     setPreview(nextPreview);
+    setPreviewIsObjectUrl(nextIsObjectUrl);
     updateDetectedAspectRatio(nextPreview);
+  }
+
+  function replaceFile(nextFile: File | null) {
+    setFile(nextFile);
+    setSourceImageUrl(null);
+
+    const nextPreview = nextFile ? URL.createObjectURL(nextFile) : null;
+    replacePreview(nextPreview, Boolean(nextFile));
 
     if (!nextFile && fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  }
+
+  function applyExistingSourceImage(imageUrl: string) {
+    setFile(null);
+    setSourceImageUrl(imageUrl);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    replacePreview(imageUrl, false);
+  }
+
+  function handleContinueWithSeed(item: VideoHistoryItem) {
+    if (!item.model_name.startsWith("veo") || typeof item.seed !== "number") {
+      setError("Энэ video дээр үргэлжлүүлэх seed алга.");
+      return;
+    }
+
+    setError(null);
+    setResult(null);
+    setPromptOptimizationInfo(null);
+    setSelectedModelName(item.model_name);
+    setDuration(item.duration as VideoDuration);
+    setQuality(item.quality as VideoQuality);
+    setSeed(String(item.seed));
+    setPrompt(item.prompt);
+    applyExistingSourceImage(item.image_url);
+
+    formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function handlePromptChange(nextValue: string) {
@@ -268,7 +307,7 @@ export function VideoGeneratorClient({
     const normalizedSeed = seed.trim();
     const isVeoModelRequest = selectedModel.name.startsWith("veo");
 
-    if (!file) {
+    if (!file && !sourceImageUrl) {
       setError("Эх зураг сонгоно уу.");
       return;
     }
@@ -316,21 +355,31 @@ export function VideoGeneratorClient({
         promptForGeneration = optimizedPrompt;
       }
 
-      const formData = new FormData();
-      formData.append("file", file);
+      let imageUrl = sourceImageUrl;
 
-      const uploadResponse = await fetch("/api/upload-image", {
-        method: "POST",
-        body: formData,
-      });
-      const uploadPayload = await uploadResponse.json();
+      if (!imageUrl && file) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      if (!uploadResponse.ok) {
-        setError(uploadPayload.error ?? "Зураг оруулахад алдаа гарлаа.");
+        const uploadResponse = await fetch("/api/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadPayload = await uploadResponse.json();
+
+        if (!uploadResponse.ok) {
+          setError(uploadPayload.error ?? "Зураг оруулахад алдаа гарлаа.");
+          return;
+        }
+
+        imageUrl = uploadPayload.url as string;
+      }
+
+      if (!imageUrl) {
+        setError("Эх зураг бэлдээгүй байна.");
         return;
       }
 
-      const imageUrl = uploadPayload.url as string;
       const generateResponse = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -394,7 +443,7 @@ export function VideoGeneratorClient({
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,29rem)_minmax(0,1fr)]">
       <div className="generator-shell-surface border-b border-[rgba(14,42,66,0.08)] bg-white/70 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col">
-          <div className="space-y-5 p-4 sm:p-6">
+          <div ref={formTopRef} className="space-y-5 p-4 sm:p-6">
             <GenerationPricingCard
               currentCost={formatMnt(currentCostMnt)}
               description={
@@ -540,6 +589,12 @@ export function VideoGeneratorClient({
                   {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               )}
+
+              {!file && sourceImageUrl ? (
+                <p className="mt-3 text-xs text-cyan-700">
+                  Өмнөх generation-ийн эх зураг ашиглаж байна. Үүнийг сольё гэвэл preview дээрх `×` дарна уу.
+                </p>
+              ) : null}
             </section>
 
             <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
@@ -660,7 +715,7 @@ export function VideoGeneratorClient({
                     />
                   </label>
                   <p className="mt-2 text-xs leading-5 text-slate-500">
-                    {`Ижил seed (${VEO_SEED_MIN}-${VEO_SEED_MAX}) ашиглавал ойролцоо composition, motion-той Veo video дахин авахад тусална. Хоосон орхивол Veo өөрөө seed оноогоод generate болсны дараа харуулна.`}
+                    {`Ижил seed (${VEO_SEED_MIN}-${VEO_SEED_MAX}) ашиглавал ойролцоо composition, motion-той Veo video дахин авахад тусална. Хоосон орхивол систем өөрөө seed үүсгээд хадгална.`}
                   </p>
                 </div>
               ) : null}
@@ -829,18 +884,33 @@ export function VideoGeneratorClient({
                         ) : null}
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{formatMnt(creditsToMnt(item.cost, creditPriceMnt))}</span>
                       </div>
-                      <a
-                        href={item.video_url}
-                        download
-                        className="generator-secondary-btn inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" x2="12" y1="15" y2="3" />
-                        </svg>
-                        Татах
-                      </a>
+                      <div className="grid gap-3">
+                        {item.model_name.startsWith("veo") && typeof item.seed === "number" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleContinueWithSeed(item)}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-100"
+                          >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 12a9 9 0 1 1-3.51-7.13" />
+                              <path d="M21 3v9h-9" />
+                            </svg>
+                            Seed-ээр үргэлжлүүлэх
+                          </button>
+                        ) : null}
+                        <a
+                          href={item.video_url}
+                          download
+                          className="generator-secondary-btn inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" x2="12" y1="15" y2="3" />
+                          </svg>
+                          Татах
+                        </a>
+                      </div>
                     </div>
                   </article>
                 ))}

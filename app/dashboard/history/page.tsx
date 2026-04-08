@@ -73,7 +73,7 @@ function SeedPanel({ seed }: { seed: number | null }) {
       <p className="mt-1 text-xs leading-5 text-slate-600">
         {seed !== null
           ? "Шинэ Veo generation дээр энэ seed-ийг дахин оруулаад ойролцоо үр дүн авч болно."
-          : "Энэ generation дээр Veo seed-ээ response дотроо буцаагаагүй байна."}
+          : "Энэ бол хуучин generation. Одоо seed хоосон байсан ч систем өөрөө seed үүсгээд хадгалдаг болсон."}
       </p>
     </div>
   );

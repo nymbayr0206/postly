@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { z } from "zod";
 
 import { getActiveModelNames } from "@/lib/env";
@@ -42,6 +43,10 @@ const requestSchema = z.object({
     .max(VEO_SEED_MAX, `Seed ${VEO_SEED_MIN}-${VEO_SEED_MAX} хооронд байх ёстой.`)
     .optional(),
 });
+
+function generateVeoSeed() {
+  return randomInt(VEO_SEED_MIN, VEO_SEED_MAX + 1);
+}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -122,6 +127,10 @@ export async function POST(request: Request) {
 
     const provider = getVideoModelProvider(model.name);
 
+    const seedForGeneration = model.name.startsWith("veo")
+      ? parsed.data.seed ?? generateVeoSeed()
+      : undefined;
+
     const generation = await provider.generateVideo({
       modelName: model.name,
       prompt: parsed.data.prompt,
@@ -129,10 +138,10 @@ export async function POST(request: Request) {
       duration: parsed.data.duration as VideoDuration,
       quality: parsed.data.quality,
       aspectRatio: parsed.data.aspect_ratio,
-      seed: parsed.data.seed,
+      seed: seedForGeneration,
     });
     const resolvedSeed =
-      model.name.startsWith("veo") ? generation.seed ?? parsed.data.seed ?? null : null;
+      model.name.startsWith("veo") ? generation.seed ?? seedForGeneration ?? null : null;
     const serverToken = await issueGenerationCommitToken(createSupabaseAdminClient(), {
       userId: user.id,
       modelName: model.name,
