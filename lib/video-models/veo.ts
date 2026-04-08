@@ -22,15 +22,24 @@ type VeoDetailsResponse = {
   data?: {
     taskId?: string;
     paramJson?: string | null;
+    promptJson?: string | null;
     successFlag?: number;
     errorMessage?: string | null;
     fallbackFlag?: boolean;
+    info?: {
+      resultUrls?: string[];
+      originUrls?: string[];
+      resolution?: string;
+      paramJson?: string | null;
+      promptJson?: string | null;
+    };
     response?: {
       taskId?: string;
       resultUrls?: string[];
       originUrls?: string[];
       resolution?: string;
       paramJson?: string | null;
+      promptJson?: string | null;
     };
   };
 };
@@ -44,7 +53,13 @@ type VeoUpgradeResponse = {
 };
 
 function extractVeoVideoUrl(data: VeoDetailsResponse["data"]) {
-  return data?.response?.resultUrls?.[0] ?? data?.response?.originUrls?.[0] ?? null;
+  return (
+    data?.response?.resultUrls?.[0] ??
+    data?.response?.originUrls?.[0] ??
+    data?.info?.resultUrls?.[0] ??
+    data?.info?.originUrls?.[0] ??
+    null
+  );
 }
 
 function normalizeSeedValue(value: unknown) {
@@ -59,35 +74,64 @@ function normalizeSeedValue(value: unknown) {
   return undefined;
 }
 
-function extractVeoSeed(data: VeoDetailsResponse["data"], fallbackSeed?: number) {
-  const directSeed = normalizeSeedValue((data as { seed?: unknown } | undefined)?.seed);
-  if (directSeed !== undefined) {
-    return directSeed;
+function extractSeedFromObject(value: unknown): number | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
   }
 
-  const directSeeds = normalizeSeedValue((data as { seeds?: unknown } | undefined)?.seeds);
-  if (directSeeds !== undefined) {
-    return directSeeds;
+  const record = value as Record<string, unknown>;
+
+  for (const key of ["seed", "seeds", "randomSeed", "random_seed"]) {
+    const next = normalizeSeedValue(record[key]);
+    if (next !== undefined) {
+      return next;
+    }
   }
 
-  for (const source of [data?.paramJson, data?.response?.paramJson]) {
-    if (!source?.trim()) {
-      continue;
+  for (const nestedKey of ["params", "param", "data", "request", "input", "metadata"]) {
+    const next = extractSeedFromObject(record[nestedKey]);
+    if (next !== undefined) {
+      return next;
+    }
+  }
+
+  return undefined;
+}
+
+function extractSeedFromJsonSource(source: unknown) {
+  if (typeof source === "string") {
+    const trimmed = source.trim();
+    if (!trimmed) {
+      return undefined;
     }
 
     try {
-      const parsed = JSON.parse(source) as { seed?: unknown; seeds?: unknown };
-      const parsedSeed = normalizeSeedValue(parsed.seed);
-      if (parsedSeed !== undefined) {
-        return parsedSeed;
-      }
-
-      const parsedSeeds = normalizeSeedValue(parsed.seeds);
-      if (parsedSeeds !== undefined) {
-        return parsedSeeds;
-      }
+      return extractSeedFromObject(JSON.parse(trimmed));
     } catch {
-      continue;
+      return undefined;
+    }
+  }
+
+  return extractSeedFromObject(source);
+}
+
+function extractVeoSeed(data: VeoDetailsResponse["data"], fallbackSeed?: number) {
+  const directDataSeed = extractSeedFromObject(data);
+  if (directDataSeed !== undefined) {
+    return directDataSeed;
+  }
+
+  for (const source of [
+    data?.paramJson,
+    data?.promptJson,
+    data?.response?.paramJson,
+    data?.response?.promptJson,
+    data?.info?.paramJson,
+    data?.info?.promptJson,
+  ]) {
+    const parsedSeed = extractSeedFromJsonSource(source);
+    if (parsedSeed !== undefined) {
+      return parsedSeed;
     }
   }
 

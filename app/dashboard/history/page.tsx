@@ -68,12 +68,12 @@ function SeedPanel({ seed }: { seed: number | null }) {
     <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Seed</p>
       <p className="mt-1 text-sm font-semibold text-slate-900">
-        {seed !== null ? seed : "Хадгалагдаагүй"}
+        {seed !== null ? seed : "Veo API буцаагаагүй"}
       </p>
       <p className="mt-1 text-xs leading-5 text-slate-600">
         {seed !== null
           ? "Шинэ Veo generation дээр энэ seed-ийг дахин оруулаад ойролцоо үр дүн авч болно."
-          : "Энэ video дээр seed хадгалагдаагүй байна."}
+          : "Энэ generation дээр Veo seed-ээ response дотроо буцаагаагүй байна."}
       </p>
     </div>
   );

@@ -53,12 +53,12 @@ function renderVeoSeedPanel(seedValue: number | null | undefined) {
     <div className="rounded-[1rem] border border-cyan-100 bg-cyan-50/70 px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Seed</p>
       <p className="mt-1 text-sm font-semibold text-slate-900">
-        {typeof seedValue === "number" ? seedValue : "Хадгалагдаагүй"}
+        {typeof seedValue === "number" ? seedValue : "Veo API буцаагаагүй"}
       </p>
       <p className="mt-1 text-xs leading-5 text-slate-600">
         {typeof seedValue === "number"
           ? "Энэ seed-ийг дахин оруулаад ойролцоо composition, motion-оо үргэлжлүүлж ашиглаж болно."
-          : "Энэ video дээр seed хадгалагдаагүй байна. Шинэ Veo generation хийхдээ seed оруулбал энд харагдана."}
+          : "Энэ generation дээр Veo seed-ээ response дотроо буцаагаагүй байна. Seed-ээ өөрөө оруулаад generate хийвэл энд тогтвортой харагдана."}
       </p>
     </div>
   );
