@@ -1,7 +1,9 @@
 import { getVeoEnv } from "@/lib/env";
 import {
+  type VideoExtensionInput,
   type VideoGenerationInput,
   type VideoGenerationOutput,
+  type VideoQuality,
   VideoModelError,
 } from "@/lib/video-models/types";
 
@@ -143,6 +145,18 @@ function getKieErrorMessage(message: string, fallbackMessage: string) {
   return normalized ? normalized : fallbackMessage;
 }
 
+function getVeoExtendModelName(modelName: string) {
+  if (modelName === "veo3_fast") {
+    return "fast";
+  }
+
+  if (modelName === "veo3") {
+    return "quality";
+  }
+
+  throw new VideoModelError("Extend зөвхөн Veo 3.1 Fast эсвэл Veo 3 Quality дээр ажиллана.", 400);
+}
+
 export class VeoProvider {
   name = "veo";
 
@@ -158,27 +172,90 @@ export class VeoProvider {
     }
 
     const deadline = Date.now() + veoTimeoutMs;
+    const taskId = await this.createTask({
+      veoApiKey,
+      endpoint: veoGenerateUrl,
+      body: {
+        prompt: input.prompt,
+        imageUrls: [input.imageUrl],
+        model: input.modelName,
+        aspect_ratio: input.aspectRatio ?? "Auto",
+        ...(input.seed === undefined ? {} : { seeds: input.seed }),
+        enableTranslation: true,
+        enableFallback: false,
+        generationType: "FIRST_AND_LAST_FRAMES_2_VIDEO",
+        watermark: "",
+      },
+      fallbackMessage: "Veo үүсгэлтийн даалгаврыг эхлүүлж чадсангүй. Дахин оролдоно уу.",
+    });
+
+    return this.waitForTaskResult({
+      veoApiKey,
+      veoPollUrl,
+      veo1080pUrl,
+      taskId,
+      quality: input.quality,
+      duration: input.duration,
+      fallbackSeed: input.seed,
+      deadline,
+    });
+  }
+
+  async extendVideo(input: VideoExtensionInput): Promise<VideoGenerationOutput> {
+    const { veoApiKey, veoExtendUrl, veoPollUrl, veo1080pUrl, veoTimeoutMs } = getVeoEnv();
+
+    if (!input.prompt.trim()) {
+      throw new VideoModelError("Промпт заавал шаардлагатай.", 400);
+    }
+
+    if (!input.sourceTaskId.trim()) {
+      throw new VideoModelError("Үргэлжлүүлэх Veo task id олдсонгүй.", 400);
+    }
+
+    const deadline = Date.now() + veoTimeoutMs;
+    const taskId = await this.createTask({
+      veoApiKey,
+      endpoint: veoExtendUrl,
+      body: {
+        taskId: input.sourceTaskId,
+        prompt: input.prompt,
+        ...(input.seed === undefined ? {} : { seeds: input.seed }),
+        watermark: "",
+        model: getVeoExtendModelName(input.modelName),
+      },
+      fallbackMessage: "Veo continue task-ийг эхлүүлж чадсангүй. Дахин оролдоно уу.",
+    });
+
+    return this.waitForTaskResult({
+      veoApiKey,
+      veoPollUrl,
+      veo1080pUrl,
+      taskId,
+      quality: input.quality,
+      duration: 8,
+      fallbackSeed: input.seed,
+      deadline,
+    });
+  }
+
+  private async createTask(params: {
+    veoApiKey: string;
+    endpoint: string;
+    body: Record<string, unknown>;
+    fallbackMessage: string;
+  }) {
+    const { veoApiKey, endpoint, body, fallbackMessage } = params;
 
     let createResponse: Response;
 
     try {
-      createResponse = await fetch(veoGenerateUrl, {
+      createResponse = await fetch(endpoint, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${veoApiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          prompt: input.prompt,
-          imageUrls: [input.imageUrl],
-          model: input.modelName,
-          aspect_ratio: input.aspectRatio ?? "Auto",
-          ...(input.seed === undefined ? {} : { seeds: input.seed }),
-          enableTranslation: true,
-          enableFallback: false,
-          generationType: "FIRST_AND_LAST_FRAMES_2_VIDEO",
-          watermark: "",
-        }),
+        body: JSON.stringify(body),
       });
     } catch {
       throw new VideoModelError("Одоогоор Veo API-д холбогдож чадсангүй.", 502);
@@ -196,10 +273,34 @@ export class VeoProvider {
 
     if (!createResponse.ok || !taskId) {
       throw new VideoModelError(
-        getKieErrorMessage(createData.msg, "Veo үүсгэлтийн даалгаврыг эхлүүлж чадсангүй. Дахин оролдоно уу."),
+        getKieErrorMessage(createData.msg, fallbackMessage),
         createResponse.status >= 500 ? 502 : 400,
       );
     }
+
+    return taskId;
+  }
+
+  private async waitForTaskResult(params: {
+    veoApiKey: string;
+    veoPollUrl: string;
+    veo1080pUrl: string;
+    taskId: string;
+    quality: VideoQuality;
+    duration: number;
+    fallbackSeed?: number;
+    deadline: number;
+  }): Promise<VideoGenerationOutput> {
+    const {
+      veoApiKey,
+      veoPollUrl,
+      veo1080pUrl,
+      taskId,
+      quality,
+      duration,
+      fallbackSeed,
+      deadline,
+    } = params;
 
     while (Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
@@ -227,19 +328,20 @@ export class VeoProvider {
 
       if (successFlag === 1) {
         const standardVideoUrl = extractVeoVideoUrl(detailsData.data);
-        const resolvedSeed = extractVeoSeed(detailsData.data, input.seed);
+        const resolvedSeed = extractVeoSeed(detailsData.data, fallbackSeed);
 
         if (!standardVideoUrl) {
           throw new VideoModelError("Veo видеоны холбоос буцаасангүй.", 502);
         }
 
-        if (input.quality !== "1080p") {
+        if (quality !== "1080p") {
           return {
             videoUrl: standardVideoUrl,
             rawResponse: detailsData,
-            duration: input.duration,
-            quality: input.quality,
+            duration,
+            quality,
             seed: resolvedSeed,
+            providerTaskId: taskId,
           };
         }
 
@@ -256,9 +358,10 @@ export class VeoProvider {
             generation: detailsData,
             upgrade1080p: hdVideoUrl,
           },
-          duration: input.duration,
-          quality: input.quality,
+          duration,
+          quality,
           seed: resolvedSeed,
+          providerTaskId: taskId,
         };
       }
 
@@ -333,6 +436,9 @@ export class VeoProvider {
       );
     }
 
-    throw new VideoModelError("Veo 1080p хувилбар бэлэн болоход хэт удаж байна. Дахин оролдоно уу.", 504);
+    throw new VideoModelError(
+      "Veo 1080p хувилбар бэлэн болоход хэт удаж байна. Дахин оролдоно уу.",
+      504,
+    );
   }
 }

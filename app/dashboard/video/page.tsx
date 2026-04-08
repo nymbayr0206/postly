@@ -37,7 +37,7 @@ export default async function VideoPage() {
     getModels(supabase),
     supabase
       .from("video_generations")
-      .select("id,prompt,video_url,image_url,duration,quality,cost,created_at,model_name,seed")
+      .select("id,prompt,video_url,image_url,duration,quality,cost,created_at,model_name,seed,provider_task_id")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -62,6 +62,7 @@ export default async function VideoPage() {
 
   const items = (history ?? []).map((item) => ({
     ...item,
+    can_extend: Boolean(item.provider_task_id && item.model_name.startsWith("veo")),
     created_at_label: formatDate(item.created_at),
   }));
   const tariff = await getEffectiveTariffForProfile(supabase, profile);

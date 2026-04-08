@@ -18,17 +18,27 @@ export type VideoGenerationInput = {
   seed?: number;
 };
 
+export type VideoExtensionInput = {
+  modelName: string;
+  prompt: string;
+  sourceTaskId: string;
+  quality: VideoQuality;
+  seed?: number;
+};
+
 export type VideoGenerationOutput = {
   videoUrl: string;
   rawResponse: unknown;
   duration?: number;
   quality?: VideoQuality;
   seed?: number;
+  providerTaskId?: string;
 };
 
 export type VideoModelProvider = {
   name: string;
   generateVideo(input: VideoGenerationInput): Promise<VideoGenerationOutput>;
+  extendVideo?(input: VideoExtensionInput): Promise<VideoGenerationOutput>;
 };
 
 export class VideoModelError extends Error {

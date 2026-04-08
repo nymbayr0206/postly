@@ -87,6 +87,7 @@ export function getVeoEnv() {
   return {
     veoApiKey: readEnvAny(["KIE_API_KEY", "VEO_API_KEY", "RUNWAY_API_KEY"]),
     veoGenerateUrl: "https://api.kie.ai/api/v1/veo/generate",
+    veoExtendUrl: "https://api.kie.ai/api/v1/veo/extend",
     veoPollUrl: "https://api.kie.ai/api/v1/veo/record-info",
     veo1080pUrl: "https://api.kie.ai/api/v1/veo/get-1080p-video",
     veoTimeoutMs: Number(process.env.VEO_TIMEOUT_MS ?? "420000"),

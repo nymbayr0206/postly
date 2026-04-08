@@ -20,6 +20,7 @@ type GenerateVideoResult = {
   video_url: string;
   cost: number;
   credits_remaining: number;
+  generation_id?: string | null;
   seed?: number | null;
 };
 
@@ -33,8 +34,14 @@ type VideoHistoryItem = {
   cost: number;
   model_name: string;
   seed?: number | null;
+  can_extend: boolean;
   created_at: string;
   created_at_label: string;
+};
+
+type ExtendSource = {
+  generationId: string;
+  createdAtLabel: string;
 };
 
 type VideoModelOption = {
@@ -57,7 +64,7 @@ function renderVeoSeedPanel(seedValue: number | null | undefined) {
       </p>
       <p className="mt-1 text-xs leading-5 text-slate-600">
         {typeof seedValue === "number"
-          ? "Энэ seed-ийг дахин оруулаад ойролцоо composition, motion-оо үргэлжлүүлж ашиглаж болно."
+          ? "Энэ seed-ийг дахин оруулаад ойролцоо composition, motion-той шинэ generation хийж болно."
           : "Энэ бол хуучин generation. Одоо seed хоосон байсан ч систем өөрөө seed үүсгээд хадгалдаг болсон."}
       </p>
     </div>
@@ -99,6 +106,7 @@ export function VideoGeneratorClient({
   const [quality, setQuality] = useState<VideoQuality>(fallbackModel?.defaultQuality ?? "720p");
   const [detectedAspectRatio, setDetectedAspectRatio] = useState<VideoAspectRatio>("Auto");
   const [seed, setSeed] = useState("");
+  const [extendSource, setExtendSource] = useState<ExtendSource | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [isOptimizingPrompt, setIsOptimizingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +137,12 @@ export function VideoGeneratorClient({
       selectedModel.qualityOptions.includes(current) ? current : selectedModel.defaultQuality,
     );
   }, [selectedModel]);
+
+  useEffect(() => {
+    if (extendSource && !selectedModelName.startsWith("veo")) {
+      setExtendSource(null);
+    }
+  }, [extendSource, selectedModelName]);
 
   function updateDetectedAspectRatio(nextPreview: string | null) {
     if (!nextPreview) {
@@ -181,7 +195,27 @@ export function VideoGeneratorClient({
 
   function handleContinueWithSeed(item: VideoHistoryItem) {
     if (!item.model_name.startsWith("veo") || typeof item.seed !== "number") {
-      setError("Энэ video дээр үргэлжлүүлэх seed алга.");
+      setError("Энэ video дээр ижил seed-ээр дахин хийх seed алга.");
+      return;
+    }
+
+    setError(null);
+    setResult(null);
+    setPromptOptimizationInfo(null);
+    setExtendSource(null);
+    setSelectedModelName(item.model_name);
+    setDuration(item.duration as VideoDuration);
+    setQuality(item.quality as VideoQuality);
+    setSeed(String(item.seed));
+    setPrompt(item.prompt);
+    applyExistingSourceImage(item.image_url);
+
+    formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function handleExtendVideo(item: VideoHistoryItem) {
+    if (!item.model_name.startsWith("veo") || !item.can_extend) {
+      setError("Энэ video дээр real continue хийх task id алга.");
       return;
     }
 
@@ -191,9 +225,13 @@ export function VideoGeneratorClient({
     setSelectedModelName(item.model_name);
     setDuration(item.duration as VideoDuration);
     setQuality(item.quality as VideoQuality);
-    setSeed(String(item.seed));
+    setSeed(typeof item.seed === "number" ? String(item.seed) : "");
     setPrompt(item.prompt);
-    applyExistingSourceImage(item.image_url);
+    replaceFile(null);
+    setExtendSource({
+      generationId: item.id,
+      createdAtLabel: item.created_at_label,
+    });
 
     formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -306,8 +344,9 @@ export function VideoGeneratorClient({
     const currentCost = calculateFinalCreditCost(baseCost, tariffMultiplier);
     const normalizedSeed = seed.trim();
     const isVeoModelRequest = selectedModel.name.startsWith("veo");
+    const isExtendRequest = Boolean(extendSource && isVeoModelRequest);
 
-    if (!file && !sourceImageUrl) {
+    if (!isExtendRequest && !file && !sourceImageUrl) {
       setError("Эх зураг сонгоно уу.");
       return;
     }
@@ -355,60 +394,84 @@ export function VideoGeneratorClient({
         promptForGeneration = optimizedPrompt;
       }
 
-      let imageUrl = sourceImageUrl;
+      let nextResult: GenerateVideoResult;
 
-      if (!imageUrl && file) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const uploadResponse = await fetch("/api/upload-image", {
+      if (isExtendRequest && extendSource) {
+        const extendResponse = await fetch("/api/extend-video", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source_generation_id: extendSource.generationId,
+            model_name: selectedModel.name,
+            prompt: promptForGeneration,
+            quality,
+            ...(normalizedSeed ? { seed: Number(normalizedSeed) } : {}),
+          }),
         });
-        const uploadPayload = await uploadResponse.json();
+        const extendPayload = await extendResponse.json();
 
-        if (!uploadResponse.ok) {
-          setError(uploadPayload.error ?? "Зураг оруулахад алдаа гарлаа.");
+        if (!extendResponse.ok) {
+          setError(extendPayload.error ?? "Видеог үргэлжлүүлэхэд алдаа гарлаа.");
           return;
         }
 
-        imageUrl = uploadPayload.url as string;
+        nextResult = extendPayload as GenerateVideoResult;
+      } else {
+        let imageUrl = sourceImageUrl;
+
+        if (!imageUrl && file) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const uploadResponse = await fetch("/api/upload-image", {
+            method: "POST",
+            body: formData,
+          });
+          const uploadPayload = await uploadResponse.json();
+
+          if (!uploadResponse.ok) {
+            setError(uploadPayload.error ?? "Зураг оруулахад алдаа гарлаа.");
+            return;
+          }
+
+          imageUrl = uploadPayload.url as string;
+        }
+
+        if (!imageUrl) {
+          setError("Эх зураг бэлдээгүй байна.");
+          return;
+        }
+
+        const generateResponse = await fetch("/api/generate-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model_name: selectedModel.name,
+            prompt: promptForGeneration,
+            image_url: imageUrl,
+            duration,
+            quality,
+            aspect_ratio: detectedAspectRatio,
+            ...(isVeoModelRequest && normalizedSeed ? { seed: Number(normalizedSeed) } : {}),
+          }),
+        });
+        const generatePayload = await generateResponse.json();
+
+        if (!generateResponse.ok) {
+          setError(generatePayload.error ?? "Видео үүсгэхэд алдаа гарлаа.");
+          return;
+        }
+
+        nextResult = generatePayload as GenerateVideoResult;
       }
 
-      if (!imageUrl) {
-        setError("Эх зураг бэлдээгүй байна.");
-        return;
-      }
-
-      const generateResponse = await fetch("/api/generate-video", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model_name: selectedModel.name,
-          prompt: promptForGeneration,
-          image_url: imageUrl,
-          duration,
-          quality,
-          aspect_ratio: detectedAspectRatio,
-          ...(isVeoModelRequest && normalizedSeed
-            ? { seed: Number(normalizedSeed) }
-            : {}),
-        }),
-      });
-      const generatePayload = await generateResponse.json();
-
-      if (!generateResponse.ok) {
-        setError(generatePayload.error ?? "Видео үүсгэхэд алдаа гарлаа.");
-        return;
-      }
-
-      const nextResult = generatePayload as GenerateVideoResult;
       setResult(nextResult);
       if (isVeoModelRequest && typeof nextResult.seed === "number") {
         setSeed(String(nextResult.seed));
       }
       setPrompt("");
       setPromptOptimizationInfo(null);
+      setExtendSource(null);
       replaceFile(null);
       router.refresh();
     } catch {
@@ -425,6 +488,7 @@ export function VideoGeneratorClient({
     setError(null);
     setPromptOptimizationInfo(null);
     setSeed("");
+    setExtendSource(null);
   }
 
   if (!selectedModel) {
@@ -438,6 +502,8 @@ export function VideoGeneratorClient({
   const hasEnoughCredits = creditsRemaining >= currentCost;
   const isDurationLocked = selectedModel.durationOptions.length === 1;
   const isVeoModel = selectedModel.name.startsWith("veo");
+  const isExtendMode = Boolean(extendSource && isVeoModel);
+  const submitLabel = isExtendMode ? "Видеог үргэлжлүүлэх" : "Видео үүсгэх";
 
   return (
     <div className="grid min-h-[calc(100vh-12rem)] gap-0 lg:grid-cols-[minmax(0,29rem)_minmax(0,1fr)]">
@@ -447,7 +513,9 @@ export function VideoGeneratorClient({
             <GenerationPricingCard
               currentCost={formatMnt(currentCostMnt)}
               description={
-                isVeoModel
+                isExtendMode
+                  ? `${selectedModel.label} нь сонгосон Veo video-гийн төгсгөлөөс дараагийн 8 секундийг жинхэнэ continuation хэлбэрээр гаргана.`
+                  : isVeoModel
                   ? `${selectedModel.label} нь fixed 8 секундын video гаргана. 1080p нь нэмэлт HD боловсруулалттай.`
                   : "Runway-ийн үнэ нь хугацаа болон чанараасаа хамаарна."
               }
@@ -517,84 +585,109 @@ export function VideoGeneratorClient({
             <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">Эх зураг</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">Mobile дээр дараад эсвэл desktop дээр drag and drop хийгээд оруулна.</p>
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    {isExtendMode ? "Үргэлжлүүлэх эх үүсвэр" : "Эх зураг"}
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    {isExtendMode
+                      ? "Сонгосон Veo video-гийн төгсгөлөөс continue хийх тул шинэ эх зураг дахин хэрэггүй."
+                      : "Mobile дээр дараад эсвэл desktop дээр drag and drop хийгээд оруулна."}
+                  </p>
                 </div>
                 <span className="generator-chip rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  {detectedAspectRatio === "Auto" ? "Auto ratio" : detectedAspectRatio}
+                  {isExtendMode ? "Real continue" : detectedAspectRatio === "Auto" ? "Auto ratio" : detectedAspectRatio}
                 </span>
               </div>
 
-              <div
-                onDrop={handleDrop}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onClick={() => !preview && fileInputRef.current?.click()}
-                className={`mt-4 flex min-h-[14rem] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.5rem] border-2 border-dashed px-6 text-center transition ${
-                  isDragging
-                    ? "generator-dropzone-active border-cyan-400 bg-cyan-50"
-                    : preview
-                      ? "generator-dropzone-filled cursor-default border-slate-200 bg-slate-50"
-                      : "generator-dropzone border-cyan-300 bg-cyan-50/60 hover:border-cyan-400 hover:bg-cyan-50"
-                }`}
-              >
-                {preview ? (
-                  <div className="generator-result-card relative w-full overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt="Эх зураг" className="max-h-72 w-full object-contain" />
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        replaceFile(null);
-                      }}
-                      className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/85 text-white"
-                      aria-label="Зураг хасах"
-                    >
-                      ×
-                    </button>
+              {isExtendMode ? (
+                <div className="mt-4 rounded-[1.5rem] border border-cyan-200 bg-cyan-50/70 px-4 py-4">
+                  <p className="text-sm font-semibold text-cyan-900">Жинхэнэ continuation идэвхтэй</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    Энэ generate нь {extendSource?.createdAtLabel} дээрх Veo video-гийн төгсгөлөөс
+                    шууд үргэлжилнэ. Эх зураг дахин upload хийхгүй, KIE-ийн `extend` endpoint ашиглана.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setExtendSource(null)}
+                    className="mt-4 inline-flex items-center justify-center rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-semibold text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-100"
+                  >
+                    Зурагтай шинэ generation руу буцах
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onClick={() => !preview && fileInputRef.current?.click()}
+                    className={`mt-4 flex min-h-[14rem] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.5rem] border-2 border-dashed px-6 text-center transition ${
+                      isDragging
+                        ? "generator-dropzone-active border-cyan-400 bg-cyan-50"
+                        : preview
+                          ? "generator-dropzone-filled cursor-default border-slate-200 bg-slate-50"
+                          : "generator-dropzone border-cyan-300 bg-cyan-50/60 hover:border-cyan-400 hover:bg-cyan-50"
+                    }`}
+                  >
+                    {preview ? (
+                      <div className="generator-result-card relative w-full overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={preview} alt="Эх зураг" className="max-h-72 w-full object-contain" />
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            replaceFile(null);
+                          }}
+                          className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/85 text-white"
+                          aria-label="Зураг хасах"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="generator-empty-icon flex h-14 w-14 items-center justify-center rounded-full bg-white text-cyan-700 shadow-sm">
+                          <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" x2="12" y1="3" y2="15" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">Эх зургаа оруулах</p>
+                          <p className="mt-1 text-sm leading-6 text-slate-500">
+                            Нэг зураг сонгож хөдөлгөөнийг нь тайлбараараа тодорхойлно.
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <div className="generator-empty-icon flex h-14 w-14 items-center justify-center rounded-full bg-white text-cyan-700 shadow-sm">
-                      <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="17 8 12 3 7 8" />
-                        <line x1="12" x2="12" y1="3" y2="15" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">Эх зургаа оруулах</p>
-                      <p className="mt-1 text-sm leading-6 text-slate-500">
-                        Нэг зураг сонгож хөдөлгөөнийг нь тайлбараараа тодорхойлно.
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
 
-              {file && (
-                <p className="mt-3 text-xs text-slate-500">
-                  {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
-                </p>
+                  {file && (
+                    <p className="mt-3 text-xs text-slate-500">
+                      {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  )}
+
+                  {!file && sourceImageUrl ? (
+                    <p className="mt-3 text-xs text-cyan-700">
+                      Өмнөх generation-ийн эх зураг ашиглаж байна. Үүнийг сольё гэвэл preview дээрх `×` дарна уу.
+                    </p>
+                  ) : null}
+                </>
               )}
-
-              {!file && sourceImageUrl ? (
-                <p className="mt-3 text-xs text-cyan-700">
-                  Өмнөх generation-ийн эх зураг ашиглаж байна. Үүнийг сольё гэвэл preview дээрх `×` дарна уу.
-                </p>
-              ) : null}
             </section>
 
             <section className="generator-panel rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm sm:p-5">
@@ -617,10 +710,21 @@ export function VideoGeneratorClient({
                 </button>
               </div>
 
+              {isExtendMode ? (
+                <div className="generator-note mt-4 rounded-[1rem] border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+                  Энэ prompt нь өмнөх 8 секундын дараа яг юу үргэлжлэхийг тайлбарлана. Жишээ нь:
+                  “she keeps walking toward the door, opens it, and the camera follows from behind”.
+                </div>
+              ) : null}
+
               <textarea
                 value={prompt}
                 onChange={(event) => handlePromptChange(event.target.value)}
-                placeholder="Жишээ: Камер удаанаар zoom in хийж, үс салхинд зөөлөн хөдөлж, cinematic cyan light туссан байдал..."
+                placeholder={
+                  isExtendMode
+                    ? "Жишээ: She continues walking down the corridor, opens the door, and the camera follows into the next room..."
+                    : "Жишээ: Камер удаанаар zoom in хийж, үс салхинд зөөлөн хөдөлж, cinematic cyan light туссан байдал..."
+                }
                 rows={5}
                 className="generator-input mt-4 w-full resize-none rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               />
@@ -642,7 +746,9 @@ export function VideoGeneratorClient({
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Видео тохиргоо</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  {isVeoModel
+                  {isExtendMode
+                    ? "Real continue mode дээр сонгосон Veo video-гийн дараагийн 8 секундыг taskId-аар үргэлжлүүлнэ."
+                    : isVeoModel
                     ? "Veo model нь 8 секундын fixed output-тай. 1080p сонголт бол HD upgrade."
                     : "Видеоны урт болон чанараа сонгоно уу."}
                 </p>
@@ -715,7 +821,9 @@ export function VideoGeneratorClient({
                     />
                   </label>
                   <p className="mt-2 text-xs leading-5 text-slate-500">
-                    {`Ижил seed (${VEO_SEED_MIN}-${VEO_SEED_MAX}) ашиглавал ойролцоо composition, motion-той Veo video дахин авахад тусална. Хоосон орхивол систем өөрөө seed үүсгээд хадгална.`}
+                    {isExtendMode
+                      ? `Хоосон орхивол өмнөх video-ийн seed-ийг ашиглана. Өөр seed (${VEO_SEED_MIN}-${VEO_SEED_MAX}) өгвөл continuation-ийн randomness өөрчлөгдөнө.`
+                      : `Ижил seed (${VEO_SEED_MIN}-${VEO_SEED_MAX}) ашиглавал ойролцоо composition, motion-той Veo video дахин авахад тусална. Хоосон орхивол систем өөрөө seed үүсгээд хадгална.`}
                   </p>
                 </div>
               ) : null}
@@ -745,7 +853,7 @@ export function VideoGeneratorClient({
                     Видео боловсруулж байна...
                   </>
                 ) : (
-                  `Видео үүсгэх · ${currentCost} кр · ${formatMnt(currentCostMnt)}`
+                  `${submitLabel} · ${currentCost} кр · ${formatMnt(currentCostMnt)}`
                 )}
               </button>
 
@@ -788,9 +896,13 @@ export function VideoGeneratorClient({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 </div>
-                <h4 className="mt-5 text-xl font-semibold text-slate-950">Видео үүсгэж байна...</h4>
+                <h4 className="mt-5 text-xl font-semibold text-slate-950">
+                  {isExtendMode ? "Видео үргэлжлүүлж байна..." : "Видео үүсгэж байна..."}
+                </h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  {isVeoModel
+                  {isExtendMode
+                    ? "Сонгосон Veo clip-ийн төгсгөлөөс шинэ 8 секунд үргэлжилж байна. HD upgrade сонгосон бол арай удаан дуусч болно."
+                    : isVeoModel
                     ? "Veo generation болон HD upgrade нь арай урт үргэлжилж болно. Дуусмагц preview автоматаар шинэчлэгдэнэ."
                     : "Энэ процесс зураг үүсгэхээс арай урт үргэлжилж болно. Дуусмагц preview автоматаар шинэчлэгдэнэ."}
                 </p>
@@ -837,7 +949,9 @@ export function VideoGeneratorClient({
                 </div>
                 <h4 className="mt-5 text-xl font-semibold text-slate-950">Таны видео энд гарна</h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                  {selectedModel.label} ашиглаад эх зургаа оруулж, хөдөлгөөнөө тодорхой бичвэл илүү тогтвортой видео гарна.
+                  {isExtendMode
+                    ? `${selectedModel.label} ашиглаад prompt-оороо дараагийн 8 секундэд юу болохыг тайлбарлавал энэ хэсэгт continuation video гарна.`
+                    : `${selectedModel.label} ашиглаад эх зургаа оруулж, хөдөлгөөнөө тодорхой бичвэл илүү тогтвортой видео гарна.`}
                 </p>
               </div>
             )}
@@ -885,6 +999,20 @@ export function VideoGeneratorClient({
                         <span className="generator-chip rounded-full bg-slate-100 px-3 py-1">{formatMnt(creditsToMnt(item.cost, creditPriceMnt))}</span>
                       </div>
                       <div className="grid gap-3">
+                        {item.model_name.startsWith("veo") && item.can_extend ? (
+                          <button
+                            type="button"
+                            onClick={() => handleExtendVideo(item)}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
+                          >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 12h6" />
+                              <path d="M9 6l6 6-6 6" />
+                              <path d="M15 12h6" />
+                            </svg>
+                            Төгсгөлөөс үргэлжлүүлэх
+                          </button>
+                        ) : null}
                         {item.model_name.startsWith("veo") && typeof item.seed === "number" ? (
                           <button
                             type="button"
@@ -895,7 +1023,7 @@ export function VideoGeneratorClient({
                               <path d="M21 12a9 9 0 1 1-3.51-7.13" />
                               <path d="M21 3v9h-9" />
                             </svg>
-                            Seed-ээр үргэлжлүүлэх
+                            Ижил seed-ээр дахин үүсгэх
                           </button>
                         ) : null}
                         <a
