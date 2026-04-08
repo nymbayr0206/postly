@@ -40,7 +40,7 @@ export default async function VideoPage() {
       .select("id,prompt,video_url,image_url,duration,quality,cost,created_at,model_name,seed,provider_task_id")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(50),
   ]);
 
   const modelByName = new Map(allModels.map((model) => [model.name, model]));

@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useEffectEvent, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { GenerationPricingCard } from "@/components/dashboard/generation-pricing-card";
 import { SpeechToTextControl } from "@/components/dashboard/speech-to-text-control";
@@ -115,7 +115,10 @@ export function VideoGeneratorClient({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
+  const handledExtendQueryRef = useRef<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     return () => {
@@ -235,6 +238,37 @@ export function VideoGeneratorClient({
 
     formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+
+  const handleExtendVideoFromQuery = useEffectEvent((item: VideoHistoryItem) => {
+    handleExtendVideo(item);
+  });
+
+  useEffect(() => {
+    const extendGenerationId = searchParams.get("extend");
+
+    if (!extendGenerationId) {
+      handledExtendQueryRef.current = null;
+      return;
+    }
+
+    if (handledExtendQueryRef.current === extendGenerationId) {
+      return;
+    }
+
+    const targetItem = history.find((item) => item.id === extendGenerationId && item.can_extend);
+
+    if (!targetItem) {
+      return;
+    }
+
+    handledExtendQueryRef.current = extendGenerationId;
+    handleExtendVideoFromQuery(targetItem);
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("extend");
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  }, [history, pathname, router, searchParams]);
 
   function handlePromptChange(nextValue: string) {
     setPrompt(nextValue);

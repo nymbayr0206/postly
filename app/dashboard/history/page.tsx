@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { DownloadButton } from "@/components/dashboard/download-button";
@@ -31,6 +32,7 @@ type HistoryItem =
       duration: number;
       quality: string;
       seed: number | null;
+      can_extend: boolean;
       cost: number;
       url: string;
       image_url: string;
@@ -104,7 +106,9 @@ export default async function HistoryPage() {
       .limit(50),
     supabase
       .from("video_generations")
-      .select("id,model_name,prompt,duration,quality,seed,cost,video_url,image_url,created_at")
+      .select(
+        "id,model_name,prompt,duration,quality,seed,cost,video_url,image_url,created_at,provider_task_id",
+      )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -138,6 +142,7 @@ export default async function HistoryPage() {
       duration: row.duration,
       quality: row.quality,
       seed: row.seed ?? null,
+      can_extend: Boolean(row.provider_task_id && row.model_name.startsWith("veo")),
       cost: row.cost,
       url: row.video_url,
       image_url: row.image_url,
@@ -159,7 +164,8 @@ export default async function HistoryPage() {
             </span>
             <h1 className="mt-4 text-3xl font-semibold sm:text-4xl">Таны үүсгэлтийн түүх</h1>
             <p className="mt-3 text-sm leading-6 text-slate-200 sm:text-base">
-              Зураг, видео, аудио бүх үр дүнгээ нэг дэлгэц дээр хянаж, дахин нээж эсвэл татаж болно.
+              Зураг, видео, аудио бүх үр дүнгээ нэг дэлгэц дээр хянаж, дахин нээж,
+              татаж эсвэл Veo видеогоо төгсгөлөөс нь үргэлжлүүлж болно.
             </p>
           </div>
 
@@ -280,48 +286,72 @@ export default async function HistoryPage() {
                   <SeedPanel seed={item.seed} />
                 ) : null}
 
-                <div className="grid grid-cols-2 gap-3">
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                <div className="grid gap-3">
+                  {item.type === "video" && item.model_name.startsWith("veo") && item.can_extend ? (
+                    <Link
+                      href={`/dashboard/video?extend=${item.id}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
                     >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    Харах
-                  </a>
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 12h6" />
+                        <path d="M9 6l6 6-6 6" />
+                        <path d="M15 12h6" />
+                      </svg>
+                      Төгсгөлөөс үргэлжлүүлэх
+                    </Link>
+                  ) : null}
 
-                  <DownloadButton
-                    url={item.url}
-                    label="Татах"
-                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                  <div className="grid grid-cols-2 gap-3">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                     >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" x2="12" y1="15" y2="3" />
-                    </svg>
-                    Татах
-                  </DownloadButton>
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      Харах
+                    </a>
+
+                    <DownloadButton
+                      url={item.url}
+                      label="Татах"
+                      className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" x2="12" y1="15" y2="3" />
+                      </svg>
+                      Татах
+                    </DownloadButton>
+                  </div>
                 </div>
               </div>
             </article>
